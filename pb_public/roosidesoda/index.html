@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooside Sõda - Mänguekraan</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050510;
+            --panel-bg: rgba(16, 22, 40, 0.85);
+            --gold: #f5b027;
+            --rose-red: #e62e4d;
+            --text-light: #f0f4f8;
+            --font-scale: 1;
+        }
+
+        html { font-size: calc(16px * var(--font-scale)); }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            text-align: center;
+            font-size: 3.2rem;
+            margin: 10px 0 5px 0;
+            text-shadow: 0 0 25px rgba(245, 176, 39, 0.6);
+            letter-spacing: 3px;
+        }
+
+        .round-title {
+            font-size: 1.5rem;
+            color: #a0b2ce;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 1;
+        }
+
+        .question-box {
+            background: linear-gradient(180deg, rgba(30, 45, 75, 0.9), rgba(15, 22, 40, 0.9));
+            border: 3px solid var(--gold);
+            border-radius: 15px;
+            padding: 25px 35px;
+            width: 100%;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            box-sizing: border-box;
+        }
+
+        .bank-box {
+            background: rgba(245, 176, 39, 0.15);
+            border: 2px dashed var(--gold);
+            border-radius: 12px;
+            padding: 10px 40px;
+            text-align: center;
+        }
+        .bank-score { font-size: 2.8rem; font-family: 'Cinzel'; font-weight: 900; color: var(--gold); }
+
+        .board-answers {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .answer-slot {
+            background: linear-gradient(145deg, #0d182b, #1b2a47);
+            border: 2px solid var(--gold);
+            border-radius: 10px;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .answer-slot.revealed {
+            background: linear-gradient(145deg, #184227, #286e41);
+            border-color: #5cf161;
+        }
+
+        .answer-num {
+            background: var(--gold);
+            color: black;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .answer-text { display: none; text-transform: uppercase; }
+        .answer-points { display: none; color: var(--gold); font-family: 'Cinzel'; font-size: 1.8rem; }
+
+        .revealed .answer-text { display: block; }
+        .revealed .answer-points { display: block; color: #fff; }
+        .revealed .answer-num { display: none; }
+
+        .scoreboard {
+            display: flex;
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .team-card {
+            background: var(--panel-bg);
+            border: 2px solid rgba(245, 176, 39, 0.5);
+            border-radius: 15px;
+            padding: 15px;
+            flex: 1;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        }
+
+        .team-name { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
+        .team-score { font-size: 3.5rem; font-family: 'Cinzel', serif; font-weight: 900; margin: 5px 0; text-shadow: 0 0 15px rgba(245, 176, 39, 0.4); }
+
+        #strikeOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        .strike-x {
+            color: var(--rose-red);
+            font-size: 20rem;
+            font-weight: 900;
+            text-shadow: 0 0 60px rgba(230, 46, 77, 1);
+            animation: popX 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popX {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <h1>🌹 ROOSIDE SÕDA 🌹</h1>
+    <div class="round-title" id="roundTitle">VOOR 1</div>
+
+    <div class="game-container">
+        <div class="question-box" id="questionBox">Ootab mängu algust...</div>
+
+        <div class="bank-box">
+            <div style="font-size: 0.9rem; color: #a0b2ce;">PUNKTI PANK</div>
+            <div class="bank-score" id="bankScore">0</div>
+        </div>
+
+        <div class="board-answers" id="boardAnswers"></div>
+    </div>
+
+    <div class="scoreboard">
+        <div class="team-card">
+            <div class="team-name" id="teamName0">TIIM 1</div>
+            <div class="team-score" id="teamScore0">0</div>
+        </div>
+        <div class="team-card">
+            <div class="team-name" id="teamName1">TIIM 2</div>
+            <div class="team-score" id="teamScore1">0</div>
+        </div>
+    </div>
+
+    <div id="strikeOverlay">
+        <div class="strike-x" id="strikeContainer">❌</div>
+    </div>
+
+    <!-- Audio Elementid -->
+    <audio id="audioCorrect" src="roosidesoda-oige.mp3" preload="auto"></audio>
+    <audio id="audioError" src="roosidesoda-error.mp3" preload="auto"></audio>
+    <audio id="audioBgm" src="roosidesoda-taustamuusika.mp3" loop preload="auto"></audio>
+
+    <script>
+        const audioCorrect = document.getElementById('audioCorrect');
+        const audioError = document.getElementById('audioError');
+        const audioBgm = document.getElementById('audioBgm');
+
+        function setAudioVolume(vol) {
+            audioCorrect.volume = vol;
+            audioError.volume = vol;
+            audioBgm.volume = vol * 0.4; // Taustamuusika jääb efektidest veidi vaiksemaks
+        }
+
+        function playCorrectSound() {
+            audioCorrect.currentTime = 0;
+            audioCorrect.play().catch(() => {});
+        }
+
+        function playErrorSound() {
+            audioError.currentTime = 0;
+            audioError.play().catch(() => {});
+        }
+
+        function toggleBgm(play) {
+            if (play) {
+                audioBgm.play().catch(() => {});
+            } else {
+                audioBgm.pause();
+            }
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('id');
+        const STORAGE_PREFIX = gameId ? `feud_${gameId}_` : 'feud_local_';
+
+        function loadState() {
+            const rounds = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'rounds'));
+            const teams = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'teams')) || [{name:'TIIM 1', score:0}, {name:'TIIM 2', score:0}];
+            const currentRoundIdx = parseInt(localStorage.getItem(STORAGE_PREFIX + 'currentRound')) || 0;
+            const bankScore = parseInt(localStorage.getItem(STORAGE_PREFIX + 'bankScore')) || 0;
+            const fontScale = parseFloat(localStorage.getItem(STORAGE_PREFIX + 'fontScale')) || 1.0;
+            const vol = parseFloat(localStorage.getItem(STORAGE_PREFIX + 'volume')) ?? 0.8;
+            const bgmActive = localStorage.getItem(STORAGE_PREFIX + 'bgm_active') === 'true';
+
+            document.documentElement.style.setProperty('--font-scale', fontScale);
+            setAudioVolume(vol);
+            toggleBgm(bgmActive);
+
+            if (!rounds || !rounds[currentRoundIdx]) return;
+
+            const r = rounds[currentRoundIdx];
+            const mult = r.multiplier || 1;
+            document.getElementById('roundTitle').innerText = `${r.title} (Kordaja: ${mult}x)`;
+            document.getElementById('questionBox').innerText = r.question;
+            document.getElementById('bankScore').innerText = bankScore;
+
+            document.getElementById('teamName0').innerText = teams[0].name;
+            document.getElementById('teamScore0').innerText = teams[0].score;
+            document.getElementById('teamName1').innerText = teams[1].name;
+            document.getElementById('teamScore1').innerText = teams[1].score;
+
+            const board = document.getElementById('boardAnswers');
+            board.innerHTML = '';
+
+            r.answers.forEach((ans, idx) => {
+                const slot = document.createElement('div');
+                slot.className = `answer-slot ${ans.revealed ? 'revealed' : ''}`;
+                slot.innerHTML = `
+                    <div class="answer-num">${idx + 1}</div>
+                    <div class="answer-text">${ans.text}</div>
+                    <div class="answer-points">${ans.points * mult}</div>
+                `;
+                board.appendChild(slot);
+            });
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === STORAGE_PREFIX + 'trigger_sound') {
+                const val = e.newValue.split('_')[0];
+                if (val === 'ding') playCorrectSound();
+                if (val === 'buzzer') playErrorSound();
+                if (val === 'confetti') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            } else if (e.key === STORAGE_PREFIX + 'trigger_strike') {
+                const count = parseInt(e.newValue.split('_')[0]) || 1;
+                playErrorSound();
+                const overlay = document.getElementById('strikeOverlay');
+                document.getElementById('strikeContainer').innerText = "❌".repeat(count);
+                overlay.style.display = 'flex';
+                setTimeout(() => { overlay.style.display = 'none'; }, 1300);
+            } else {
+                loadState();
+            }
+        });
+
+        // 3D Taust
+        function initNebula() {
+            const canvas = document.getElementById('bgCanvas');
+            const ctx = canvas.getContext('2d');
+            let w = canvas.width = window.innerWidth;
+            let h = canvas.height = window.innerHeight;
+            const stars = Array.from({length: 120}, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 2, d: Math.random() * 0.8 }));
+            function draw() {
+                ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#f5b027';
+                stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); s.y += s.d; if (s.y > h) s.y = 0; });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        window.onload = () => { loadState(); initNebula(); };
+    </script>
+</body>
+</html>
