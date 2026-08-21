@@ -1,19 +1,11 @@
 services:
   pocketbase:
     image: ghcr.io/muchobien/pocketbase:latest
+    container_name: ohtu-pb
     restart: unless-stopped
     ports:
       - "8090:8090"
     volumes:
-      # Andmebaas (SQLite) + üleslaaditud failid - see kaust SISALDAB kõiki
-      # su andmeid, varunda seda regulaarselt.
-      - ./pb_data:/pb_data
-      # Sinu mängude lehed (index.html, kuldvillak.html, roosidesoda/...).
-      # PocketBase serveerib neid ISE samalt pordilt/domeenilt kui API-t,
-      # nii ei teki enam mixed-content viga.
-      - ./pb_public:/pb_public
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8090/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ./pb/pb_data:/pb_data
+      - ./pb/pb_migrations:/pb_migrations
+    command: serve --http=0.0.0.0:8090

@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #030a16;
+  --gold: #dfb342;
+}
+
+html, body, #root {
+  min-height: 100vh;
+}
+
+body {
+  background: radial-gradient(ellipse at center, #0a1b36 0%, #081426 55%, #030a16 100%);
+  background-attachment: fixed;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a1525;
+}
+::-webkit-scrollbar-thumb {
+  background: #dfb34255;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #dfb34299;
+}
+
+@layer components {
+  .btn-gold {
+    @apply bg-gold text-bg font-bold px-5 py-2.5 rounded-full
+           hover:bg-gold-hover transition-all shadow-gold
+           active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-outline {
+    @apply border-2 border-gold text-gold font-bold px-5 py-2.5 rounded-full
+           hover:bg-gold hover:text-bg transition-all
+           active:scale-95 disabled:opacity-50;
+  }
+  .card-panel {
+    @apply bg-bg-card border border-gold/30 rounded-2xl backdrop-blur-md
+           shadow-lg shadow-black/40;
+  }
+  .input-field {
+    @apply w-full bg-bg-panel border border-gold/40 rounded-xl px-4 py-3
+           text-white placeholder:text-white/40 focus:outline-none
+           focus:border-gold focus:ring-2 focus:ring-gold/30 transition;
+  }
+}

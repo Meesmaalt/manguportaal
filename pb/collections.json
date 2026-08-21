@@ -1,0 +1,126 @@
+[
+  {
+    "name": "packs",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "options": { "min": 1, "max": 120 }
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "required": false,
+        "options": { "max": 500 }
+      },
+      {
+        "name": "game_type",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["kuldvillak", "roosidesoda"]
+        }
+      },
+      {
+        "name": "data",
+        "type": "json",
+        "required": true
+      },
+      {
+        "name": "is_official",
+        "type": "bool",
+        "required": false,
+        "options": { "default": false }
+      },
+      {
+        "name": "is_public",
+        "type": "bool",
+        "required": false,
+        "options": { "default": false }
+      },
+      {
+        "name": "owner",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      }
+    ],
+    "listRule": "is_official = true || is_public = true || owner = @request.auth.id",
+    "viewRule": "is_official = true || is_public = true || owner = @request.auth.id",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "owner = @request.auth.id && is_official = false",
+    "deleteRule": "owner = @request.auth.id && is_official = false"
+  },
+  {
+    "name": "game_sessions",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "code",
+        "type": "text",
+        "required": true,
+        "options": { "min": 4, "max": 10 }
+      },
+      {
+        "name": "game_type",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["kuldvillak", "roosidesoda"]
+        }
+      },
+      {
+        "name": "pack",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "packs",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "host",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "maxSelect": 1
+        }
+      },
+      {
+        "name": "state",
+        "type": "json",
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["lobby", "playing", "finished"]
+        }
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "host = @request.auth.id",
+    "deleteRule": "host = @request.auth.id",
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_session_code ON game_sessions (code)"
+    ]
+  }
+]
