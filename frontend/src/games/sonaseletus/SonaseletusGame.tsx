@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
 
 type Team = { name: string; score: number }
 
@@ -91,13 +92,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      {sessionCode && (
-        <div className="text-center mb-4">
-          <span className="inline-block bg-gold/15 border border-gold/40 text-gold px-4 py-1 rounded-full text-sm font-bold tracking-widest">
-            Kood: {sessionCode}
-          </span>
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       <div className="text-center mb-6">
         <div className="text-white/50 text-sm uppercase tracking-widest mb-1">

@@ -49,3 +49,32 @@ Esimene käivitus loob automaatselt:
 - `docker compose down -v` on vajalik, kui varem oli vana/poolik PB andmebaas — muidu migratsioonid võivad vahele jääda.
 - Ametlikud packid on frontendis (offline fallback); PB-sse saab neid salvestada mängu käigus.
 - Helid: `frontend/public/sounds/` enne `docker compose up --build`.
+
+
+## Alamtee (reverse proxy)
+
+Kui rakendus on nt `https://domain.ee/mangud/` all:
+
+1. Loo projekti juures `.env`:
+```env
+BASE_PATH=/mangud
+PB_PUBLIC_URL=/mangud/pb
+```
+
+2. Nginx peaproxy näide:
+```nginx
+location /mangud/ {
+  proxy_pass http://127.0.0.1:3000/;
+  proxy_set_header Host $host;
+}
+location /mangud/pb/ {
+  proxy_pass http://127.0.0.1:8090/;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+}
+```
+
+3. `docker compose up -d --build`
+
+Frontend kasutab suhtelisi assete (`base: './'`) + `env.js` runtime `basePath`.

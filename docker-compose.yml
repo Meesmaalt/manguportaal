@@ -7,7 +7,6 @@ services:
       - "8090:8090"
     volumes:
       - pb_data:/pb_data
-      # Migratsioonid käivituvad automaatselt esimesel stardil
       - ./pb/pb_migrations:/pb_migrations:ro
     environment:
       PB_ADMIN_EMAIL: admin@ohtu.local
@@ -23,13 +22,21 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Build-time: './' = suhtelised assetid (soovitatav alamtee jaoks)
+        VITE_BASE_PATH: "./"
     container_name: ohtu-web
     restart: unless-stopped
     ports:
       - "3000:80"
     environment:
-      # Brauser räägib PocketBase'iga läbi nginx proksi /pb (CORS pole vaja)
-      PB_PUBLIC_URL: /pb
+      # Runtime: alamtee kui reverse proxy paneb nt /mangud alla
+      # Näide: BASE_PATH=/mangud
+      BASE_PATH: "${BASE_PATH:-}"
+      # PocketBase URL brauserile. Tühi = BASE_PATH/pb või /pb
+      # Näide otse: PB_PUBLIC_URL=http://192.168.88.28:8090
+      # Näide proksi: PB_PUBLIC_URL=/mangud/pb
+      PB_PUBLIC_URL: "${PB_PUBLIC_URL:-}"
     depends_on:
       pocketbase:
         condition: service_healthy

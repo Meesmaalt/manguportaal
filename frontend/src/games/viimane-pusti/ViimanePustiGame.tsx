@@ -1,4 +1,5 @@
 import type { ViimanePustiPackData } from '@/data/official-packs'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
 
 type Player = { name: string; lives: number; standing: boolean }
 
@@ -53,11 +54,7 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      {sessionCode && (
-        <div className="text-center mb-4 text-gold text-sm font-bold tracking-widest">
-          Kood: {sessionCode}
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       {winner ? (
         <div className="card-panel p-10 text-center mb-6 border-gold shadow-gold">

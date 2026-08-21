@@ -1,17 +1,9 @@
 import PocketBase from 'pocketbase'
+import { getConfig } from '@/lib/config'
 
-declare global {
-  interface Window {
-    __PB_URL__?: string
-  }
-}
+const { pbUrl } = getConfig()
 
-const url =
-  (typeof window !== 'undefined' && window.__PB_URL__) ||
-  import.meta.env.VITE_PB_URL ||
-  'http://127.0.0.1:8090'
-
-export const pb = new PocketBase(url)
+export const pb = new PocketBase(pbUrl)
 
 pb.authStore.onChange(() => {})
 
@@ -27,7 +19,7 @@ export type Pack = {
   name: string
   description?: string
   game_type: string
-  data: KuldvillakPackData | RoosidesodaPackData
+  data: KuldvillakPackData | RoosidesodaPackData | Record<string, unknown>
   is_official: boolean
   is_public: boolean
   owner?: string

@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { RoosidesodaState } from './types'
 import { Plus, Minus, SkipForward, Banknote, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { playSound, sounds, createBgm } from '@/lib/audio'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
+import { useFontScale } from '@/hooks/useFontScale'
 
 type Props = {
   state: RoosidesodaState
@@ -26,8 +28,8 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
   const rounds = packData?.rounds || []
   const round = rounds[currentRoundIdx]
 
-  const [fontScale, setFontScale] = useState(1)
   const [musicOn, setMusicOn] = useState(false)
+  const { smaller, reset, larger } = useFontScale()
   const [sfxOn, setSfxOn] = useState(true)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
 
@@ -157,10 +159,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
   }
 
   return (
-    <div
-      className="w-full max-w-5xl mx-auto px-2 relative"
-      style={{ fontSize: `calc(1rem * ${fontScale})` }}
-    >
+    <div className="w-full max-w-5xl mx-auto px-2 relative">
       {isHost && (
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
           <div className="flex items-center gap-1 bg-bg-card border border-gold/40 rounded-full px-2 py-1">
@@ -168,21 +167,21 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale((s) => Math.max(0.75, +(s - 0.1).toFixed(2)))}
+              onClick={smaller}
             >
               A−
             </button>
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale(1)}
+              onClick={reset}
             >
               A
             </button>
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale((s) => Math.min(1.5, +(s + 0.1).toFixed(2)))}
+              onClick={larger}
             >
               A+
             </button>
@@ -210,13 +209,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
         </div>
       )}
 
-      {sessionCode && (
-        <div className="text-center mb-3">
-          <span className="inline-block bg-gold/15 border border-gold/40 text-gold px-4 py-1.5 rounded-full text-sm font-bold tracking-widest">
-            Kood: {sessionCode}
-          </span>
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-2 tracking-wide">
         🌹 ROOSIDE SÕDA 🌹

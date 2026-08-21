@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { KuldvillakState } from './types'
 import { X, Eye, EyeOff, Plus, Minus, Trophy, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { createBgm, sounds } from '@/lib/audio'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
+import { useFontScale } from '@/hooks/useFontScale'
 
 type Props = {
   state: KuldvillakState
@@ -16,18 +18,14 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const categories = packData?.categories || []
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
 
-  const [fontScale, setFontScale] = useState(1)
   const [musicOn, setMusicOn] = useState(false)
+  const { smaller, reset, larger } = useFontScale()
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
 
   useEffect(() => {
     bgmRef.current = createBgm(sounds.kuldvillakBgm, 0.3)
     return () => bgmRef.current?.pause()
   }, [])
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--font-scale', String(fontScale))
-  }, [fontScale])
 
   function toggleMusic() {
     if (!bgmRef.current) return
@@ -117,10 +115,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 max-w-5xl mx-auto'
 
   return (
-    <div
-      className="w-full max-w-6xl mx-auto px-2"
-      style={{ fontSize: `calc(1rem * ${fontScale})` }}
-    >
+    <div className="w-full max-w-6xl mx-auto px-2">
       {/* Toolbar */}
       {isHost && (
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
@@ -129,21 +124,21 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale((s) => Math.max(0.75, +(s - 0.1).toFixed(2)))}
+              onClick={smaller}
             >
               A−
             </button>
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale(1)}
+              onClick={reset}
             >
               A
             </button>
             <button
               type="button"
               className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={() => setFontScale((s) => Math.min(1.5, +(s + 0.1).toFixed(2)))}
+              onClick={larger}
             >
               A+
             </button>
@@ -183,14 +178,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         </div>
       )}
 
-      {sessionCode && (
-        <div className="text-center mb-4">
-          <span className="inline-block bg-gold/15 border border-gold/40 text-gold px-4 py-1.5 rounded-full text-sm font-bold tracking-widest">
-            Kood: {sessionCode}
-          </span>
-          <p className="text-white/40 text-xs mt-1">Ava teises seadmes /ekraan/{sessionCode}</p>
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-5 tracking-wide drop-shadow-[0_0_20px_rgba(223,179,66,0.4)]">
         🏆 KULDVILLAK 🏆

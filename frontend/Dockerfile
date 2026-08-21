@@ -3,7 +3,8 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
-ENV VITE_PB_URL=/pb
+ARG VITE_BASE_PATH=./
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
 RUN npm run build
 
 FROM nginx:alpine

@@ -1,4 +1,5 @@
 import type { MaEiOleKunagiPackData } from '@/data/official-packs'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
 
 type Player = { name: string; lives: number }
 
@@ -46,11 +47,7 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      {sessionCode && (
-        <div className="text-center mb-4 text-gold text-sm font-bold tracking-widest">
-          Kood: {sessionCode}
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       <div className="card-panel p-8 text-center mb-6">
         <p className="text-white/50 text-sm uppercase tracking-widest mb-3">Väide</p>

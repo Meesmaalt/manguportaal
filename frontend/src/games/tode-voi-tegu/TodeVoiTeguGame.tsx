@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { TodeVoiTeguPackData } from '@/data/official-packs'
+import SessionCodeBadge from '@/components/SessionCodeBadge'
 
 type Player = { name: string }
 
@@ -57,11 +58,7 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      {sessionCode && (
-        <div className="text-center mb-4 text-gold text-sm font-bold tracking-widest">
-          Kood: {sessionCode}
-        </div>
-      )}
+      <SessionCodeBadge code={sessionCode} />
 
       <div className="text-center mb-6">
         <p className="text-white/50 text-sm uppercase tracking-widest">Praegu käib</p>
