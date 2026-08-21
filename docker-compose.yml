@@ -23,20 +23,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Build-time: './' = suhtelised assetid (soovitatav alamtee jaoks)
-        VITE_BASE_PATH: "./"
+        VITE_BASE_PATH: "/mangud/"
     container_name: ohtu-web
     restart: unless-stopped
     ports:
       - "3000:80"
     environment:
-      # Runtime: alamtee kui reverse proxy paneb nt /mangud alla
-      # Näide: BASE_PATH=/mangud
-      BASE_PATH: "${BASE_PATH:-}"
-      # PocketBase URL brauserile. Tühi = BASE_PATH/pb või /pb
-      # Näide otse: PB_PUBLIC_URL=http://192.168.88.28:8090
-      # Näide proksi: PB_PUBLIC_URL=/mangud/pb
-      PB_PUBLIC_URL: "${PB_PUBLIC_URL:-}"
+      BASE_PATH: "/mangud"
+      # Brauser peab PB-ni jõudma. Vaikimisi proovi sama hosti /mangud/pb proksit.
+      # Kui 404, sea .env-is otse: PB_PUBLIC_URL=https://tools.thormen.com:8090
+      PB_PUBLIC_URL: "${PB_PUBLIC_URL:-/mangud/pb}"
     depends_on:
       pocketbase:
         condition: service_healthy

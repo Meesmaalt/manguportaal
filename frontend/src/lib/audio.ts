@@ -1,4 +1,4 @@
-/** Lihtne helimängija – failid public/sounds/ all */
+import { assetUrl } from '@/lib/config'
 
 const cache: Record<string, HTMLAudioElement> = {}
 
@@ -11,10 +11,18 @@ function get(src: string): HTMLAudioElement {
 }
 
 export const sounds = {
-  kuldvillakBgm: '/sounds/kuldvillak.mp3',
-  roosCorrect: '/sounds/roosidesoda-oige.mp3',
-  roosError: '/sounds/roosidesoda-error.mp3',
-  roosBgm: '/sounds/roosidesoda-taustamuusika.mp3',
+  get kuldvillakBgm() {
+    return assetUrl('sounds/kuldvillak.mp3')
+  },
+  get roosCorrect() {
+    return assetUrl('sounds/roosidesoda-oige.mp3')
+  },
+  get roosError() {
+    return assetUrl('sounds/roosidesoda-error.mp3')
+  },
+  get roosBgm() {
+    return assetUrl('sounds/roosidesoda-taustamuusika.mp3')
+  },
 }
 
 export function playSound(src: string, volume = 0.8) {

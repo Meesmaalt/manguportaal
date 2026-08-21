@@ -119,8 +119,11 @@ export default function PackSelect() {
     setLoading(true)
     setError('')
     try {
+      const ownerFilter = user?.id
+        ? ` || owner = "${user.id}"`
+        : ''
       const list = await pb.collection('packs').getList<Pack>(1, 50, {
-        filter: `game_type = "${gameType}" && (is_official = true || is_public = true || owner = "${user?.id}")`,
+        filter: `game_type = "${gameType}" && (is_official = true || is_public = true${ownerFilter})`,
         sort: '-is_official,-created',
       })
       setPacks(list.items)

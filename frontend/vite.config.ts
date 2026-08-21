@@ -4,8 +4,14 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // './' = suhtelised teed (töötab igal alamteel). Või '/mangud/' kui tahad absoluutset.
-  const base = env.VITE_BASE_PATH || './'
+  // ALAMTEE: peab olema absoluutne kaldkriipsudega, nt "/mangud/"
+  // "./" EI TOHI kasutada – rikub /ekraan/XYZ deep-linkid
+  let base = env.VITE_BASE_PATH || '/'
+  if (base !== './' && base !== '/') {
+    if (!base.startsWith('/')) base = '/' + base
+    if (!base.endsWith('/')) base = base + '/'
+  }
+  if (base === './') base = '/' // safety
 
   return {
     base,

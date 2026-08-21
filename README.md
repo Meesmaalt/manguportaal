@@ -51,30 +51,63 @@ Esimene käivitus loob automaatselt:
 - Helid: `frontend/public/sounds/` enne `docker compose up --build`.
 
 
-## Alamtee (reverse proxy)
+## Alamtee (reverse proxy) – tools.thormen.com/mangud
 
-Kui rakendus on nt `https://domain.ee/mangud/` all:
+**Oluline:** Vite `base` peab olema absoluutne `/mangud/` (mitte `./`).
+Deep-link `/mangud/ekraan/KOOD` muidu otsib JS-i valest kaustast.
 
-1. Loo projekti juures `.env`:
+### 1. `.env` projekti juures
 ```env
 BASE_PATH=/mangud
-PB_PUBLIC_URL=/mangud/pb
+PB_PUBLIC_URL=http://127.0.0.1:8090
+```
+Kui brauser ei pääse serveri localhostile, kasuta avalikku hosti:
+```env
+PB_PUBLIC_URL=https://tools.thormen.com:8090
+```
+(või ava port 8090 firewallis / proksi PB eraldi)
+
+### 2. `docker-compose.yml` build arg
+```yaml
+args:
+  VITE_BASE_PATH: "/mangud/"
 ```
 
-2. Nginx peaproxy näide:
+### 3. Nginx (host)
 ```nginx
 location /mangud/ {
-  proxy_pass http://127.0.0.1:3000/;
+  proxy_pass http://127.0.0.1:3000/mangud/;
   proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-Prefix /mangud;
 }
+
+# PocketBase – kas eraldi port 8090 VÕI:
 location /mangud/pb/ {
   proxy_pass http://127.0.0.1:8090/;
   proxy_http_version 1.1;
   proxy_set_header Upgrade $http_upgrade;
   proxy_set_header Connection "upgrade";
+  proxy_set_header Host $host;
 }
 ```
 
-3. `docker compose up -d --build`
+**proxy_pass lõpus olev `/mangud/`** on tähtis, kui frontend container teenindab teid juba `/mangud/` prefiksiga (Vite base).
 
-Frontend kasutab suhtelisi assete (`base: './'`) + `env.js` runtime `basePath`.
+Kui frontend containeris on failid juures (`/index.html`), kasuta:
+```nginx
+location /mangud/ {
+  proxy_pass http://127.0.0.1:3000/;
+}
+```
+ja **buildi `VITE_BASE_PATH=/mangud/`** ikkagi – brauser küsib `/mangud/assets/...`, nginx eemaldab prefiksi `proxy_pass .../` abil.
+
+### 4. Rebuild
+```bash
+docker compose down
+docker compose build --no-cache frontend
+docker compose up -d
+```
+
+Kontrolli brauseris:
+- View Source → script src peaks olema `/mangud/assets/...`
+- `/mangud/env.js` peab olema JavaScript, mitte HTML
