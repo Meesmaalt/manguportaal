@@ -1,58 +1,95 @@
 [
   {
+    "id": "pbc_packs00001",
     "name": "packs",
     "type": "base",
     "system": false,
-    "schema": [
+    "fields": [
       {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3214982121",
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1579384326",
         "name": "name",
-        "type": "text",
+        "pattern": "",
+        "primaryKey": false,
         "required": true,
-        "options": { "min": 1, "max": 120 }
+        "system": false,
+        "type": "text",
+        "min": 1,
+        "max": 120
       },
       {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1843672811",
         "name": "description",
+        "pattern": "",
+        "primaryKey": false,
+        "required": false,
+        "system": false,
         "type": "text",
-        "required": false,
-        "options": { "max": 500 }
+        "max": 500
       },
       {
+        "hidden": false,
+        "id": "select28491029",
+        "maxSelect": 1,
         "name": "game_type",
-        "type": "select",
         "required": true,
-        "options": {
-          "maxSelect": 1,
-          "values": ["kuldvillak", "roosidesoda"]
-        }
+        "system": false,
+        "type": "select",
+        "values": ["kuldvillak", "roosidesoda"]
       },
       {
+        "hidden": false,
+        "id": "json102938475",
+        "maxSize": 0,
         "name": "data",
-        "type": "json",
-        "required": true
+        "required": true,
+        "system": false,
+        "type": "json"
       },
       {
+        "hidden": false,
+        "id": "bool987654321",
         "name": "is_official",
-        "type": "bool",
         "required": false,
-        "options": { "default": false }
+        "system": false,
+        "type": "bool"
       },
       {
+        "hidden": false,
+        "id": "bool123456789",
         "name": "is_public",
-        "type": "bool",
         "required": false,
-        "options": { "default": false }
+        "system": false,
+        "type": "bool"
       },
       {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation112233",
+        "maxSelect": 1,
+        "minSelect": 0,
         "name": "owner",
-        "type": "relation",
         "required": false,
-        "options": {
-          "collectionId": "_pb_users_auth_",
-          "cascadeDelete": false,
-          "maxSelect": 1
-        }
+        "system": false,
+        "type": "relation"
       }
     ],
+    "indexes": [],
     "listRule": "is_official = true || is_public = true || owner = @request.auth.id",
     "viewRule": "is_official = true || is_public = true || owner = @request.auth.id",
     "createRule": "@request.auth.id != \"\"",
@@ -60,67 +97,96 @@
     "deleteRule": "owner = @request.auth.id && is_official = false"
   },
   {
+    "id": "pbc_sessions01",
     "name": "game_sessions",
     "type": "base",
     "system": false,
-    "schema": [
+    "fields": [
       {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text3214982122",
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text9988776655",
         "name": "code",
+        "pattern": "",
+        "primaryKey": false,
+        "required": true,
+        "system": false,
         "type": "text",
-        "required": true,
-        "options": { "min": 4, "max": 10 }
+        "min": 4,
+        "max": 10
       },
       {
+        "hidden": false,
+        "id": "select28491030",
+        "maxSelect": 1,
         "name": "game_type",
-        "type": "select",
         "required": true,
-        "options": {
-          "maxSelect": 1,
-          "values": ["kuldvillak", "roosidesoda"]
-        }
+        "system": false,
+        "type": "select",
+        "values": ["kuldvillak", "roosidesoda"]
       },
       {
+        "cascadeDelete": false,
+        "collectionId": "pbc_packs00001",
+        "hidden": false,
+        "id": "relation445566",
+        "maxSelect": 1,
+        "minSelect": 0,
         "name": "pack",
-        "type": "relation",
         "required": false,
-        "options": {
-          "collectionId": "packs",
-          "cascadeDelete": false,
-          "maxSelect": 1
-        }
+        "system": false,
+        "type": "relation"
       },
       {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "hidden": false,
+        "id": "relation778899",
+        "maxSelect": 1,
+        "minSelect": 0,
         "name": "host",
-        "type": "relation",
         "required": true,
-        "options": {
-          "collectionId": "_pb_users_auth_",
-          "cascadeDelete": false,
-          "maxSelect": 1
-        }
+        "system": false,
+        "type": "relation"
       },
       {
+        "hidden": false,
+        "id": "json102938476",
+        "maxSize": 0,
         "name": "state",
-        "type": "json",
-        "required": true
+        "required": true,
+        "system": false,
+        "type": "json"
       },
       {
+        "hidden": false,
+        "id": "select28491031",
+        "maxSelect": 1,
         "name": "status",
-        "type": "select",
         "required": true,
-        "options": {
-          "maxSelect": 1,
-          "values": ["lobby", "playing", "finished"]
-        }
+        "system": false,
+        "type": "select",
+        "values": ["lobby", "playing", "finished"]
       }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_session_code` ON `game_sessions` (`code`)"
     ],
     "listRule": "",
     "viewRule": "",
     "createRule": "@request.auth.id != \"\"",
     "updateRule": "host = @request.auth.id",
-    "deleteRule": "host = @request.auth.id",
-    "indexes": [
-      "CREATE UNIQUE INDEX idx_session_code ON game_sessions (code)"
-    ]
+    "deleteRule": "host = @request.auth.id"
   }
 ]

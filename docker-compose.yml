@@ -6,6 +6,34 @@ services:
     ports:
       - "8090:8090"
     volumes:
-      - ./pb/pb_data:/pb_data
+      - pb_data:/pb_data
       - ./pb/pb_migrations:/pb_migrations
-    command: serve --http=0.0.0.0:8090
+    environment:
+      # Admin loodakse automaatselt esimesel käivitamisel
+      PB_ADMIN_EMAIL: admin@ohtu.local
+      PB_ADMIN_PASSWORD: ohtu123456
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ohtu-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      # Brauser kasutab sama hosti kaudu /pb proksit (CORS pole vaja)
+      # Kui tahad otse PB-d: PB_PUBLIC_URL=http://SINU_IP:8090
+      PB_PUBLIC_URL: /pb
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+
+volumes:
+  pb_data:

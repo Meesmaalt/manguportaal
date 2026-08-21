@@ -1,98 +1,64 @@
-# Õhtu Mängud – Seltskonnamängude platvorm
+# Õhtu Mängud
 
-Äge, mitmefunktsionaalne seltskonnamängude leht, kus saab kontoga sisse logida, valida küsimuste seti (profiili) ja mängida koos sõpradega.
+Seltskonnamängude platvorm (Kuldvillak + Rooside Sõda) — **üks käsk ja valmis**.
+
+## Käivitamine (Docker)
+
+```bash
+docker compose up -d --build
+```
+
+| Teenus        | Aadress                         |
+|---------------|---------------------------------|
+| **Mäng**      | http://localhost:3000           |
+| **PB Admin**  | http://localhost:8090/_/        |
+
+### Admin (PocketBase)
+
+| | |
+|-|-|
+| E-post | `admin@ohtu.local` |
+| Parool | `ohtu123456` |
+
+Kollektsioonid (`packs`, `game_sessions`) luuakse **automaatselt** migratsiooniga esimesel käivitamisel.
+
+### Mängu konto
+
+Ava http://localhost:3000 → **Loo konto** (e-post + parool) → mängi.
+
+### Teises seadmes / teleris
+
+Sessioonikoodiga: `http://SINU_IP:3000/ekraan/KOOD`
+
+Kui frontend ja PB on eri masinatel, sea compose’is:
+
+```yaml
+environment:
+  PB_PUBLIC_URL: http://192.168.x.x:8090
+```
+
+## Ilma Dockerita (dev)
+
+```bash
+# Terminal 1 – PocketBase
+docker compose up pocketbase -d
+
+# Terminal 2 – frontend
+cd frontend
+cp .env.example .env   # VITE_PB_URL=http://127.0.0.1:8090
+npm install && npm run dev
+```
 
 ## Mängud
 
-- **Kuldvillak** – klassikaline Jeopardy-stiilis lauamäng (kategooriad + punktid)
-- **Rooside Sõda** – Family Feud / "100 inimest ütles" stiilis voorud, streigid ja bank
+- **Kuldvillak** – Jeopardy-stiilis laud
+- **Rooside Sõda** – Family Feud / streigid + bank
+- Küsimuste setid (profiilid), host + TV režiim, kontod
 
-## Funktsioonid
-
-- Kasutajakontod (e-post + parool)
-- Küsimuste setid / "profiilid" (ametlikud + enda loodud)
-- Host-režiim (juht) + TV/ekraani režiim (sessioonikoodiga)
-- Reaalajas sünkroniseerimine (PocketBase realtime)
-- Tume kuldne visuaalne stiil (originaalmängude vaimus)
-- Confetti, streigid, punktid, meeskonnad
-
-## Kiire käivitamine
-
-### 1. Nõuded
-- Node.js 20+
-- Docker (PocketBase jaoks) **või** PocketBase binaar
-
-### 2. PocketBase käivitamine
-
-```bash
-# Variant A – Docker
-docker compose up -d
-
-# Variant B – otse (laadi alla https://pocketbase.io)
-./pb/pocketbase serve --http=127.0.0.1:8090
-```
-
-Avage admin: http://127.0.0.1:8090/_/  
-Esimene käivitamine loob admini.  
-
-### 3. Skeem
-
-Mine PocketBase admini → Collections → Import collections  
-või käivita migratsioon (vt `pb/pb_migrations`).
-
-Või loo käsitsi järgmised kollektsioonid (vt `pb/SCHEMA.md`).
-
-### 4. Frontend
-
-```bash
-cd frontend
-cp .env.example .env   # vajadusel muuda VITE_PB_URL
-npm install
-npm run dev
-```
-
-Ava http://localhost:5173
-
-### 5. Demo kasutaja
-
-Registreeri end lehel või loo administ kasutaja.
-
-## Projekti struktuur
+## Failid
 
 ```
-ohtu-mangud/
-├── docker-compose.yml
-├── pb/                     # PocketBase andmed + migratsioonid
-├── frontend/               # Vite + React + TS + Tailwind
-│   ├── src/
-│   │   ├── games/          # Kuldvillak & Rooside Sõda
-│   │   ├── pages/          # Login, Dashboard, Play, Display
-│   │   ├── components/
-│   │   ├── data/           # Ametlikud packid
-│   │   └── lib/pocketbase.ts
-│   └── ...
-└── README.md
+docker-compose.yml          # PB + frontend
+pb/pb_migrations/           # automaatne skeem
+frontend/                   # React + Vite
 ```
-
-## Kuidas mängida
-
-1. Logi sisse
-2. Vali mäng (Kuldvillak või Rooside Sõda)
-3. Vali või loo küsimuste set ("profiil")
-4. Loo sessioon → saad koodi
-5. Ava teises brauseris / teleris `/ekraan/KOOD`
-6. Mängi hostist, ekraan näitab ilusat vaadet
-
-## Tehnoloogiad
-
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4, Framer Motion
-- **Backend / DB**: PocketBase (SQLite + realtime + auth)
-- **Ikoonid**: Lucide
-- **Fontid**: Cinzel + Montserrat (originaalide stiil)
-
-## Autorlus
-
-Põhineb sinu originaalkoodidel (`kuldvillak.html` + `Rooside Sõda`).  
-Ümber kirjutatud moodsa platvormina.
-
-Head mängimist! 🎉

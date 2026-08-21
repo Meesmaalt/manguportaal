@@ -1,13 +1,19 @@
 import PocketBase from 'pocketbase'
 
-const url = import.meta.env.VITE_PB_URL || 'http://127.0.0.1:8090'
+declare global {
+  interface Window {
+    __PB_URL__?: string
+  }
+}
+
+const url =
+  (typeof window !== 'undefined' && window.__PB_URL__) ||
+  import.meta.env.VITE_PB_URL ||
+  'http://127.0.0.1:8090'
 
 export const pb = new PocketBase(url)
 
-// Auto-refresh auth
-pb.authStore.onChange(() => {
-  // optional: persist side-effects
-})
+pb.authStore.onChange(() => {})
 
 export type User = {
   id: string
@@ -71,7 +77,6 @@ export type GameSession = {
   updated: string
 }
 
-/** Generate a short session code */
 export function generateCode(length = 6): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
