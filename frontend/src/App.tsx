@@ -7,6 +7,7 @@ import Dashboard from '@/pages/Dashboard'
 import PackSelect from '@/pages/PackSelect'
 import PlayKuldvillak from '@/pages/PlayKuldvillak'
 import PlayRoosidesoda from '@/pages/PlayRoosidesoda'
+import PlayGeneric from '@/pages/PlayGeneric'
 import Display from '@/pages/Display'
 import CreatePack from '@/pages/CreatePack'
 
@@ -29,48 +30,13 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/play/:gameType"
-          element={
-            <PrivateRoute>
-              <PackSelect />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/play/kuldvillak/:sessionId"
-          element={
-            <PrivateRoute>
-              <PlayKuldvillak />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/play/roosidesoda/:sessionId"
-          element={
-            <PrivateRoute>
-              <PlayRoosidesoda />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/packs/new"
-          element={
-            <PrivateRoute>
-              <CreatePack />
-            </PrivateRoute>
-          }
-        />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/play/:gameType" element={<PrivateRoute><PackSelect /></PrivateRoute>} />
+        <Route path="/play/kuldvillak/:sessionId" element={<PrivateRoute><PlayKuldvillak /></PrivateRoute>} />
+        <Route path="/play/roosidesoda/:sessionId" element={<PrivateRoute><PlayRoosidesoda /></PrivateRoute>} />
+        <Route path="/play/:gameType/:sessionId" element={<PrivateRoute><PlayGeneric /></PrivateRoute>} />
+        <Route path="/packs/new" element={<PrivateRoute><CreatePack /></PrivateRoute>} />
       </Route>
-      {/* Full-screen display – no layout chrome */}
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -1,11 +1,9 @@
 import type { KuldvillakPackData, RoosidesodaPackData } from '@/lib/pocketbase'
 
-/** Ametlikud packid – seeditakse esimesel käivitamisel või kasutatakse offline fallbackina */
-
 export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
   categories: [
     {
-      name: 'Autod',
+      name: 'Tehnika & Liiklus',
       questions: [
         { points: 100, q: "Mis akronüümi kannab pidurisüsteem, mis takistab rataste lukustumist?", a: "ABS" },
         { points: 200, q: "Milline legendaarne mudel oli Saksa 'rahvaauto' esimeseks sümboliks?", a: "Põrnikas (Beetle)" },
@@ -15,17 +13,17 @@ export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
       ],
     },
     {
-      name: 'Köök',
+      name: 'Toit & Küpsetised',
       questions: [
         { points: 100, q: "Itaaliapärane ümmargune küpsetis tomatikastme ja juustuga?", a: "Pitsa" },
-        { points: 200, q: "Jaapani/Aasia tehnika pehme pärmitaigna saamiseks (jahu-vee pudru keetmine)?", a: "Tangzhong" },
+        { points: 200, q: "Jaapani/Aasia tehnika pehme pärmitaigna saamiseks?", a: "Tangzhong" },
         { points: 300, q: "Maailma kalleim vürts, mida korjatakse krookuse õitest?", a: "Safran" },
         { points: 400, q: "Eesti traditsiooniline põimitud pärmitaignast pidusaia vorm?", a: "Kringel" },
         { points: 500, q: "Reaktsioon aminohapete ja suhkrute vahel liha pruunistumisel?", a: "Maillard'i reaktsioon" },
       ],
     },
     {
-      name: 'Religioon',
+      name: 'Piibel & Usundid',
       questions: [
         { points: 100, q: "Islami kõige püham linn?", a: "Meka" },
         { points: 200, q: "Mitu raamatut on protestantlikus Piiblis kokku?", a: "66" },
@@ -35,12 +33,12 @@ export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
       ],
     },
     {
-      name: 'Mängud & Kultuur',
+      name: 'Mängud & Meelelahutus',
       questions: [
         { points: 100, q: "Mis arvutimängus ehitatakse plokkidest maailmu ja võideldakse Creeperitega?", a: "Minecraft" },
         { points: 200, q: "Populaarne ulmesari, kus reisiti läbi täheväravate?", a: "Stargate SG-1" },
         { points: 300, q: "Mitu kaardimasti on tavalises mängukaartide pakis?", a: "4" },
-        { points: 400, q: "Millises klassikalises lauamängus kogutakse kinnisvara ja maksad üüri?", a: "Monopoly" },
+        { points: 400, q: "Millises klassikalises lauamängus kogutakse kinnisvara?", a: "Monopoly" },
         { points: 500, q: "Kes lõi tegelaskuju Sherlock Holmes?", a: "Arthur Conan Doyle" },
       ],
     },
@@ -49,64 +47,9 @@ export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
       questions: [
         { points: 100, q: "Mis on Eesti pealinn?", a: "Tallinn" },
         { points: 200, q: "Milline lind on Eesti rahvuslind?", a: "Suitsupääsuke" },
-        { points: 300, q: "Mis aastal taastas Eesti iseseisvuse (taasiseseisvumine)?", a: "1991" },
+        { points: 300, q: "Mis aastal taastas Eesti iseseisvuse?", a: "1991" },
         { points: 400, q: "Kes kirjutas 'Tõde ja õigus'?", a: "A. H. Tammsaare" },
         { points: 500, q: "Mis on Eesti kõrgeim mägi?", a: "Suur Munamägi" },
-      ],
-    },
-  ],
-}
-
-export const KULDVILLAK_SYNNEPAEV: KuldvillakPackData = {
-  categories: [
-    {
-      name: 'Sünnipäev',
-      questions: [
-        { points: 100, q: "Mitu küünalt on tavaliselt tordil?", a: "Nii mitu kui vanust" },
-        { points: 200, q: "Mis laulu lauldakse sünnipäeval peaaegu alati?", a: "Happy Birthday / Palju õnne" },
-        { points: 300, q: "Mis värvi on klassikaline sünnipäevaballoon?", a: "Mitmevärviline / kuldne" },
-        { points: 400, q: "Mis on sünnipäevakingi kõige tavalisem pakend?", a: "Karp / paber" },
-        { points: 500, q: "Mis on sünnipäeva tähistamise peamine eesmärk?", a: "Tähistada eluaastat / koos olla" },
-      ],
-    },
-    {
-      name: 'Sõbrad',
-      questions: [
-        { points: 100, q: "Kes on sinu parim sõber?", a: "(vaba vastus)" },
-        { points: 200, q: "Mis on teie lemmikühine tegevus?", a: "(vaba vastus)" },
-        { points: 300, q: "Kus te esimest korda kohtusite?", a: "(vaba vastus)" },
-        { points: 400, q: "Mis on kõige naljakam mälestus koos?", a: "(vaba vastus)" },
-        { points: 500, q: "Mis kingitust sa kõige rohkem tahaksid?", a: "(vaba vastus)" },
-      ],
-    },
-    {
-      name: 'Mälestused',
-      questions: [
-        { points: 100, q: "Mis oli sinu esimene telefon?", a: "(vaba vastus)" },
-        { points: 200, q: "Mis oli lemmik seri/film lapsepõlves?", a: "(vaba vastus)" },
-        { points: 300, q: "Mis oli kõige hullem soeng?", a: "(vaba vastus)" },
-        { points: 400, q: "Mis oli esimene kontsert?", a: "(vaba vastus)" },
-        { points: 500, q: "Mis on kõige piinlikum lugu?", a: "(vaba vastus)" },
-      ],
-    },
-    {
-      name: 'Tulevik',
-      questions: [
-        { points: 100, q: "Kuhu tahaksid järgmisena reisida?", a: "(vaba vastus)" },
-        { points: 200, q: "Mis oskust tahaksid õppida?", a: "(vaba vastus)" },
-        { points: 300, q: "Mis on unistuste töö?", a: "(vaba vastus)" },
-        { points: 400, q: "Kus elad 10 aasta pärast?", a: "(vaba vastus)" },
-        { points: 500, q: "Mis on sinu elu motto?", a: "(vaba vastus)" },
-      ],
-    },
-    {
-      name: 'Juhuslik',
-      questions: [
-        { points: 100, q: "Mis on sinu lemmiktoit?", a: "(vaba vastus)" },
-        { points: 200, q: "Kass või koer?", a: "(vaba vastus)" },
-        { points: 300, q: "Mis on sinu peidetud talent?", a: "(vaba vastus)" },
-        { points: 400, q: "Mis on kõige veidram asi, mida oled söönud?", a: "(vaba vastus)" },
-        { points: 500, q: "Kui sa oleksid superkangelane, mis võime sul oleks?", a: "(vaba vastus)" },
       ],
     },
   ],
@@ -117,53 +60,47 @@ export const ROOSIDESODA_KLASSIKA: RoosidesodaPackData = {
     {
       title: 'VOOR 1',
       multiplier: 1,
-      question: 'Nimeta midagi, mida inimesed teevad sünnipäeval',
+      question: 'Nimeta midagi, mida inimesed tihti kaotavad?',
       answers: [
-        { text: 'Sööb torti', points: 28 },
-        { text: 'Avab kingitusi', points: 22 },
-        { text: 'Laulab Palju õnne', points: 18 },
-        { text: 'Puhub küünlaid', points: 15 },
-        { text: 'Korraldab pidu', points: 10 },
-        { text: 'Helistab sõpradele', points: 7 },
+        { text: 'Võtmed', points: 42 },
+        { text: 'Mobiiltelefon', points: 28 },
+        { text: 'Prillid', points: 14 },
+        { text: 'Raha / Rahakott', points: 9 },
+        { text: 'Mõistus / Kannatus', points: 5 },
       ],
     },
     {
       title: 'VOOR 2',
       multiplier: 1,
-      question: 'Nimeta asi, mida võtad randa kaasa',
+      question: 'Mis on esimene asi, mida teed hommikul ärgates?',
       answers: [
-        { text: 'Rätik', points: 30 },
-        { text: 'Päikesekreem', points: 25 },
-        { text: 'Ujumistrikoo / püksid', points: 18 },
-        { text: 'Jook / vesi', points: 12 },
-        { text: 'Raamat / telefon', points: 8 },
-        { text: 'Päikeseprillid', points: 7 },
+        { text: 'Avan silmad', points: 38 },
+        { text: 'Käin tualetis', points: 25 },
+        { text: 'Vaatan telefoni', points: 18 },
+        { text: 'Joon kohvi', points: 12 },
       ],
     },
     {
       title: 'VOOR 3',
       multiplier: 2,
-      question: 'Nimeta midagi, mis on köögis',
+      question: 'Nimeta toit, mida süüakse tavaliselt kätega?',
       answers: [
-        { text: 'Nuga', points: 24 },
-        { text: 'Pott / pann', points: 20 },
-        { text: 'Külmkapp', points: 18 },
-        { text: 'Taldrikud', points: 15 },
-        { text: 'Mikser / blender', points: 12 },
-        { text: 'Sool / pipar', points: 11 },
+        { text: 'Pitsa', points: 45 },
+        { text: 'Burger', points: 30 },
+        { text: 'Friikartulid', points: 12 },
+        { text: 'Võileib', points: 8 },
       ],
     },
     {
       title: 'VOOR 4',
       multiplier: 2,
-      question: 'Nimeta Eesti kuulus inimene',
+      question: 'Nimeta midagi, mida võtad randa kaasa',
       answers: [
-        { text: 'Kerli / laulja', points: 20 },
-        { text: 'Arvo Pärt', points: 18 },
-        { text: 'Kristina Šmigun', points: 15 },
-        { text: 'Jüri Ratas / poliitik', points: 14 },
-        { text: 'Ott Tänak', points: 12 },
-        { text: 'Lenna Kuurmaa', points: 11 },
+        { text: 'Rätik', points: 30 },
+        { text: 'Päikesekreem', points: 25 },
+        { text: 'Ujumistrikoo', points: 18 },
+        { text: 'Jook', points: 12 },
+        { text: 'Päikeseprillid', points: 8 },
       ],
     },
     {
@@ -174,36 +111,156 @@ export const ROOSIDESODA_KLASSIKA: RoosidesodaPackData = {
         { text: 'Tantsitakse', points: 26 },
         { text: 'Juakse', points: 22 },
         { text: 'Süüakse', points: 18 },
-        { text: 'Räägitakse / vesteldakse', points: 15 },
+        { text: 'Vesteldakse', points: 15 },
         { text: 'Lauldakse', points: 10 },
-        { text: 'Tehakse fotosid', points: 9 },
       ],
     },
+  ],
+}
+
+export type SonaseletusPackData = { words: string[]; roundSeconds?: number }
+export type MaEiOleKunagiPackData = { statements: string[] }
+export type ViimanePustiPackData = { statements: string[]; startingLives?: number }
+export type TodeVoiTeguPackData = {
+  truths: string[]
+  dares: string[]
+}
+
+export const SONASELETUS_KLASSIKA: SonaseletusPackData = {
+  roundSeconds: 60,
+  words: [
+    'Banaan', 'Jalgratas', 'Päikeseloojang', 'Raamatukogu', 'Kohvimasin',
+    'Lumememm', 'Klaver', 'Teleskoop', 'Sünnipäevatort', 'Vihmavari',
+    'Kosmoselaev', 'Hambapasta', 'Rulluisud', 'Pitsa', 'Mikrofon',
+    'Kaktus', 'Tõukeratas', 'Muinasjutt', 'Fotokaamera', 'Jääkaru',
+    'Metroo', 'Šokolaad', 'Tuletorn', 'Diivan', 'Pardipoeg',
+    'Kontsert', 'Seljakott', 'Kuu', 'Traktor', 'Jõulupuu',
+  ],
+}
+
+export const MA_EI_OLE_KUNAGI: MaEiOleKunagiPackData = {
+  statements: [
+    'Ma ei ole kunagi unustanud kellegi sünnipäeva',
+    'Ma ei ole kunagi magama jäänud kinos',
+    'Ma ei ole kunagi valetanud vanematele oma asukoha kohta',
+    'Ma ei ole kunagi söönud midagi, mis langes maha',
+    'Ma ei ole kunagi naernud valel hetkel',
+    'Ma ei ole kunagi saatnud sõnumit valele inimesele',
+    'Ma ei ole kunagi teeselnud, et olen haige, et töölt puududa',
+    'Ma ei ole kunagi laulnud dušši all',
+    'Ma ei ole kunagi vaadanud seriaali ühe ööga läbi',
+    'Ma ei ole kunagi kaotanud võtmeid',
+    'Ma ei ole kunagi joonud liiga palju kohvi',
+    'Ma ei ole kunagi unustanud telefoni koju',
+    'Ma ei ole kunagi tantsinud peol nagu keegi ei vaataks',
+    'Ma ei ole kunagi proovinud süüa midagi väga vürtsikat',
+    'Ma ei ole kunagi nutnud filmi pärast',
+    'Ma ei ole kunagi rääkinud iseendaga valjusti',
+    'Ma ei ole kunagi maganud päev läbi',
+    'Ma ei ole kunagi unustanud pesu pesumasinasse',
+    'Ma ei ole kunagi ostnud midagi, mida ma ei vajanud',
+    'Ma ei ole kunagi proovinud uut soengut ja kahetsenud',
+  ],
+}
+
+export const VIIMANE_PUSTI: ViimanePustiPackData = {
+  startingLives: 3,
+  statements: [
+    'Kes on kunagi magama jäänud bussis/rongis?',
+    'Kes on kunagi unustanud kellegi nime hetk pärast tutvumist?',
+    'Kes on kunagi saatnud häälsonumi ja kahetsenud?',
+    'Kes on kunagi söönud magustoitu enne põhirooga?',
+    'Kes on kunagi vaadanud lastesaadet täiskasvanuna?',
+    'Kes on kunagi teeselnud, et kuulab, aga tegelikult ei kuulanud?',
+    'Kes on kunagi naernud niikaua, et kõht valutas?',
+    'Kes on kunagi proovinud uut hobi ja loobunud esimesel nädalal?',
+    'Kes on kunagi unustanud pesu kuivama panna?',
+    'Kes on kunagi laulnud valesti karaoke?',
+    'Kes on kunagi maganud töökoosolekul?',
+    'Kes on kunagi ostnud midagi ainult sellepärast, et see oli soodushinnaga?',
+    'Kes on kunagi rääkinud unes?',
+    'Kes on kunagi unustanud sünnipäevakingi osta viimasel minutil?',
+    'Kes on kunagi tantsinud peegli ees?',
+  ],
+}
+
+export const TODE_VOI_TEGU: TodeVoiTeguPackData = {
+  truths: [
+    'Mis on sinu kõige piinlikum mälestus?',
+    'Kellele sa viimati valetastesid ja miks?',
+    'Mis on sinu salajane talent?',
+    'Mis on kõige veidram asi, mida oled söönud?',
+    'Kes selles toas meeldib sulle kõige rohkem ja miks?',
+    'Mis on sinu suurim hirm?',
+    'Mis on sinu unistuste reis?',
+    'Kas oled kunagi kellegi sõnumeid salaja lugenud?',
+    'Mis on sinu lemmik lapsemeelne asi, mida ikka teed?',
+    'Mis on üks asi, mida sa ei ütleks oma vanematele?',
+    'Kes oli sinu esimene armumine?',
+    'Mis on kõige julgem asi, mida oled teinud?',
+  ],
+  dares: [
+    'Tee 10 kükki praegu',
+    'Laula 15 sekundit valitud laulu',
+    'Räägi 30 sekundit naljakal häälel',
+    'Saada viimasele kontakti sõnum “Tere! Kuidas läheb?”',
+    'Imiteeri kedagi toas 20 sekundit',
+    'Joo klaas vett ühe sõõmuga',
+    'Tee 5 push-upi',
+    'Räägi kompliment igale mängijale',
+    'Tantsi 20 sekundit ilma muusikata',
+    'Räägi oma telefoni viimasest fotost',
+    'Pane silmad kinni ja lase teistel valida sulle midagi teha (ohutult)',
+    'Räägi nalja – kui keegi ei naera, joogid / kaotad punkti',
   ],
 }
 
 export const OFFICIAL_PACKS = [
   {
     name: 'Kuldvillak – Klassika',
-    description: 'Autod, köök, religioon, mängud ja Eesti – valmis mängimiseks.',
+    description: 'Tehnika, toit, piibel, mängud, Eesti.',
     game_type: 'kuldvillak' as const,
     data: KULDVILLAK_KLASSIKA,
     is_official: true,
     is_public: true,
   },
   {
-    name: 'Kuldvillak – Sünnipäev',
-    description: 'Sünnipäeva, sõprade ja mälestuste teemaline set. Paljud vabad vastused.',
-    game_type: 'kuldvillak' as const,
-    data: KULDVILLAK_SYNNEPAEV,
+    name: 'Rooside Sõda – Klassika',
+    description: 'Viis vooru klassikaliste küsimustega.',
+    game_type: 'roosidesoda' as const,
+    data: ROOSIDESODA_KLASSIKA,
     is_official: true,
     is_public: true,
   },
   {
-    name: 'Rooside Sõda – Klassika',
-    description: 'Viis vooru klassikaliste küsimustega. Valmis kohe mängima.',
-    game_type: 'roosidesoda' as const,
-    data: ROOSIDESODA_KLASSIKA,
+    name: 'Sõnaseletus – Klassika',
+    description: '30 sõna, 60 sekundi voorud.',
+    game_type: 'sonaseletus' as const,
+    data: SONASELETUS_KLASSIKA,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    name: 'Ma ei ole kunagi – Peo sett',
+    description: '20 kerget ja lõbusat väidet.',
+    game_type: 'ma_ei_ole_kunagi' as const,
+    data: MA_EI_OLE_KUNAGI,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    name: 'Viimane püsti – Klassika',
+    description: '3 elu, väited, viimane järelejäänu võidab.',
+    game_type: 'viimane_pusti' as const,
+    data: VIIMANE_PUSTI,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    name: 'Tõde või tegu – Peo sett',
+    description: 'Tõed ja teod peoks.',
+    game_type: 'tode_voi_tegu' as const,
+    data: TODE_VOI_TEGU,
     is_official: true,
     is_public: true,
   },

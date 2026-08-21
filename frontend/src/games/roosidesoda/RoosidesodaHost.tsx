@@ -1,7 +1,8 @@
 import confetti from 'canvas-confetti'
+import { playSound, sounds, createBgm } from '@/lib/audio'
+import { useEffect, useRef } from 'react'
 import type { RoosidesodaState } from './types'
 import { X, Plus, Minus, SkipForward, Banknote } from 'lucide-react'
-import { useEffect } from 'react'
 
 type Props = {
   state: RoosidesodaState
@@ -43,6 +44,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
   function reveal(idx: number) {
     if (!isHost || revealed.includes(idx)) return
     const pts = round.answers[idx].points * round.multiplier
+    playSound(sounds.roosCorrect)
     update((prev) => ({
       ...prev,
       revealed: [...prev.revealed, idx],
@@ -53,6 +55,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
   function addStrike() {
     if (!isHost) return
     const next = strikes + 1
+    playSound(sounds.roosError)
     update({
       strikes: next,
       showStrikeOverlay: true,

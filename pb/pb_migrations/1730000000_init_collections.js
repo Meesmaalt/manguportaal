@@ -1,13 +1,20 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
-  // Skip if already created (e.g. imported manually)
   try {
     app.findCollectionByNameOrId("packs")
-    console.log("packs already exists – skip migration")
+    console.log("[ohtu] packs exists – skip schema")
     return
   } catch (e) {}
 
   const users = app.findCollectionByNameOrId("users")
+  const gameTypes = [
+    "kuldvillak",
+    "roosidesoda",
+    "sonaseletus",
+    "ma_ei_ole_kunagi",
+    "viimane_pusti",
+    "tode_voi_tegu",
+  ]
 
   const packs = new Collection({
     id: "pbc_packs00001",
@@ -26,7 +33,7 @@ migrate((app) => {
         type: "select",
         required: true,
         maxSelect: 1,
-        values: ["kuldvillak", "roosidesoda"],
+        values: gameTypes,
       },
       { name: "data", type: "json", required: true },
       { name: "is_official", type: "bool", required: false },
@@ -59,7 +66,7 @@ migrate((app) => {
         type: "select",
         required: true,
         maxSelect: 1,
-        values: ["kuldvillak", "roosidesoda"],
+        values: gameTypes,
       },
       {
         name: "pack",
@@ -91,6 +98,7 @@ migrate((app) => {
     ],
   })
   app.save(sessions)
+  console.log("[ohtu] packs + game_sessions created")
 }, (app) => {
   try { app.delete(app.findCollectionByNameOrId("game_sessions")) } catch (e) {}
   try { app.delete(app.findCollectionByNameOrId("packs")) } catch (e) {}

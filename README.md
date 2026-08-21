@@ -1,64 +1,51 @@
 # Õhtu Mängud
 
-Seltskonnamängude platvorm (Kuldvillak + Rooside Sõda) — **üks käsk ja valmis**.
+**Ainult helifailid + üks käsk.** PocketBase skeem, admin ja frontend tulevad ise.
 
-## Käivitamine (Docker)
+## 1. Helifailid (ainus käsitsi samm)
+
+Kopeeri need kausta `frontend/public/sounds/`:
+
+```
+kuldvillak.mp3
+roosidesoda-oige.mp3
+roosidesoda-error.mp3
+roosidesoda-taustamuusika.mp3
+```
+
+Ilma nendeta töötab kõik peale heli.
+
+## 2. Käivita
 
 ```bash
+docker compose down -v    # puhas start (kustutab vana PB andmed)
 docker compose up -d --build
 ```
 
-| Teenus        | Aadress                         |
-|---------------|---------------------------------|
-| **Mäng**      | http://localhost:3000           |
-| **PB Admin**  | http://localhost:8090/_/        |
-
-### Admin (PocketBase)
-
 | | |
-|-|-|
-| E-post | `admin@ohtu.local` |
-| Parool | `ohtu123456` |
+|--|--|
+| **Mäng** | http://localhost:3000 (või http://SINU_IP:3000) |
+| **Admin** | http://localhost:8090/_/ |
+| Admin e-post | `admin@ohtu.local` |
+| Admin parool | `ohtu123456` |
 
-Kollektsioonid (`packs`, `game_sessions`) luuakse **automaatselt** migratsiooniga esimesel käivitamisel.
+Esimene käivitus loob automaatselt:
+- admini konto
+- kollektsioonid `packs` ja `game_sessions` (kõik 6 mängutüüpi)
+- API reeglid
 
-### Mängu konto
+## 3. Mängi
 
-Ava http://localhost:3000 → **Loo konto** (e-post + parool) → mängi.
-
-### Teises seadmes / teleris
-
-Sessioonikoodiga: `http://SINU_IP:3000/ekraan/KOOD`
-
-Kui frontend ja PB on eri masinatel, sea compose’is:
-
-```yaml
-environment:
-  PB_PUBLIC_URL: http://192.168.x.x:8090
-```
-
-## Ilma Dockerita (dev)
-
-```bash
-# Terminal 1 – PocketBase
-docker compose up pocketbase -d
-
-# Terminal 2 – frontend
-cd frontend
-cp .env.example .env   # VITE_PB_URL=http://127.0.0.1:8090
-npm install && npm run dev
-```
+1. Ava mängu leht → **Loo konto** (tavaline kasutaja, mitte admin)
+2. Vali mäng → vali set → alusta
+3. TV/teine seade: `http://SINU_IP:3000/ekraan/KOOD`
 
 ## Mängud
 
-- **Kuldvillak** – Jeopardy-stiilis laud
-- **Rooside Sõda** – Family Feud / streigid + bank
-- Küsimuste setid (profiilid), host + TV režiim, kontod
+- Kuldvillak, Rooside Sõda, Sõnaseletus, Ma ei ole kunagi, Viimane püsti, Tõde või tegu
 
-## Failid
+## Märkused
 
-```
-docker-compose.yml          # PB + frontend
-pb/pb_migrations/           # automaatne skeem
-frontend/                   # React + Vite
-```
+- `docker compose down -v` on vajalik, kui varem oli vana/poolik PB andmebaas — muidu migratsioonid võivad vahele jääda.
+- Ametlikud packid on frontendis (offline fallback); PB-sse saab neid salvestada mängu käigus.
+- Helid: `frontend/public/sounds/` enne `docker compose up --build`.

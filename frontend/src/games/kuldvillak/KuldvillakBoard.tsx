@@ -125,7 +125,35 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       </div>
 
       {/* Scoreboard */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      {isHost && (
+        <div className="flex justify-center gap-2 mb-3">
+          <button
+            type="button"
+            className="btn-outline text-xs !py-1 !px-3"
+            onClick={() =>
+              update((prev) => ({
+                ...prev,
+                teams: [...prev.teams, { name: `Meeskond ${prev.teams.length + 1}`, score: 0 }],
+              }))
+            }
+          >
+            + Lisa meeskond
+          </button>
+          <button
+            type="button"
+            className="btn-outline text-xs !py-1 !px-3 border-accent-red text-accent-red"
+            onClick={() =>
+              update((prev) => ({
+                ...prev,
+                teams: prev.teams.length > 1 ? prev.teams.slice(0, -1) : prev.teams,
+              }))
+            }
+          >
+            − Eemalda
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
         {teams.map((team, i) => (
           <div
             key={i}

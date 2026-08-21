@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 export default function CreatePack() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [gameType, setGameType] = useState<'kuldvillak' | 'roosidesoda'>('kuldvillak')
+  const [gameType, setGameType] = useState<string>('kuldvillak')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)

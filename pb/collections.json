@@ -49,7 +49,14 @@
         "required": true,
         "system": false,
         "type": "select",
-        "values": ["kuldvillak", "roosidesoda"]
+        "values": [
+          "kuldvillak",
+          "roosidesoda",
+          "sonaseletus",
+          "ma_ei_ole_kunagi",
+          "viimane_pusti",
+          "tode_voi_tegu"
+        ]
       },
       {
         "hidden": false,
@@ -134,7 +141,14 @@
         "required": true,
         "system": false,
         "type": "select",
-        "values": ["kuldvillak", "roosidesoda"]
+        "values": [
+          "kuldvillak",
+          "roosidesoda",
+          "sonaseletus",
+          "ma_ei_ole_kunagi",
+          "viimane_pusti",
+          "tode_voi_tegu"
+        ]
       },
       {
         "cascadeDelete": false,
@@ -177,7 +191,11 @@
         "required": true,
         "system": false,
         "type": "select",
-        "values": ["lobby", "playing", "finished"]
+        "values": [
+          "lobby",
+          "playing",
+          "finished"
+        ]
       }
     ],
     "indexes": [

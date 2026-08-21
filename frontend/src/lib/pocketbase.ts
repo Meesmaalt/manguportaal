@@ -26,7 +26,7 @@ export type Pack = {
   id: string
   name: string
   description?: string
-  game_type: 'kuldvillak' | 'roosidesoda'
+  game_type: string
   data: KuldvillakPackData | RoosidesodaPackData
   is_official: boolean
   is_public: boolean
@@ -67,7 +67,7 @@ export type RoosidesodaPackData = {
 export type GameSession = {
   id: string
   code: string
-  game_type: 'kuldvillak' | 'roosidesoda'
+  game_type: string
   pack: string
   expand?: { pack?: Pack }
   host: string

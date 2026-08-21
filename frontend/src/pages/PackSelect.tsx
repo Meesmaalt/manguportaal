@@ -3,8 +3,100 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Play, Plus, Lock } from 'lucide-react'
+import { ArrowLeft, Play, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { GAME_META, type GameType } from '@/lib/types'
+
+function buildInitialState(gameType: string, packData: any, code: string) {
+  switch (gameType) {
+    case 'kuldvillak':
+      return {
+        teams: [
+          { name: 'Meeskond 1', score: 0 },
+          { name: 'Meeskond 2', score: 0 },
+        ],
+        disabledCards: [],
+        currentQuestion: null,
+        showAnswer: false,
+        packData,
+        code,
+      }
+    case 'roosidesoda':
+      return {
+        teams: [
+          { name: 'Meeskond 1', score: 0 },
+          { name: 'Meeskond 2', score: 0 },
+        ],
+        currentRoundIdx: 0,
+        revealed: [],
+        strikes: 0,
+        bank: 0,
+        activeTeam: 0,
+        packData,
+        code,
+      }
+    case 'sonaseletus': {
+      const words = [...(packData.words || [])].sort(() => Math.random() - 0.5)
+      return {
+        teams: [
+          { name: 'Tiim 1', score: 0 },
+          { name: 'Tiim 2', score: 0 },
+        ],
+        activeTeam: 0,
+        words,
+        wordIndex: 0,
+        roundSeconds: packData.roundSeconds || 60,
+        timeLeft: packData.roundSeconds || 60,
+        running: false,
+        packData,
+        code,
+      }
+    }
+    case 'ma_ei_ole_kunagi':
+      return {
+        players: [
+          { name: 'Mängija 1', lives: 3 },
+          { name: 'Mängija 2', lives: 3 },
+          { name: 'Mängija 3', lives: 3 },
+        ],
+        statements: packData.statements || [],
+        index: 0,
+        packData,
+        code,
+      }
+    case 'viimane_pusti': {
+      const lives = packData.startingLives || 3
+      return {
+        players: [
+          { name: 'Mängija 1', lives, standing: true },
+          { name: 'Mängija 2', lives, standing: true },
+          { name: 'Mängija 3', lives, standing: true },
+        ],
+        statements: packData.statements || [],
+        index: 0,
+        startingLives: lives,
+        packData,
+        code,
+      }
+    }
+    case 'tode_voi_tegu':
+      return {
+        players: [
+          { name: 'Mängija 1' },
+          { name: 'Mängija 2' },
+          { name: 'Mängija 3' },
+        ],
+        currentPlayer: 0,
+        truths: packData.truths || [],
+        dares: packData.dares || [],
+        currentCard: null,
+        packData,
+        code,
+      }
+    default:
+      return { packData, code }
+  }
+}
 
 export default function PackSelect() {
   const { gameType } = useParams<{ gameType: string }>()
@@ -15,7 +107,8 @@ export default function PackSelect() {
   const [starting, setStarting] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const isValid = gameType === 'kuldvillak' || gameType === 'roosidesoda'
+  const meta = GAME_META[gameType as GameType]
+  const isValid = !!meta
 
   useEffect(() => {
     if (!isValid) return
@@ -26,15 +119,12 @@ export default function PackSelect() {
     setLoading(true)
     setError('')
     try {
-      // Try PocketBase first
       const list = await pb.collection('packs').getList<Pack>(1, 50, {
         filter: `game_type = "${gameType}" && (is_official = true || is_public = true || owner = "${user?.id}")`,
         sort: '-is_official,-created',
       })
       setPacks(list.items)
-    } catch (e) {
-      console.warn('PocketBase packs failed, using local official packs', e)
-      // Fallback to local official packs
+    } catch {
       const local = OFFICIAL_PACKS.filter((p) => p.game_type === gameType).map((p, i) => ({
         id: `local-${i}`,
         ...p,
@@ -51,11 +141,11 @@ export default function PackSelect() {
     if (!user) return
     setStarting(pack.id)
     setError('')
-    try {
-      const code = generateCode()
-      let packId = pack.id
+    const code = generateCode()
+    const initialState = buildInitialState(gameType!, pack.data, code)
 
-      // If local pack, create it in PB first (or just embed data in session)
+    try {
+      let packId = pack.id
       if (pack.id.startsWith('local-')) {
         try {
           const created = await pb.collection('packs').create({
@@ -69,35 +159,9 @@ export default function PackSelect() {
           })
           packId = created.id
         } catch {
-          // If create fails (no collection), store data in session state
           packId = pack.id
         }
       }
-
-      const initialState =
-        gameType === 'kuldvillak'
-          ? {
-              teams: [
-                { name: 'Meeskond 1', score: 0 },
-                { name: 'Meeskond 2', score: 0 },
-              ],
-              disabledCards: [] as string[],
-              currentQuestion: null as any,
-              showAnswer: false,
-              packData: pack.data,
-            }
-          : {
-              teams: [
-                { name: 'Meeskond 1', score: 0 },
-                { name: 'Meeskond 2', score: 0 },
-              ],
-              currentRoundIdx: 0,
-              revealed: [] as number[],
-              strikes: 0,
-              bank: 0,
-              activeTeam: 0,
-              packData: pack.data,
-            }
 
       const session = await pb.collection('game_sessions').create({
         code,
@@ -107,46 +171,12 @@ export default function PackSelect() {
         state: initialState,
         status: 'playing',
       })
-
       navigate(`/play/${gameType}/${session.id}`)
     } catch (err: any) {
       console.error(err)
-      // Offline / no PB fallback: create local session in memory via URL state is hard;
-      // instead show message and still allow local play with a fake id
-      setError(
-        'Sessiooni loomine ebaõnnestus (PocketBase pole käivitatud?). ' +
-          'Käivita PocketBase või proovi uuesti. Võid ka mängida offline-režiimis allpool.'
-      )
-      // Create a local-only session key
+      setError('PocketBase sessioon ebaõnnestus – mängin offline.')
       const localId = `local-${Date.now()}`
-      const stateKey = `session_${localId}`
-      const initialState =
-        gameType === 'kuldvillak'
-          ? {
-              teams: [
-                { name: 'Meeskond 1', score: 0 },
-                { name: 'Meeskond 2', score: 0 },
-              ],
-              disabledCards: [],
-              currentQuestion: null,
-              showAnswer: false,
-              packData: pack.data,
-              code: generateCode(),
-            }
-          : {
-              teams: [
-                { name: 'Meeskond 1', score: 0 },
-                { name: 'Meeskond 2', score: 0 },
-              ],
-              currentRoundIdx: 0,
-              revealed: [],
-              strikes: 0,
-              bank: 0,
-              activeTeam: 0,
-              packData: pack.data,
-              code: generateCode(),
-            }
-      localStorage.setItem(stateKey, JSON.stringify(initialState))
+      localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
       navigate(`/play/${gameType}/${localId}`)
     } finally {
       setStarting(null)
@@ -157,28 +187,21 @@ export default function PackSelect() {
     return (
       <div className="text-center py-20">
         <p className="text-white/60">Tundmatu mäng</p>
-        <Link to="/dashboard" className="text-gold mt-4 inline-block">
-          ← Tagasi
-        </Link>
+        <Link to="/dashboard" className="text-gold mt-4 inline-block">← Tagasi</Link>
       </div>
     )
   }
 
-  const title = gameType === 'kuldvillak' ? 'Kuldvillak' : 'Rooside Sõda'
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center gap-2 text-white/60 hover:text-gold mb-6 text-sm"
-      >
+      <Link to="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-gold mb-6 text-sm">
         <ArrowLeft size={16} /> Tagasi
       </Link>
 
-      <h1 className="font-display text-3xl text-gold mb-2">Vali küsimuste set</h1>
-      <p className="text-white/60 mb-8">
-        {title} · Need on sinu “profiilid”. Vali üks ja alusta mängu.
-      </p>
+      <h1 className="font-display text-3xl text-gold mb-2">
+        {meta.emoji} Vali set · {meta.title}
+      </h1>
+      <p className="text-white/60 mb-8">Küsimuste set / “profiil”. Vali üks ja alusta.</p>
 
       {error && (
         <div className="mb-6 text-amber-200 text-sm bg-amber-900/30 border border-amber-600/40 rounded-lg px-4 py-3">
@@ -195,16 +218,14 @@ export default function PackSelect() {
               key={pack.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: i * 0.04 }}
               className="card-panel p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-display text-xl text-gold">{pack.name}</h3>
                   {pack.is_official && (
-                    <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">
-                      Ametlik
-                    </span>
+                    <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">Ametlik</span>
                   )}
                 </div>
                 <p className="text-white/50 text-sm">{pack.description || 'Küsimuste set'}</p>
@@ -219,11 +240,8 @@ export default function PackSelect() {
               </button>
             </motion.div>
           ))}
-
           {packs.length === 0 && (
-            <div className="text-center py-12 text-white/50">
-              Ühtegi seti ei leitud. Loo oma!
-            </div>
+            <div className="text-center py-12 text-white/50">Ühtegi seti ei leitud.</div>
           )}
         </div>
       )}
