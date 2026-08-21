@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { RotateCcw } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
 
 type Team = { name: string; score: number }
@@ -74,6 +75,18 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
     })
   }
 
+  function resetGame() {
+    if (!isHost) return
+    if (!confirm('Nulli skoorid?')) return
+    update({
+      teams: teams.map((t) => ({ ...t, score: 0 })),
+      wordIndex: 0,
+      running: false,
+      timeLeft: roundSeconds,
+      activeTeam: 0,
+    })
+  }
+
   const word = words[wordIndex] || '—'
 
   return (
@@ -124,6 +137,9 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
           )}
           <button onClick={nextTeam} className="btn-outline text-sm">
             Järgmine tiim
+          </button>
+          <button onClick={resetGame} className="btn-outline text-sm border-accent-red text-accent-red flex items-center gap-1">
+            <RotateCcw size={14} /> Algseis
           </button>
         </div>
       )}
