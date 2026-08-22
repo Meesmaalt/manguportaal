@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Play, Plus } from 'lucide-react'
+import { ArrowLeft, Play, Plus, User } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { GAME_META, type GameType } from '@/lib/types'
 
@@ -81,11 +81,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
     }
     case 'tode_voi_tegu':
       return {
-        players: [
-          { name: 'Mängija 1' },
-          { name: 'Mängija 2' },
-          { name: 'Mängija 3' },
-        ],
+        players: [{ name: 'Mängija 1' }, { name: 'Mängija 2' }, { name: 'Mängija 3' }],
         currentPlayer: 0,
         truths: packData.truths || [],
         dares: packData.dares || [],
@@ -98,14 +94,22 @@ function buildInitialState(gameType: string, packData: any, code: string) {
   }
 }
 
+function localOfficial(gameType: string): Pack[] {
+  return OFFICIAL_PACKS.filter((p) => p.game_type === gameType).map((p, i) => ({
+    id: `local-${gameType}-${i}`,
+    ...p,
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+  })) as Pack[]
+}
+
 export default function PackSelect() {
   const { gameType } = useParams<{ gameType: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isLoggedIn } = useAuth()
   const [packs, setPacks] = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState<string | null>(null)
-  const [error, setError] = useState('')
 
   const meta = GAME_META[gameType as GameType]
   const isValid = !!meta
@@ -117,23 +121,18 @@ export default function PackSelect() {
 
   async function loadPacks() {
     setLoading(true)
-    setError('')
+    const local = localOfficial(gameType!)
     try {
-      const ownerFilter = user?.id
-        ? ` || owner = "${user.id}"`
-        : ''
+      const ownerFilter = user?.id ? ` || owner = "${user.id}"` : ''
       const list = await pb.collection('packs').getList<Pack>(1, 50, {
         filter: `game_type = "${gameType}" && (is_official = true || is_public = true${ownerFilter})`,
         sort: '-is_official,-created',
       })
-      setPacks(list.items)
+      // Merge: local official first (always available), then remote unique by name
+      const names = new Set(local.map((p) => p.name))
+      const remote = list.items.filter((p) => !names.has(p.name))
+      setPacks([...local, ...remote])
     } catch {
-      const local = OFFICIAL_PACKS.filter((p) => p.game_type === gameType).map((p, i) => ({
-        id: `local-${i}`,
-        ...p,
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-      })) as Pack[]
       setPacks(local)
     } finally {
       setLoading(false)
@@ -141,43 +140,48 @@ export default function PackSelect() {
   }
 
   async function startSession(pack: Pack) {
-    if (!user) return
     setStarting(pack.id)
-    setError('')
     const code = generateCode()
     const initialState = buildInitialState(gameType!, pack.data, code)
 
-    try {
-      let packId = pack.id
-      if (pack.id.startsWith('local-')) {
-        try {
-          const created = await pb.collection('packs').create({
-            name: pack.name,
-            description: pack.description,
-            game_type: pack.game_type,
-            data: pack.data,
-            is_official: true,
-            is_public: true,
-            owner: user.id,
+    // Guest or offline → always local session (works without account)
+    if (!isLoggedIn || pack.id.startsWith('local-')) {
+      try {
+        if (isLoggedIn && user) {
+          // try cloud session with embedded pack data
+          const session = await pb.collection('game_sessions').create({
+            code,
+            game_type: gameType,
+            pack: null,
+            host: user.id,
+            state: initialState,
+            status: 'playing',
           })
-          packId = created.id
-        } catch {
-          packId = pack.id
+          navigate(`/play/${gameType}/${session.id}`)
+          return
         }
+      } catch {
+        /* fall through to local */
       }
+      const localId = `local-${Date.now()}`
+      localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
+      navigate(`/play/${gameType}/${localId}`)
+      setStarting(null)
+      return
+    }
 
+    // Logged in + remote pack
+    try {
       const session = await pb.collection('game_sessions').create({
         code,
         game_type: gameType,
-        pack: packId.startsWith('local-') ? null : packId,
-        host: user.id,
+        pack: pack.id,
+        host: user!.id,
         state: initialState,
         status: 'playing',
       })
       navigate(`/play/${gameType}/${session.id}`)
-    } catch (err: any) {
-      console.error(err)
-      setError('PocketBase sessioon ebaõnnestus – mängin offline.')
+    } catch {
       const localId = `local-${Date.now()}`
       localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
       navigate(`/play/${gameType}/${localId}`)
@@ -190,69 +194,85 @@ export default function PackSelect() {
     return (
       <div className="text-center py-20">
         <p className="text-white/60">Tundmatu mäng</p>
-        <Link to="/dashboard" className="text-gold mt-4 inline-block">← Tagasi</Link>
+        <Link to="/dashboard" className="text-gold mt-4 inline-block">
+          ← Tagasi
+        </Link>
       </div>
     )
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
-      <Link to="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-gold mb-6 text-sm">
+      <Link
+        to="/dashboard"
+        className="inline-flex items-center gap-2 text-white/60 hover:text-gold mb-6 text-sm"
+      >
         <ArrowLeft size={16} /> Tagasi
       </Link>
 
       <h1 className="font-display text-3xl text-gold mb-2">
-        {meta.emoji} Vali set · {meta.title}
+        {meta.emoji} {meta.title}
       </h1>
-      <p className="text-white/60 mb-8">Küsimuste set / “profiil”. Vali üks ja alusta.</p>
-
-      {error && (
-        <div className="mb-6 text-amber-200 text-sm bg-amber-900/30 border border-amber-600/40 rounded-lg px-4 py-3">
-          {error}
-        </div>
+      <p className="text-white/60 mb-2">Vali küsimuste set ja alusta – konto pole kohustuslik.</p>
+      {!isLoggedIn && (
+        <p className="text-white/40 text-sm mb-6 flex items-center gap-2">
+          <User size={14} />
+          Külalisena mängid offline (sama seade + TV link töötab).{' '}
+          <Link to="/login" className="text-gold hover:underline">
+            Logi sisse
+          </Link>{' '}
+          et salvestada omi sette.
+        </p>
       )}
+      {isLoggedIn && <div className="mb-6" />}
 
       {loading ? (
         <div className="text-center text-gold animate-pulse py-12">Laadin setid...</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {packs.map((pack, i) => (
             <motion.div
               key={pack.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
+              transition={{ delay: i * 0.03 }}
               className="card-panel p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-display text-xl text-gold">{pack.name}</h3>
                   {pack.is_official && (
-                    <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">Ametlik</span>
+                    <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">
+                      Valmis sett
+                    </span>
                   )}
                 </div>
                 <p className="text-white/50 text-sm">{pack.description || 'Küsimuste set'}</p>
               </div>
               <button
+                type="button"
                 onClick={() => startSession(pack)}
                 disabled={!!starting}
                 className="btn-gold flex items-center gap-2 shrink-0"
               >
                 <Play size={16} />
-                {starting === pack.id ? 'Alustan...' : 'Alusta'}
+                {starting === pack.id ? 'Alustan...' : 'Mängi'}
               </button>
             </motion.div>
           ))}
-          {packs.length === 0 && (
-            <div className="text-center py-12 text-white/50">Ühtegi seti ei leitud.</div>
-          )}
         </div>
       )}
 
       <div className="mt-10 text-center">
-        <Link to="/packs/new" className="btn-outline inline-flex items-center gap-2">
-          <Plus size={16} /> Loo uus set
-        </Link>
+        {isLoggedIn ? (
+          <Link to="/packs/new" className="btn-outline inline-flex items-center gap-2">
+            <Plus size={16} /> Loo oma set
+          </Link>
+        ) : (
+          <Link to="/login" className="text-gold/80 text-sm hover:underline">
+            Logi sisse, et luua oma küsimuste sette →
+          </Link>
+        )}
       </div>
     </div>
   )

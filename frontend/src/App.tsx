@@ -30,12 +30,21 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/play/:gameType" element={<PrivateRoute><PackSelect /></PrivateRoute>} />
-        <Route path="/play/kuldvillak/:sessionId" element={<PrivateRoute><PlayKuldvillak /></PrivateRoute>} />
-        <Route path="/play/roosidesoda/:sessionId" element={<PrivateRoute><PlayRoosidesoda /></PrivateRoute>} />
-        <Route path="/play/:gameType/:sessionId" element={<PrivateRoute><PlayGeneric /></PrivateRoute>} />
-        <Route path="/packs/new" element={<PrivateRoute><CreatePack /></PrivateRoute>} />
+        {/* Dashboard & mängud avatud ka külalisele */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/play/:gameType" element={<PackSelect />} />
+        <Route path="/play/kuldvillak/:sessionId" element={<PlayKuldvillak />} />
+        <Route path="/play/roosidesoda/:sessionId" element={<PlayRoosidesoda />} />
+        <Route path="/play/:gameType/:sessionId" element={<PlayGeneric />} />
+        {/* Oma seti loomine nõuab kontot */}
+        <Route
+          path="/packs/new"
+          element={
+            <PrivateRoute>
+              <CreatePack />
+            </PrivateRoute>
+          }
+        />
       </Route>
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="*" element={<Navigate to="/" replace />} />

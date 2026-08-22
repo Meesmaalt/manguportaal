@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { Sparkles, Users, Tv, Layers } from 'lucide-react'
+import { Sparkles, Users, Tv, Layers, Play } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { GAME_META, type GameType } from '@/lib/types'
 
@@ -18,25 +18,46 @@ export default function Home() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 md:py-16">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-14">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-14"
+      >
         <h1 className="font-display text-5xl md:text-7xl font-black text-gold tracking-wide mb-4 drop-shadow-[0_0_30px_rgba(223,179,66,0.4)]">
           ÕHTU MÄNGUD
         </h1>
         <p className="text-xl text-white/70 max-w-2xl mx-auto">
-          Seltskonnamängud, mis muudavad iga õhtu unustamatuks. Logi sisse, vali set ja mängi.
+          Seltskonnamängud kohe mängimiseks. Konto pole kohustuslik – vali mäng ja alusta.
         </p>
-        <div className="mt-8">
-          <Link to={isLoggedIn ? '/dashboard' : '/login'} className="btn-gold text-lg px-8 py-3">
-            {isLoggedIn ? 'Mine mängima' : 'Alusta kohe'}
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link to="/dashboard" className="btn-gold text-lg px-8 py-3 flex items-center gap-2">
+            <Play size={20} /> Mängi kohe
           </Link>
+          {!isLoggedIn && (
+            <Link to="/login" className="btn-outline text-lg px-6 py-3">
+              Konto (valikuline)
+            </Link>
+          )}
         </div>
       </motion.div>
 
       <div className="grid md:grid-cols-3 gap-5 mb-16">
         {[
-          { icon: <Layers className="text-gold" size={26} />, title: 'Küsimuste setid', text: 'Ametlikud packid või oma “profiil” iga mängu jaoks.' },
-          { icon: <Tv className="text-gold" size={26} />, title: 'Host + TV', text: 'Juhi telefonist, suur ekraan sessioonikoodiga.' },
-          { icon: <Users className="text-gold" size={26} />, title: 'Konto', text: 'Sinu packid ja mängud on salvestatud.' },
+          {
+            icon: <Play className="text-gold" size={26} />,
+            title: 'Ilma kontota',
+            text: 'Valmis setid on sees. Alusta sekunditega – sobib peole.',
+          },
+          {
+            icon: <Tv className="text-gold" size={26} />,
+            title: 'Host + TV',
+            text: 'Juhi telefonist, ava koodiga link teleris.',
+          },
+          {
+            icon: <Layers className="text-gold" size={26} />,
+            title: 'Oma setid',
+            text: 'Konto abil saad salvestada isiklikke küsimusi.',
+          },
         ].map((f, i) => (
           <div key={i} className="card-panel p-5 text-center">
             <div className="flex justify-center mb-2">{f.icon}</div>
@@ -55,13 +76,14 @@ export default function Home() {
           return (
             <Link
               key={key}
-              to={isLoggedIn ? `/play/${key}` : '/login'}
+              to={`/play/${key}`}
               className="card-panel p-5 hover:border-gold/50 transition group"
             >
               <span className="text-2xl">{g.emoji}</span>
               <p className="text-gold/60 text-xs uppercase tracking-widest mt-1">{g.subtitle}</p>
               <h3 className="font-display text-xl text-gold group-hover:text-gold-hover">{g.title}</h3>
               <p className="text-white/55 text-sm mt-1">{g.description}</p>
+              <span className="inline-block mt-3 text-gold text-sm font-bold">Mängi →</span>
             </Link>
           )
         })}

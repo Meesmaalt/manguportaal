@@ -18,15 +18,15 @@ export default function Layout() {
           </Link>
 
           <nav className="flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-1.5 text-sm text-white/80 hover:text-gold transition px-2 py-1.5"
+            >
+              <Home size={16} />
+              <span className="hidden sm:inline">Mängud</span>
+            </Link>
             {isLoggedIn ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-1.5 text-sm text-white/80 hover:text-gold transition px-2 py-1.5"
-                >
-                  <Home size={16} />
-                  <span className="hidden sm:inline">Avaleht</span>
-                </Link>
                 <span className="flex items-center gap-1.5 text-sm text-gold/90 px-2">
                   <User size={16} />
                   <span className="hidden sm:inline max-w-[120px] truncate">{user?.name || user?.email}</span>
