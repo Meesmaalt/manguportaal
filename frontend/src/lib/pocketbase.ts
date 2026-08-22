@@ -1,11 +1,12 @@
 import PocketBase from 'pocketbase'
 import { getConfig } from '@/lib/config'
 
-const { pbUrl } = getConfig()
+function createPb() {
+  const { pbUrl } = getConfig()
+  return new PocketBase(pbUrl)
+}
 
-export const pb = new PocketBase(pbUrl)
-
-pb.authStore.onChange(() => {})
+export const pb = createPb()
 
 export type User = {
   id: string

@@ -1,11 +1,11 @@
 import { Volume2, RotateCcw } from 'lucide-react'
 import { useFontScale } from '@/hooks/useFontScale'
 import { getMasterVolume, setMasterVolume } from '@/lib/audio'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 type Props = {
   onReset?: () => void
-  extra?: React.ReactNode
+  extra?: ReactNode
 }
 
 export default function GameToolbar({ onReset, extra }: Props) {

@@ -1,11 +1,17 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+
+# Install deps first (better layer cache)
 COPY package.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
+
 COPY . .
-# Build-time base path – MUST match public URL subpath, e.g. /mangud/
+
+# Must match public URL subpath, e.g. /mangud/
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
+
+# Build (vite only – no tsc -b which needs project references)
 RUN npm run build
 
 FROM nginx:alpine

@@ -70,12 +70,6 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
     }
   }
 
-  if (!round) {
-    return (
-      <div className="text-center py-20 text-gold font-display text-2xl">Mäng läbi! 🎉</div>
-    )
-  }
-
   function reveal(idx: number) {
     if (!isHost || revealed.includes(idx)) return
     const pts = round.answers[idx].points * round.multiplier
@@ -166,6 +160,12 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
       activeTeam: 0,
       showStrikeOverlay: false,
     }))
+  }
+
+  if (!round) {
+    return (
+      <div className="text-center py-20 text-gold font-display text-2xl">Mäng läbi! 🎉</div>
+    )
   }
 
   return (

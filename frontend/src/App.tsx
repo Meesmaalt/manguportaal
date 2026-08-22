@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import Layout from '@/components/Layout'
@@ -11,7 +12,7 @@ import PlayGeneric from '@/pages/PlayGeneric'
 import Display from '@/pages/Display'
 import CreatePack from '@/pages/CreatePack'
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   if (loading) {
     return (
