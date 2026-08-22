@@ -1,9 +1,7 @@
 import type { KuldvillakPackData } from '@/lib/pocketbase'
 
-export type Team = { name: string; score: number }
-
 export type KuldvillakState = {
-  teams: Team[]
+  teams: { name: string; score: number }[]
   disabledCards: string[]
   currentQuestion: {
     col: number
@@ -16,4 +14,7 @@ export type KuldvillakState = {
   showAnswer: boolean
   packData: KuldvillakPackData
   code?: string
+  /** timestamp – Display fires confetti when this changes */
+  confettiAt?: number
+  hostPeek?: boolean
 }

@@ -1,5 +1,6 @@
 import type { MaEiOleKunagiPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
+import GameToolbar from '@/components/GameToolbar'
 
 type Player = { name: string; lives: number }
 
@@ -47,7 +48,8 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      <SessionCodeBadge code={sessionCode} />
+      {isHost && <SessionCodeBadge code={sessionCode} />}
+      {isHost && <GameToolbar />}
 
       <div className="card-panel p-8 text-center mb-6">
         <p className="text-white/50 text-sm uppercase tracking-widest mb-3">Väide</p>

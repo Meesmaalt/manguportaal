@@ -1,9 +1,7 @@
 import type { RoosidesodaPackData } from '@/lib/pocketbase'
 
-export type Team = { name: string; score: number }
-
 export type RoosidesodaState = {
-  teams: Team[]
+  teams: { name: string; score: number }[]
   currentRoundIdx: number
   revealed: number[]
   strikes: number
@@ -12,4 +10,5 @@ export type RoosidesodaState = {
   packData: RoosidesodaPackData
   code?: string
   showStrikeOverlay?: boolean
+  confettiAt?: number
 }

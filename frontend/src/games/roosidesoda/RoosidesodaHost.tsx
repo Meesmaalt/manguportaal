@@ -4,7 +4,7 @@ import type { RoosidesodaState } from './types'
 import { Plus, Minus, SkipForward, Banknote, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { playSound, sounds, createBgm } from '@/lib/audio'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
-import { useFontScale } from '@/hooks/useFontScale'
+import GameToolbar from '@/components/GameToolbar'
 
 type Props = {
   state: RoosidesodaState
@@ -23,15 +23,25 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
     activeTeam,
     packData,
     showStrikeOverlay,
+    confettiAt,
   } = state
 
   const rounds = packData?.rounds || []
   const round = rounds[currentRoundIdx]
 
   const [musicOn, setMusicOn] = useState(false)
-  const { smaller, reset, larger } = useFontScale()
   const [sfxOn, setSfxOn] = useState(true)
+  const lastConfetti = useRef(0)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
+
+  // Confetti on TV / public display only
+  useEffect(() => {
+    if (isHost) return
+    if (confettiAt && confettiAt !== lastConfetti.current) {
+      lastConfetti.current = confettiAt
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, spread: 70 })
+    }
+  }, [confettiAt, isHost])
 
   useEffect(() => {
     bgmRef.current = createBgm(sounds.roosBgm, 0.28)
@@ -96,8 +106,8 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
       ),
       bank: 0,
       strikes: 0,
+      confettiAt: Date.now(),
     }))
-    confetti({ particleCount: 110, spread: 65, origin: { y: 0.6 } })
   }
 
   function nextRound() {
@@ -161,56 +171,30 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
   return (
     <div className="w-full max-w-5xl mx-auto px-2 relative">
       {isHost && (
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-1 bg-bg-card border border-gold/40 rounded-full px-2 py-1">
-            <span className="text-gold text-xs px-1">Tekst</span>
-            <button
-              type="button"
-              className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={smaller}
-            >
-              A−
-            </button>
-            <button
-              type="button"
-              className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={reset}
-            >
-              A
-            </button>
-            <button
-              type="button"
-              className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm"
-              onClick={larger}
-            >
-              A+
-            </button>
-          </div>
-          <button type="button" onClick={toggleMusic} className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5">
-            {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            {musicOn ? 'Taust sees' : 'Taust'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSfxOn((v) => !v)}
-            className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
-          >
-            {sfxOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            {sfxOn ? 'Efektid sees' : 'Efektid'}
-          </button>
-          <button
-            type="button"
-            onClick={resetGame}
-            className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 border-accent-red/60 text-accent-red"
-          >
-            <RotateCcw size={14} />
-            Taasta algseis
-          </button>
-        </div>
+        <GameToolbar
+          onReset={resetGame}
+          extra={
+            <>
+              <button type="button" onClick={toggleMusic} className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5">
+                {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                {musicOn ? 'Taust sees' : 'Taust'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSfxOn((v) => !v)}
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
+              >
+                {sfxOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                {sfxOn ? 'Efektid sees' : 'Efektid'}
+              </button>
+            </>
+          }
+        />
       )}
 
-      <SessionCodeBadge code={sessionCode} />
+      {isHost && <SessionCodeBadge code={sessionCode} />}
 
+      <div id="game-scale-root">
       <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-2 tracking-wide">
         🌹 ROOSIDE SÕDA 🌹
       </h1>
@@ -351,6 +335,8 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
             )}
           </div>
         ))}
+      </div>
+
       </div>
 
       {showStrikeOverlay && (

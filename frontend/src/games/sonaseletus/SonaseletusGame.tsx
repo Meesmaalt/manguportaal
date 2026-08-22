@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
+import GameToolbar from '@/components/GameToolbar'
 
 type Team = { name: string; score: number }
 
@@ -92,7 +92,9 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      <SessionCodeBadge code={sessionCode} />
+      <div id="game-scale-root">
+      {isHost && <SessionCodeBadge code={sessionCode} />}
+      {isHost && <GameToolbar onReset={resetGame} />}
 
       <div className="text-center mb-6">
         <div className="text-white/50 text-sm uppercase tracking-widest mb-1">
@@ -151,6 +153,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
             <div className="text-3xl font-display font-black">{t.score}</div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   )

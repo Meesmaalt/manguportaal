@@ -110,22 +110,22 @@ export default function Display() {
       </div>
 
       {gt === 'kuldvillak' && (
-        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code} />
+        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
       )}
       {gt === 'roosidesoda' && (
-        <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} sessionCode={session.code} />
+        <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
       )}
       {gt === 'sonaseletus' && (
-        <SonaseletusGame state={state} update={noop} isHost={false} sessionCode={session.code} />
+        <SonaseletusGame state={state} update={noop} isHost={false} />
       )}
       {gt === 'ma_ei_ole_kunagi' && (
-        <MaEiOleKunagiGame state={state} update={noop} isHost={false} sessionCode={session.code} />
+        <MaEiOleKunagiGame state={state} update={noop} isHost={false} />
       )}
       {gt === 'viimane_pusti' && (
-        <ViimanePustiGame state={state} update={noop} isHost={false} sessionCode={session.code} />
+        <ViimanePustiGame state={state} update={noop} isHost={false} />
       )}
       {gt === 'tode_voi_tegu' && (
-        <TodeVoiTeguGame state={state} update={noop} isHost={false} sessionCode={session.code} />
+        <TodeVoiTeguGame state={state} update={noop} isHost={false} />
       )}
     </div>
   )
