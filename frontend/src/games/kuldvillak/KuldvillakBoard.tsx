@@ -2,7 +2,8 @@ import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import type { KuldvillakState } from './types'
 import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon } from 'lucide-react'
-import { createBgm, sounds } from '@/lib/audio'
+import { createBgm, sounds, playFx } from '@/lib/audio'
+import GameShowFrame from '@/components/GameShowFrame'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 
@@ -19,6 +20,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
 
   const [musicOn, setMusicOn] = useState(false)
+  const [pulseTeam, setPulseTeam] = useState<number | null>(null)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
   const lastConfetti = useRef<number>(0)
 
@@ -47,12 +49,24 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     }
   }
 
+  useEffect(() => {
+    if (!isHost) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && currentQuestion) closeQuestion()
+      if (e.key.toLowerCase() === 'm') toggleMusic()
+      if (e.key.toLowerCase() === 'r') resetGame()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isHost, currentQuestion])
+
   function openCard(col: number, row: number) {
     if (!isHost) return
     const cardId = `${col}-${row}`
     if (disabledCards.includes(cardId)) return
     const cat = categories[col]
     const q = cat.questions[row]
+    playFx('reveal')
     update({
       currentQuestion: {
         col,
@@ -69,6 +83,12 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   function closeQuestion(awardTo?: number) {
     if (!currentQuestion) return
     const cardId = `${currentQuestion.col}-${currentQuestion.row}`
+    if (awardTo !== undefined) playFx('correct')
+    else playFx('wrong')
+    if (awardTo !== undefined) {
+      setPulseTeam(awardTo)
+      window.setTimeout(() => setPulseTeam(null), 650)
+    }
     update((prev) => {
       const next: KuldvillakState = { ...prev }
       if (!prev.disabledCards.includes(cardId)) {
@@ -125,9 +145,14 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 max-w-5xl mx-auto'
 
   const showPeek = isHost && hostPeek
+  const totalCards = categories.reduce((n, c) => n + c.questions.length, 0)
+  const playedCards = disabledCards.length
+  const finished = totalCards > 0 && playedCards >= totalCards && !currentQuestion
+  const leader = [...teams].sort((a,b) => b.score-a.score)[0]
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-2">
+    <GameShowFrame display={!isHost} title="KULDVILLAK">
+    <div className="w-full max-w-6xl mx-auto px-2 py-2">
       {isHost && (
         <GameToolbar
           onReset={resetGame}
@@ -182,6 +207,12 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
 
       {isHost && <SessionCodeBadge code={sessionCode} />}
 
+      <div className="flex items-center justify-between gap-3 mb-4 px-1">
+        <div className="text-white/45 text-xs uppercase tracking-[.18em]">Voor • {playedCards}/{totalCards}</div>
+        <div className="flex-1 max-w-sm h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{width:`${totalCards ? (playedCards/totalCards)*100 : 0}%`}} /></div>
+        <div className="text-gold text-xs font-bold">{totalCards ? Math.round((playedCards/totalCards)*100) : 0}%</div>
+      </div>
+
       <div id="game-scale-root">
         <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-5 tracking-wide drop-shadow-[0_0_20px_rgba(223,179,66,0.4)]">
           🏆 KULDVILLAK 🏆
@@ -212,7 +243,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   disabled={disabled || !isHost}
                   onClick={() => openCard(col, row)}
                   className={`
-                    min-h-[72px] md:min-h-[96px] rounded-xl font-display font-black
+                    game-card min-h-[72px] md:min-h-[96px] rounded-xl font-display font-black
                     transition-all duration-200 border-2 relative overflow-hidden
                     ${
                       disabled
@@ -250,7 +281,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               ) : (
                 <div className="font-display text-gold text-lg font-bold">{team.name}</div>
               )}
-              <div className="text-4xl md:text-5xl font-display font-black text-white tabular-nums drop-shadow-[0_0_12px_rgba(223,179,66,0.35)]">
+              <div className={`text-4xl md:text-5xl font-display font-black text-white tabular-nums drop-shadow-[0_0_12px_rgba(223,179,66,0.35)] ${pulseTeam === i ? 'score-pulse' : ''}`}>
                 {team.score}
               </div>
               {isHost && (
@@ -268,9 +299,21 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         </div>
       </div>
 
+      {finished && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/80 backdrop-blur-lg">
+          <div className="winner-stage text-center max-w-xl w-full">
+            <div className="text-gold text-sm uppercase tracking-[.35em] font-bold mb-4">Mäng läbi</div>
+            <div className="text-6xl mb-5">🏆</div>
+            <h2 className="font-display text-5xl md:text-7xl font-black text-gold mb-3">{leader?.name || 'Võitja'}</h2>
+            <p className="text-white/65 text-lg mb-7">Võidutulemus <strong className="text-white">{leader?.score ?? 0}</strong> punkti</p>
+            {isHost && <button type="button" onClick={resetGame} className="btn-gold">Mängi uuesti</button>}
+          </div>
+        </div>
+      )}
+
       {currentQuestion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="card-panel max-w-2xl w-full p-6 md:p-10 relative border-2 border-gold/60 shadow-gold-lg bg-gradient-to-b from-[#0c1a30] to-[#050c18]">
+          <div className="question-reveal card-panel max-w-2xl w-full p-6 md:p-10 relative border-2 border-gold/60 shadow-gold-lg bg-gradient-to-b from-[#0c1a30] to-[#050c18]">
             <button type="button" onClick={() => closeQuestion()} className="absolute top-4 right-4 text-white/50 hover:text-white">
               <X size={24} />
             </button>
@@ -328,5 +371,6 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         </div>
       )}
     </div>
+    </GameShowFrame>
   )
 }

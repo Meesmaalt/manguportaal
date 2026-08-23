@@ -6,6 +6,7 @@ import MaEiOleKunagiGame, { type MaEiOleKunagiState } from '@/games/ma-ei-ole-ku
 import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import { GAME_META, type GameType } from '@/lib/types'
+import GameShowFrame from '@/components/GameShowFrame'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
@@ -32,7 +33,8 @@ export default function PlayGeneric() {
   const code = session?.code || state.code
 
   return (
-    <div className="py-6 px-2">
+    <GameShowFrame title={(meta?.title || 'ÕHTU').toUpperCase()}>
+    <div className="py-4 px-2">
       <div className="max-w-3xl mx-auto mb-4 flex items-center justify-between px-2">
         <Link to={`/play/${gameType}`} className="inline-flex items-center gap-2 text-white/50 hover:text-gold text-sm">
           <ArrowLeft size={16} /> Uus mäng
@@ -56,5 +58,6 @@ export default function PlayGeneric() {
         <TodeVoiTeguGame state={state as TodeVoiTeguState} update={update} isHost sessionCode={code} />
       )}
     </div>
+    </GameShowFrame>
   )
 }

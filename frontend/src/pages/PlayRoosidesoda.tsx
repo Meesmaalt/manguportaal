@@ -3,6 +3,7 @@ import { useGameSession } from '@/hooks/useGameSession'
 import RoosidesodaHost from '@/games/roosidesoda/RoosidesodaHost'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { ArrowLeft } from 'lucide-react'
+import GameShowFrame from '@/components/GameShowFrame'
 
 export default function PlayRoosidesoda() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -30,7 +31,8 @@ export default function PlayRoosidesoda() {
   }
 
   return (
-    <div className="py-6 px-2">
+    <GameShowFrame title="ROOSIDE SÕDA">
+    <div className="py-4 px-2">
       <div className="max-w-5xl mx-auto mb-4 flex items-center justify-between px-2">
         <Link
           to="/play/roosidesoda"
@@ -49,5 +51,6 @@ export default function PlayRoosidesoda() {
         sessionCode={session?.code || state.code}
       />
     </div>
+    </GameShowFrame>
   )
 }

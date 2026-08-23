@@ -88,6 +88,15 @@ export function playSound(src: string, volume = 1) {
   } catch {}
 }
 
+export function playFx(type: 'reveal' | 'correct' | 'wrong' | 'tick' | 'victory' | 'click') {
+  try {
+    const ctx = ensureCtx(); const now = ctx.currentTime
+    const notes: Record<string, number[]> = { click:[440], tick:[620], reveal:[330,494,659], correct:[523,659,784], wrong:[220,165], victory:[523,659,784,1047] }
+    const duration: Record<string, number> = { click:.06,tick:.07,reveal:.12,correct:.14,wrong:.18,victory:.18 }
+    ;(notes[type] || [440]).forEach((freq,i)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type==='wrong'?'sawtooth':'sine';o.frequency.value=freq;const t=now+i*(type==='victory'?.09:.045);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12*masterGain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+(duration[type]||.1));o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.25) })
+  } catch {}
+}
+
 export function createBgm(src: string, volume = 0.35) {
   const a = get(src)
   a.loop = true

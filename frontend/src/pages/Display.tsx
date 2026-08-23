@@ -104,10 +104,8 @@ export default function Display() {
   const noop = () => {}
 
   return (
-    <div className="min-h-screen bg-bg py-8 px-4">
-      <div className="text-center mb-6">
-        <h1 className="font-display text-4xl text-gold font-black tracking-wider">ÕHTU</h1>
-      </div>
+    <div className="min-h-screen bg-bg py-5 px-4">
+        <div className="text-center mb-4"><div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/20 px-4 py-1.5 text-[10px] uppercase tracking-[.25em] text-white/45">Sessioon {session.code}</div></div>
 
       {gt === 'kuldvillak' && (
         <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />

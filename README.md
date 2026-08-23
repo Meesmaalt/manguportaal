@@ -111,3 +111,16 @@ docker compose up -d
 Kontrolli brauseris:
 - View Source → script src peaks olema `/mangud/assets/...`
 - `/mangud/env.js` peab olema JavaScript, mitte HTML
+
+
+## V2 Game-show upgrade
+
+This release keeps the existing game/session architecture and adds a presentation layer rather than replacing the working backend. Highlights:
+- Fullscreen game-show frame for Kuldvillak and TV-friendly presentation.
+- Animated question reveal, score pulse, progress bar and winner screen.
+- Keyboard shortcuts in Kuldvillak host mode: `M` music, `R` reset, `Esc` close question.
+- Lightweight WebAudio effects for reveal/correct/wrong/victory/click states; no new audio assets required.
+- Playlist now persists locally, supports reordering and clearing.
+- Improved visual depth, live status, TV framing and responsive controls.
+
+The project still uses PocketBase realtime sessions and the existing local-session fallback.
