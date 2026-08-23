@@ -4,7 +4,8 @@ import type { KuldvillakState } from './types'
 import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon } from 'lucide-react'
 import { createBgm, sounds, playFx } from '@/lib/audio'
 import GameShowFrame from '@/components/GameShowFrame'
-import SessionCodeBadge from '@/components/SessionCodeBadge'
+import TvJoinPanel from '@/components/TvJoinPanel'
+import type { ConnectionStatus } from '@/hooks/useGameSession'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 
@@ -13,9 +14,11 @@ type Props = {
   update: (partial: Partial<KuldvillakState> | ((p: KuldvillakState) => KuldvillakState)) => void
   isHost?: boolean
   sessionCode?: string
+  connection?: ConnectionStatus
+  lastSync?: number
 }
 
-export default function KuldvillakBoard({ state, update, isHost = true, sessionCode }: Props) {
+export default function KuldvillakBoard({ state, update, isHost = true, sessionCode, connection = 'offline', lastSync = 0 }: Props) {
   const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek } = state
   const { t } = useI18n()
   const categories = packData?.categories || []
@@ -207,7 +210,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         />
       )}
 
-      {isHost && <SessionCodeBadge code={sessionCode} />}
+      {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} />}
 
       <div id="game-scale-root">
         <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-5 tracking-wide drop-shadow-[0_0_20px_rgba(223,179,66,0.4)]">

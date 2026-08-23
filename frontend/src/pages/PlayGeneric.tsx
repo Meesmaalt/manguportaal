@@ -11,7 +11,7 @@ import { useI18n } from '@/i18n/I18nContext'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
-  const { session, state, update, loading, error } = useGameSession<any>(sessionId!)
+  const { session, state, update, loading, error, connection, lastSync } = useGameSession<any>(sessionId!)
   const meta = GAME_META[gameType as GameType]
   const { t } = useI18n()
 

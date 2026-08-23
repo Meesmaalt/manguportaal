@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
 import KuldvillakBoard from '@/games/kuldvillak/KuldvillakBoard'
 import RoosidesodaHost from '@/games/roosidesoda/RoosidesodaHost'
@@ -8,98 +8,163 @@ import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import GameShowFrame from '@/components/GameShowFrame'
-import { useI18n } from '@/i18n/I18nContext'
-import type { TranslationKey } from '@/i18n/translations'
+import ConnectionChip from '@/components/ConnectionChip'
+import type { ConnectionStatus } from '@/hooks/useGameSession'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
+import { useI18n } from '@/i18n/I18nContext'
+import type { TranslationKey } from '@/i18n/translations'
 
 export default function Display() {
-  const { code } = useParams<{ code: string }>()
+  const { code: codeParam } = useParams<{ code: string }>()
+  const navigate = useNavigate()
+  const { t } = useI18n()
+  const [codeInput, setCodeInput] = useState('')
   const [session, setSession] = useState<GameSession | null>(null)
   const [state, setState] = useState<any>(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
-  const { t } = useI18n()
+  const [loading, setLoading] = useState(Boolean(codeParam))
+  const [connection, setConnection] = useState<ConnectionStatus>('offline')
+  const lastBeat = useRef(0)
+
+  const code = (codeParam || '').toUpperCase()
 
   useEffect(() => {
-    if (!code) return
+    if (!code) {
+      setLoading(false)
+      return
+    }
     let unsub: (() => void) | null = null
+    let poll: number | null = null
 
     async function find() {
       setLoading(true)
+      setError('')
       try {
         const list = await pb.collection('game_sessions').getList<GameSession>(1, 1, {
-          filter: `code = "${code!.toUpperCase()}"`,
+          filter: `code = "${code}"`,
         })
-        if (list.items.length === 0) throw new Error('Sessiooni ei leitud')
+        if (list.items.length === 0) throw new Error('not found')
         const rec = list.items[0]
         setSession(rec)
         setState(rec.state)
+        setConnection('live')
         unsub = await pb.collection('game_sessions').subscribe<GameSession>(rec.id, (e) => {
           if (e.action === 'update') {
             setSession(e.record)
             setState(e.record.state)
+            setConnection('live')
+            lastBeat.current = Date.now()
           }
         })
-      } catch (e: any) {
+      } catch {
+        // local fallback
         let found = false
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)
-          if (key?.startsWith('session_')) {
-            try {
-              const data = JSON.parse(localStorage.getItem(key)!)
-              if (data.code?.toUpperCase() === code!.toUpperCase()) {
-                setState(data)
-                setSession({
-                  id: key.replace('session_', ''),
-                  code: data.code,
-                  game_type: (data.packData?.categories && 'kuldvillak') ||
-                    (data.packData?.rounds && 'roosidesoda') ||
-                    (data.packData?.words && 'sonaseletus') ||
-                    (data.packData?.truths && 'tode_voi_tegu') ||
-                    (data.packData?.startingLives && 'viimane_pusti') ||
-                    (data.packData?.statements && 'ma_ei_ole_kunagi') ||
-                    'kuldvillak',
-                  pack: '',
-                  host: '',
-                  state: data,
-                  status: 'playing',
-                  created: '',
-                  updated: '',
-                })
-                found = true
-                const interval = setInterval(() => {
-                  const raw = localStorage.getItem(key!)
-                  if (raw) setState(JSON.parse(raw))
-                }, 400)
-                unsub = () => clearInterval(interval)
-                break
+          if (!key?.startsWith('session_')) continue
+          try {
+            const data = JSON.parse(localStorage.getItem(key)!)
+            if (data.code?.toUpperCase() === code) {
+              setState(data)
+              setSession({
+                id: key.replace('session_', ''),
+                code: data.code,
+                game_type:
+                  (data.packData?.categories && 'kuldvillak') ||
+                  (data.packData?.rounds && 'roosidesoda') ||
+                  (data.packData?.words && 'sonaseletus') ||
+                  (data.packData?.truths && 'tode_voi_tegu') ||
+                  (data.packData?.startingLives && 'viimane_pusti') ||
+                  (data.packData?.statements && 'ma_ei_ole_kunagi') ||
+                  'kuldvillak',
+                pack: '',
+                host: '',
+                state: data,
+                status: 'playing',
+                created: '',
+                updated: '',
+              })
+              setConnection('local')
+              found = true
+              poll = window.setInterval(() => {
+                const raw = localStorage.getItem(key!)
+                if (!raw) return
+                const parsed = JSON.parse(raw)
+                setState(parsed)
+                if (parsed.hostBeat && parsed.hostBeat !== lastBeat.current) {
+                  lastBeat.current = parsed.hostBeat
+                  setConnection('local')
+                }
+              }, 500)
+              unsub = () => {
+                if (poll) clearInterval(poll)
               }
-            } catch {}
-          }
+              break
+            }
+          } catch {}
         }
-        if (!found) setError(e.message || 'Sessiooni ei leitud')
+        if (!found) {
+          setError(t('errorSession'))
+          setConnection('offline')
+        }
       } finally {
         setLoading(false)
       }
     }
+
     find()
-    return () => { unsub?.() }
-  }, [code])
+    return () => {
+      unsub?.()
+      if (poll) clearInterval(poll)
+    }
+  }, [code, t])
+
+  function joinWithCode(e: React.FormEvent) {
+    e.preventDefault()
+    const c = codeInput.trim().toUpperCase()
+    if (c.length >= 4) navigate(`/ekraan/${c}`)
+  }
+
+  if (!code) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4 gap-6">
+        <h1 className="font-display text-4xl text-gold font-black">{t('tvJoinTitle')}</h1>
+        <p className="text-white/60 text-center max-w-md">{t('tvEnterCodeHint')}</p>
+        <form onSubmit={joinWithCode} className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+          <input
+            className="input-field text-center font-display text-2xl tracking-[0.25em] uppercase"
+            placeholder="ABC123"
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+            maxLength={10}
+            autoFocus
+          />
+          <button type="submit" className="btn-gold">
+            {t('tvConnect')}
+          </button>
+        </form>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-3">
         <div className="text-gold font-display text-3xl animate-pulse">{t('connecting')}</div>
+        <ConnectionChip connection="reconnecting" />
       </div>
     )
   }
 
   if (error || !state || !session) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4">
-        <div className="text-accent-red text-xl">{error || t('errorSession')}</div>
-        <p className="text-white/40">Kood: {code}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4 px-4">
+        <div className="text-accent-red text-xl text-center">{error || t('errorSession')}</div>
+        <ConnectionChip connection="offline" />
+        <button type="button" className="btn-outline" onClick={() => navigate('/ekraan')}>
+          {t('tvEnterCode')}
+        </button>
       </div>
     )
   }
@@ -108,20 +173,28 @@ export default function Display() {
   const noop = () => {}
   const title = t(('game_' + gt) as TranslationKey).toUpperCase()
 
-  if (gt === 'kuldvillak') {
-    return <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
-  }
-
   return (
-    <GameShowFrame display title={title}>
-      <div className="text-center mb-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/20 px-4 py-1.5 text-[10px] uppercase tracking-[.25em] text-white/45">{t('sessionCode')}: {session.code}</div>
+    <div className="relative">
+      <div className="fixed top-3 right-3 z-[60]">
+        <ConnectionChip connection={connection} />
       </div>
-      {gt === 'roosidesoda' && <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />}
-      {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
-      {gt === 'ma_ei_ole_kunagi' && <MaEiOleKunagiGame state={state} update={noop} isHost={false} />}
-      {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
-      {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
-    </GameShowFrame>
+
+      {gt === 'kuldvillak' && (
+        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
+      )}
+      {gt === 'roosidesoda' && (
+        <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
+      )}
+      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && (
+        <GameShowFrame display title={title}>
+          {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
+          {gt === 'ma_ei_ole_kunagi' && (
+            <MaEiOleKunagiGame state={state} update={noop} isHost={false} />
+          )}
+          {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
+          {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
+        </GameShowFrame>
+      )}
+    </div>
   )
 }

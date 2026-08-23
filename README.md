@@ -1,5 +1,20 @@
 # Õhtu Mängud
 
+## Party checklist (15 minutes)
+
+1. Open the site on your **phone** (host).
+2. Tap a game → pick a pack → **Play** (no account needed).
+3. On the host screen, open **Ava teleris / Open on TV**:
+   - Scan the **QR** with the TV/laptop camera, **or**
+   - Open the link / enter the code at `/ekraan` on the second device.
+4. Phone = controls. TV = board only. Status should read **Live** (cloud) or **Same device** (local).
+5. Play ~15 minutes. Reset from the host toolbar when done.
+
+**Two physical devices** need PocketBase reachable (`PB_PUBLIC_URL`). Local-only mode works for two tabs on the same browser/device.
+
+---
+
+
 **Ainult helifailid + üks käsk.** PocketBase skeem, admin ja frontend tulevad ise.
 
 ## 1. Helifailid (ainus käsitsi samm)
@@ -124,3 +139,10 @@ This release keeps the existing game/session architecture and adds a presentatio
 - Improved visual depth, live status, TV framing and responsive controls.
 
 The project still uses PocketBase realtime sessions and the existing local-session fallback.
+
+
+## V2.5 Room mode
+
+- Host: QR + link + code + connection status
+- TV: `/ekraan` or `/ekraan/CODE`, connection chip, no admin chrome
+- Rooside Sõda aligned with Kuldvillak show presentation

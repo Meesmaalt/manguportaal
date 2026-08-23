@@ -7,10 +7,8 @@ import { useI18n } from '@/i18n/I18nContext'
 
 export default function PlayKuldvillak() {
   const { sessionId } = useParams<{ sessionId: string }>()
-  const { session, state, update, loading, error } = useGameSession<KuldvillakState>(
-    sessionId!
-  )
-
+  const { session, state, update, loading, error, connection, lastSync } =
+    useGameSession<KuldvillakState>(sessionId!)
   const { t } = useI18n()
 
   if (loading) {
@@ -26,22 +24,24 @@ export default function PlayKuldvillak() {
       <div className="text-center py-20">
         <p className="text-accent-red mb-4">{error || t('errorSession')}</p>
         <Link to="/dashboard" className="text-gold">
-          ← Tagasi
+          ← {t('packBack')}
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="py-6 px-2">
-      <div className="max-w-6xl mx-auto mb-4 flex items-center justify-between px-2">
+    <div className="py-4 px-2">
+      <div className="max-w-6xl mx-auto mb-2 flex items-center justify-between px-2">
         <Link
           to="/play/kuldvillak"
           className="inline-flex items-center gap-2 text-white/50 hover:text-gold text-sm"
         >
-          <ArrowLeft size={16} /> Uus mäng
+          <ArrowLeft size={16} /> {t('newGame')}
         </Link>
-        <h1 className="font-display text-2xl text-gold hidden sm:block">{t('game_kuldvillak')} · {t('hostLabel')}</h1>
+        <h1 className="font-display text-xl text-gold hidden sm:block">
+          {t('game_kuldvillak')} · {t('hostLabel')}
+        </h1>
         <div className="w-20" />
       </div>
 
@@ -50,6 +50,8 @@ export default function PlayKuldvillak() {
         update={update}
         isHost
         sessionCode={session?.code || state.code}
+        connection={connection}
+        lastSync={lastSync}
       />
     </div>
   )

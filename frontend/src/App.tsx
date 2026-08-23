@@ -49,6 +49,7 @@ export default function App() {
           }
         />
       </Route>
+      <Route path="/ekraan" element={<Display />} />
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
