@@ -6,6 +6,7 @@ import { createBgm, sounds, playFx } from '@/lib/audio'
 import GameShowFrame from '@/components/GameShowFrame'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Props = {
   state: KuldvillakState
@@ -16,6 +17,7 @@ type Props = {
 
 export default function KuldvillakBoard({ state, update, isHost = true, sessionCode }: Props) {
   const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek } = state
+  const { t } = useI18n()
   const categories = packData?.categories || []
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
 
@@ -151,7 +153,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const leader = [...teams].sort((a,b) => b.score-a.score)[0]
 
   return (
-    <GameShowFrame display={!isHost} title="KULDVILLAK">
+    <GameShowFrame display={!isHost} title={t('game_kuldvillak').toUpperCase()}>
     <div className="w-full max-w-6xl mx-auto px-2 py-2">
       {isHost && (
         <GameToolbar
@@ -164,7 +166,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                 className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
               >
                 {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {musicOn ? 'Muusika sees' : 'Muusika'}
+                {musicOn ? t('toolbarMusicOn') : t('toolbarMusic')}
               </button>
               <button
                 type="button"
@@ -174,7 +176,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                 }`}
               >
                 <EyeIcon size={14} />
-                {hostPeek ? 'Vastused peidus' : 'Näita vastuseid'}
+                {hostPeek ? t('toolbarHideAnswers') : t('toolbarShowAnswers')}
               </button>
               <button
                 type="button"
@@ -186,7 +188,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   }))
                 }
               >
-                + Meeskond
+                {t('toolbarAddTeam')}
               </button>
               <button
                 type="button"
@@ -198,7 +200,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   }))
                 }
               >
-                − Meeskond
+                {t('toolbarRemoveTeam')}
               </button>
             </>
           }
@@ -206,12 +208,6 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       )}
 
       {isHost && <SessionCodeBadge code={sessionCode} />}
-
-      <div className="flex items-center justify-between gap-3 mb-4 px-1">
-        <div className="text-white/45 text-xs uppercase tracking-[.18em]">Voor • {playedCards}/{totalCards}</div>
-        <div className="flex-1 max-w-sm h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-gold transition-all duration-500" style={{width:`${totalCards ? (playedCards/totalCards)*100 : 0}%`}} /></div>
-        <div className="text-gold text-xs font-bold">{totalCards ? Math.round((playedCards/totalCards)*100) : 0}%</div>
-      </div>
 
       <div id="game-scale-root">
         <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-5 tracking-wide drop-shadow-[0_0_20px_rgba(223,179,66,0.4)]">
@@ -302,11 +298,11 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       {finished && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/80 backdrop-blur-lg">
           <div className="winner-stage text-center max-w-xl w-full">
-            <div className="text-gold text-sm uppercase tracking-[.35em] font-bold mb-4">Mäng läbi</div>
+            <div className="text-gold text-sm uppercase tracking-[.35em] font-bold mb-4">{t('gameOver')}</div>
             <div className="text-6xl mb-5">🏆</div>
-            <h2 className="font-display text-5xl md:text-7xl font-black text-gold mb-3">{leader?.name || 'Võitja'}</h2>
-            <p className="text-white/65 text-lg mb-7">Võidutulemus <strong className="text-white">{leader?.score ?? 0}</strong> punkti</p>
-            {isHost && <button type="button" onClick={resetGame} className="btn-gold">Mängi uuesti</button>}
+            <h2 className="font-display text-5xl md:text-7xl font-black text-gold mb-3">{leader?.name || t('winner')}</h2>
+            <p className="text-white/65 text-lg mb-7">{t('winningScore')} <strong className="text-white">{leader?.score ?? 0}</strong> {t('points')}</p>
+            {isHost && <button type="button" onClick={resetGame} className="btn-gold">{t('playAgain')}</button>}
           </div>
         </div>
       )}
@@ -337,7 +333,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   className="btn-outline text-sm mb-4 flex items-center gap-2"
                 >
                   {showAnswer ? <EyeOff size={16} /> : <Eye size={16} />}
-                  {showAnswer ? 'Peida vastus' : 'Näita vastust'}
+                  {showAnswer ? t('hideAnswer') : t('showAnswer')}
                 </button>
 
                 {showAnswer && (
@@ -355,7 +351,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                       </button>
                     ))}
                     <button type="button" onClick={() => closeQuestion()} className="btn-outline">
-                      Keegi ei tea
+                      {t('nobodyKnows')}
                     </button>
                   </div>
                 )}

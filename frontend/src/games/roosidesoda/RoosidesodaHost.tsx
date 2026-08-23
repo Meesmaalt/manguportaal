@@ -5,6 +5,7 @@ import { Plus, Minus, SkipForward, Banknote, RotateCcw, Volume2, VolumeX } from 
 import { playSound, sounds, createBgm } from '@/lib/audio'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Props = {
   state: RoosidesodaState
@@ -25,6 +26,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
     showStrikeOverlay,
     confettiAt,
   } = state
+  const { t } = useI18n()
 
   const rounds = packData?.rounds || []
   const round = rounds[currentRoundIdx]
@@ -149,7 +151,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
 
   function resetGame() {
     if (!isHost) return
-    if (!confirm('Nulli mäng? Skoorid, bank ja avatud vastused nullitakse.')) return
+    if (!confirm(t('resetConfirm'))) return
     update((prev) => ({
       ...prev,
       teams: prev.teams.map((t) => ({ ...t, score: 0 })),
@@ -164,7 +166,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
 
   if (!round) {
     return (
-      <div className="text-center py-20 text-gold font-display text-2xl">Mäng läbi! 🎉</div>
+      <div className="text-center py-20 text-gold font-display text-2xl">{t('gameFinished')} 🎉</div>
     )
   }
 
@@ -177,7 +179,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
             <>
               <button type="button" onClick={toggleMusic} className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5">
                 {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {musicOn ? 'Taust sees' : 'Taust'}
+                {musicOn ? t('toolbarBgmOn') : t('toolbarBgm')}
               </button>
               <button
                 type="button"
@@ -185,7 +187,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
                 className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
               >
                 {sfxOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {sfxOn ? 'Efektid sees' : 'Efektid'}
+                {sfxOn ? t('toolbarSfxOn') : t('toolbarSfx')}
               </button>
             </>
           }
@@ -212,7 +214,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
       {/* Bank */}
       <div className="flex justify-center mb-6">
         <div className="px-10 py-4 text-center rounded-2xl border-2 border-dashed border-gold/60 bg-gold/10">
-          <div className="text-gold/70 text-xs uppercase tracking-widest mb-0.5">Punkti pank</div>
+          <div className="text-gold/70 text-xs uppercase tracking-widest mb-0.5">{t('bank')}</div>
           <div className="font-display text-5xl font-black text-gold">{bank}</div>
         </div>
       </div>
@@ -276,19 +278,19 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
             onClick={addStrike}
             className="btn-outline border-accent-red text-accent-red hover:bg-accent-red hover:text-white"
           >
-            Streik ✕
+            {t('strike')} ✕
           </button>
           <button type="button" onClick={awardBank} className="btn-gold flex items-center gap-2">
-            <Banknote size={16} /> Anna bank ({teams[activeTeam]?.name})
+            <Banknote size={16} /> {t('awardBank')} ({teams[activeTeam]?.name})
           </button>
           <button type="button" onClick={switchTeam} className="btn-outline">
-            Vaheta meeskonda
+            {t('switchTeam')}
           </button>
           <button type="button" onClick={prevRound} className="btn-outline text-sm">
-            ◄ Voor
+            ◄ {t('previousRound')}
           </button>
           <button type="button" onClick={nextRound} className="btn-outline flex items-center gap-1">
-            Voor ► <SkipForward size={14} />
+            {t('nextRound')} ► <SkipForward size={14} />
           </button>
         </div>
       )}
@@ -331,7 +333,7 @@ export default function RoosidesodaHost({ state, update, isHost = true, sessionC
               </div>
             )}
             {i === activeTeam && (
-              <div className="text-xs text-gold/70 mt-1 uppercase tracking-wider">Aktiivne</div>
+              <div className="text-xs text-gold/70 mt-1 uppercase tracking-wider">{t('active')}</div>
             )}
           </div>
         ))}

@@ -7,6 +7,9 @@ import SonaseletusGame from '@/games/sonaseletus/SonaseletusGame'
 import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
+import GameShowFrame from '@/components/GameShowFrame'
+import { useI18n } from '@/i18n/I18nContext'
+import type { TranslationKey } from '@/i18n/translations'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 
@@ -16,6 +19,7 @@ export default function Display() {
   const [state, setState] = useState<any>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const { t } = useI18n()
 
   useEffect(() => {
     if (!code) return
@@ -86,7 +90,7 @@ export default function Display() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="text-gold font-display text-3xl animate-pulse">Ühendan...</div>
+        <div className="text-gold font-display text-3xl animate-pulse">{t('connecting')}</div>
       </div>
     )
   }
@@ -94,7 +98,7 @@ export default function Display() {
   if (error || !state || !session) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4">
-        <div className="text-accent-red text-xl">{error || 'Viga'}</div>
+        <div className="text-accent-red text-xl">{error || t('errorSession')}</div>
         <p className="text-white/40">Kood: {code}</p>
       </div>
     )
@@ -102,29 +106,22 @@ export default function Display() {
 
   const gt = session.game_type
   const noop = () => {}
+  const title = t(('game_' + gt) as TranslationKey).toUpperCase()
+
+  if (gt === 'kuldvillak') {
+    return <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
+  }
 
   return (
-    <div className="min-h-screen bg-bg py-5 px-4">
-        <div className="text-center mb-4"><div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/20 px-4 py-1.5 text-[10px] uppercase tracking-[.25em] text-white/45">Sessioon {session.code}</div></div>
-
-      {gt === 'kuldvillak' && (
-        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
-      )}
-      {gt === 'roosidesoda' && (
-        <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
-      )}
-      {gt === 'sonaseletus' && (
-        <SonaseletusGame state={state} update={noop} isHost={false} />
-      )}
-      {gt === 'ma_ei_ole_kunagi' && (
-        <MaEiOleKunagiGame state={state} update={noop} isHost={false} />
-      )}
-      {gt === 'viimane_pusti' && (
-        <ViimanePustiGame state={state} update={noop} isHost={false} />
-      )}
-      {gt === 'tode_voi_tegu' && (
-        <TodeVoiTeguGame state={state} update={noop} isHost={false} />
-      )}
-    </div>
+    <GameShowFrame display title={title}>
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-black/20 px-4 py-1.5 text-[10px] uppercase tracking-[.25em] text-white/45">{t('sessionCode')}: {session.code}</div>
+      </div>
+      {gt === 'roosidesoda' && <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />}
+      {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
+      {gt === 'ma_ei_ole_kunagi' && <MaEiOleKunagiGame state={state} update={noop} isHost={false} />}
+      {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
+      {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
+    </GameShowFrame>
   )
 }

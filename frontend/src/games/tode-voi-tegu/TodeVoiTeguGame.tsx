@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { TodeVoiTeguPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Player = { name: string }
 
@@ -24,6 +25,7 @@ type Props = {
 
 export default function TodeVoiTeguGame({ state, update, isHost = true, sessionCode }: Props) {
   const { players, currentPlayer, truths, dares, currentCard } = state
+  const { t } = useI18n()
   const player = players[currentPlayer]
 
   function draw(type: 'truth' | 'dare') {
@@ -63,19 +65,19 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
       {isHost && <GameToolbar />}
 
       <div className="text-center mb-6">
-        <p className="text-white/50 text-sm uppercase tracking-widest">Praegu käib</p>
+        <p className="text-white/50 text-sm uppercase tracking-widest">{t('nowPlaying')}</p>
         <h2 className="font-display text-3xl text-gold font-black">{player?.name || '—'}</h2>
       </div>
 
       {currentCard ? (
         <div className="card-panel p-8 text-center mb-6 border-gold/50">
           <p className="text-gold text-sm font-bold uppercase tracking-widest mb-3">
-            {currentCard.type === 'truth' ? 'Tõde' : 'Tegu'}
+            {currentCard.type === 'truth' ? t('truth') : t('dare')}
           </p>
           <p className="text-2xl font-bold text-white leading-snug">{currentCard.text}</p>
           {isHost && (
             <button onClick={nextPlayer} className="btn-gold mt-6">
-              Tehtud · Järgmine mängija
+              {t('doneNextPlayer')}
             </button>
           )}
         </div>
@@ -118,7 +120,7 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
 
       {isHost && (
         <button onClick={addPlayer} className="btn-outline text-sm mx-auto block">
-          + Lisa mängija
+          {t('addPlayer')}
         </button>
       )}
     </div>

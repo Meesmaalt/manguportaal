@@ -7,11 +7,13 @@ import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/
 import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import { GAME_META, type GameType } from '@/lib/types'
 import GameShowFrame from '@/components/GameShowFrame'
+import { useI18n } from '@/i18n/I18nContext'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
   const { session, state, update, loading, error } = useGameSession<any>(sessionId!)
   const meta = GAME_META[gameType as GameType]
+  const { t } = useI18n()
 
   if (loading) {
     return (
@@ -33,14 +35,14 @@ export default function PlayGeneric() {
   const code = session?.code || state.code
 
   return (
-    <GameShowFrame title={(meta?.title || 'ÕHTU').toUpperCase()}>
+    <GameShowFrame title={(gameType ? t(('game_' + gameType) as any) : 'ÕHTU').toUpperCase()}>
     <div className="py-4 px-2">
       <div className="max-w-3xl mx-auto mb-4 flex items-center justify-between px-2">
         <Link to={`/play/${gameType}`} className="inline-flex items-center gap-2 text-white/50 hover:text-gold text-sm">
           <ArrowLeft size={16} /> Uus mäng
         </Link>
         <h1 className="font-display text-xl text-gold hidden sm:block">
-          {meta?.emoji} {meta?.title} · Host
+          {meta?.emoji} {gameType ? t(('game_' + gameType) as any) : meta?.title} · {t('hostLabel')}
         </h1>
         <div className="w-16" />
       </div>

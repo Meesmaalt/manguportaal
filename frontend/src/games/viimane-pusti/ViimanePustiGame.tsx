@@ -1,6 +1,7 @@
 import type { ViimanePustiPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Player = { name: string; lives: number; standing: boolean }
 
@@ -22,6 +23,7 @@ type Props = {
 
 export default function ViimanePustiGame({ state, update, isHost = true, sessionCode }: Props) {
   const { players, statements, index } = state
+  const { t } = useI18n()
   const standing = players.filter((p) => p.standing && p.lives > 0)
   const winner = standing.length === 1 ? standing[0] : null
 
@@ -60,16 +62,16 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
 
       {winner ? (
         <div className="card-panel p-10 text-center mb-6 border-gold shadow-gold">
-          <p className="text-gold font-display text-xl mb-2">Viimane püsti!</p>
+          <p className="text-gold font-display text-xl mb-2">{t('lastStanding')}</p>
           <h2 className="text-4xl font-black text-white">{winner.name}</h2>
         </div>
       ) : (
         <div className="card-panel p-8 text-center mb-6">
-          <p className="text-white/50 text-sm uppercase tracking-widest mb-3">Väide</p>
+          <p className="text-white/50 text-sm uppercase tracking-widest mb-3">{t('statement')}</p>
           <h2 className="text-2xl font-bold text-white">{statements[index]}</h2>
           {isHost && (
             <button onClick={next} className="btn-gold mt-6">
-              Järgmine →
+              {t('next')}
             </button>
           )}
         </div>
@@ -91,7 +93,7 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
 
       {isHost && (
         <button onClick={addPlayer} className="btn-outline text-sm mx-auto block">
-          + Lisa mängija
+          {t('addPlayer')}
         </button>
       )}
     </div>

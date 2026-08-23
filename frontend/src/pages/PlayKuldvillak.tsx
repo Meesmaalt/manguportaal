@@ -3,6 +3,7 @@ import { useGameSession } from '@/hooks/useGameSession'
 import KuldvillakBoard from '@/games/kuldvillak/KuldvillakBoard'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
 import { ArrowLeft } from 'lucide-react'
+import { useI18n } from '@/i18n/I18nContext'
 
 export default function PlayKuldvillak() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -10,10 +11,12 @@ export default function PlayKuldvillak() {
     sessionId!
   )
 
+  const { t } = useI18n()
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-gold font-display text-2xl animate-pulse">Laadin mängu...</div>
+        <div className="text-gold font-display text-2xl animate-pulse">{t('loadingGame')}</div>
       </div>
     )
   }
@@ -21,7 +24,7 @@ export default function PlayKuldvillak() {
   if (error || !state) {
     return (
       <div className="text-center py-20">
-        <p className="text-accent-red mb-4">{error || 'Sessioon puudub'}</p>
+        <p className="text-accent-red mb-4">{error || t('errorSession')}</p>
         <Link to="/dashboard" className="text-gold">
           ← Tagasi
         </Link>
@@ -38,7 +41,7 @@ export default function PlayKuldvillak() {
         >
           <ArrowLeft size={16} /> Uus mäng
         </Link>
-        <h1 className="font-display text-2xl text-gold hidden sm:block">Kuldvillak · Host</h1>
+        <h1 className="font-display text-2xl text-gold hidden sm:block">{t('game_kuldvillak')} · {t('hostLabel')}</h1>
         <div className="w-20" />
       </div>
 

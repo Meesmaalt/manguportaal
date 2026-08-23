@@ -1,6 +1,7 @@
 import type { MaEiOleKunagiPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Player = { name: string; lives: number }
 
@@ -21,6 +22,7 @@ type Props = {
 
 export default function MaEiOleKunagiGame({ state, update, isHost = true, sessionCode }: Props) {
   const { players, statements, index } = state
+  const { t } = useI18n()
   const current = statements[index]
 
   function next() {
@@ -52,17 +54,17 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
       {isHost && <GameToolbar />}
 
       <div className="card-panel p-8 text-center mb-6">
-        <p className="text-white/50 text-sm uppercase tracking-widest mb-3">Väide</p>
+        <p className="text-white/50 text-sm uppercase tracking-widest mb-3">{t('statement')}</p>
         <h2 className="text-2xl md:text-3xl font-bold text-white leading-snug">{current}</h2>
         {isHost && (
           <button onClick={next} className="btn-gold mt-6">
-            Järgmine väide →
+            {t('nextStatement')}
           </button>
         )}
       </div>
 
       <p className="text-center text-white/50 text-sm mb-4">
-        Kes ON teinud – kaotab elu (vajuta nimele)
+        {t('whoDidIt')}
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
@@ -83,7 +85,7 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
 
       {isHost && (
         <button onClick={addPlayer} className="btn-outline text-sm mx-auto block">
-          + Lisa mängija
+          {t('addPlayer')}
         </button>
       )}
     </div>

@@ -4,12 +4,15 @@ import RoosidesodaHost from '@/games/roosidesoda/RoosidesodaHost'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { ArrowLeft } from 'lucide-react'
 import GameShowFrame from '@/components/GameShowFrame'
+import { useI18n } from '@/i18n/I18nContext'
 
 export default function PlayRoosidesoda() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const { session, state, update, loading, error } = useGameSession<RoosidesodaState>(
     sessionId!
   )
+
+  const { t } = useI18n()
 
   if (loading) {
     return (
@@ -31,7 +34,7 @@ export default function PlayRoosidesoda() {
   }
 
   return (
-    <GameShowFrame title="ROOSIDE SÕDA">
+    <GameShowFrame title={t('game_roosidesoda').toUpperCase()}>
     <div className="py-4 px-2">
       <div className="max-w-5xl mx-auto mb-4 flex items-center justify-between px-2">
         <Link
@@ -40,7 +43,7 @@ export default function PlayRoosidesoda() {
         >
           <ArrowLeft size={16} /> Uus mäng
         </Link>
-        <h1 className="font-display text-2xl text-gold hidden sm:block">Rooside Sõda · Host</h1>
+        <h1 className="font-display text-2xl text-gold hidden sm:block">{t('game_roosidesoda')} · {t('hostLabel')}</h1>
         <div className="w-20" />
       </div>
 

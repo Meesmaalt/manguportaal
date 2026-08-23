@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
+import { useI18n } from '@/i18n/I18nContext'
 
 type Team = { name: string; score: number }
 
@@ -27,6 +28,7 @@ type Props = {
 
 export default function SonaseletusGame({ state, update, isHost = true, sessionCode }: Props) {
   const { teams, activeTeam, words, wordIndex, roundSeconds, timeLeft, running } = state
+  const { t } = useI18n()
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
 
   function resetGame() {
     if (!isHost) return
-    if (!confirm('Nulli skoorid?')) return
+    if (!confirm(t('resetScoresConfirm'))) return
     update({
       teams: teams.map((t) => ({ ...t, score: 0 })),
       wordIndex: 0,
@@ -99,7 +101,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
 
       <div className="text-center mb-6">
         <div className="text-white/50 text-sm uppercase tracking-widest mb-1">
-          {teams[activeTeam]?.name} · voor
+          {teams[activeTeam]?.name} · {t('round')}
         </div>
         <div
           className={`font-display text-6xl font-black tabular-nums ${
@@ -108,7 +110,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
         >
           {timeLeft}
         </div>
-        <div className="text-white/40 text-sm">sekundit</div>
+        <div className="text-white/40 text-sm">{t('seconds')}</div>
       </div>
 
       <div className="card-panel p-10 text-center mb-6 min-h-[140px] flex items-center justify-center">
@@ -121,23 +123,23 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {!running ? (
             <button onClick={startRound} className="btn-gold text-lg px-8">
-              Start ({roundSeconds}s)
+              {t('start')} ({roundSeconds}s)
             </button>
           ) : (
             <>
               <button onClick={correct} className="btn-gold bg-accent-green border-0 text-lg px-6">
-                ✓ Õige
+                ✓ {t('correct')}
               </button>
               <button onClick={skip} className="btn-outline text-lg px-6">
-                → Vahele
+                → {t('skip')}
               </button>
             </>
           )}
           <button onClick={nextTeam} className="btn-outline text-sm">
-            Järgmine tiim
+            {t('nextTeam')}
           </button>
           <button onClick={resetGame} className="btn-outline text-sm border-accent-red text-accent-red flex items-center gap-1">
-            <RotateCcw size={14} /> Algseis
+            <RotateCcw size={14} /> {t('resetState')}
           </button>
         </div>
       )}
