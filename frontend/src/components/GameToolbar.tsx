@@ -1,6 +1,7 @@
 import { Volume2, RotateCcw } from 'lucide-react'
 import { useFontScale } from '@/hooks/useFontScale'
 import { getMasterVolume, setMasterVolume } from '@/lib/audio'
+import { useI18n } from '@/i18n/I18nContext'
 import { useState, type ReactNode } from 'react'
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 export default function GameToolbar({ onReset, extra }: Props) {
   const { smaller, reset, larger, fontScale } = useFontScale()
   const [vol, setVol] = useState(() => getMasterVolume())
+  const { t } = useI18n()
 
   function onVol(v: number) {
     setVol(v)
@@ -20,7 +22,9 @@ export default function GameToolbar({ onReset, extra }: Props) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
       <div className="flex items-center gap-1 bg-bg-card border border-gold/40 rounded-full px-2 py-1">
-        <span className="text-gold text-xs px-1">Tekst {Math.round(fontScale * 100)}%</span>
+        <span className="text-gold text-xs px-1">
+          {t('toolbarText')} {Math.round(fontScale * 100)}%
+        </span>
         <button type="button" className="text-gold font-bold px-2 py-0.5 rounded-full hover:bg-gold hover:text-bg text-sm" onClick={smaller}>
           A−
         </button>
@@ -42,7 +46,6 @@ export default function GameToolbar({ onReset, extra }: Props) {
           value={vol}
           onChange={(e) => onVol(Number(e.target.value))}
           className="w-full accent-[#dfb342] h-1.5"
-          title="Helitugevus (kuni 200%)"
         />
         <span className="text-gold text-xs tabular-nums w-10 text-right">{Math.round(vol * 100)}%</span>
       </div>
@@ -54,7 +57,7 @@ export default function GameToolbar({ onReset, extra }: Props) {
           className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 border-accent-red/60 text-accent-red"
         >
           <RotateCcw size={14} />
-          Taasta algseis
+          {t('toolbarReset')}
         </button>
       )}
 

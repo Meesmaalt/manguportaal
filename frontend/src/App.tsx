@@ -11,6 +11,7 @@ import PlayRoosidesoda from '@/pages/PlayRoosidesoda'
 import PlayGeneric from '@/pages/PlayGeneric'
 import Display from '@/pages/Display'
 import CreatePack from '@/pages/CreatePack'
+import Playlist from '@/pages/Playlist'
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         {/* Dashboard & mängud avatud ka külalisele */}
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/playlist" element={<Playlist />} />
         <Route path="/play/:gameType" element={<PackSelect />} />
         <Route path="/play/kuldvillak/:sessionId" element={<PlayKuldvillak />} />
         <Route path="/play/roosidesoda/:sessionId" element={<PlayRoosidesoda />} />

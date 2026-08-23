@@ -5,7 +5,9 @@ import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { GAME_META, type GameType } from '@/lib/types'
+import type { GameType } from '@/lib/types'
+import { useI18n } from '@/i18n/I18nContext'
+import type { TranslationKey } from '@/i18n/translations'
 
 function buildInitialState(gameType: string, packData: any, code: string) {
   switch (gameType) {
@@ -103,16 +105,36 @@ function localOfficial(gameType: string): Pack[] {
   })) as Pack[]
 }
 
+
 export default function PackSelect() {
   const { gameType } = useParams<{ gameType: string }>()
   const navigate = useNavigate()
   const { user, isLoggedIn } = useAuth()
+  const { t } = useI18n()
   const [packs, setPacks] = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState<string | null>(null)
 
-  const meta = GAME_META[gameType as GameType]
-  const isValid = !!meta
+  const isValid = [
+    'kuldvillak',
+    'roosidesoda',
+    'sonaseletus',
+    'ma_ei_ole_kunagi',
+    'viimane_pusti',
+    'tode_voi_tegu',
+  ].includes(gameType || '')
+  const gameTitle = isValid ? t(('game_' + gameType) as TranslationKey) : ''
+  const emoji =
+    (
+      {
+        kuldvillak: '🏆',
+        roosidesoda: '🌹',
+        sonaseletus: '🗣️',
+        ma_ei_ole_kunagi: '🙅',
+        viimane_pusti: '🧍',
+        tode_voi_tegu: '🎲',
+      } as Record<string, string>
+    )[gameType || ''] || ''
 
   useEffect(() => {
     if (!isValid) return
@@ -128,7 +150,6 @@ export default function PackSelect() {
         filter: `game_type = "${gameType}" && (is_official = true || is_public = true${ownerFilter})`,
         sort: '-is_official,-created',
       })
-      // Merge: local official first (always available), then remote unique by name
       const names = new Set(local.map((p) => p.name))
       const remote = list.items.filter((p) => !names.has(p.name))
       setPacks([...local, ...remote])
@@ -144,11 +165,9 @@ export default function PackSelect() {
     const code = generateCode()
     const initialState = buildInitialState(gameType!, pack.data, code)
 
-    // Guest or offline → always local session (works without account)
     if (!isLoggedIn || pack.id.startsWith('local-')) {
       try {
         if (isLoggedIn && user) {
-          // try cloud session with embedded pack data
           const session = await pb.collection('game_sessions').create({
             code,
             game_type: gameType,
@@ -161,7 +180,7 @@ export default function PackSelect() {
           return
         }
       } catch {
-        /* fall through to local */
+        /* local */
       }
       const localId = `local-${Date.now()}`
       localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
@@ -170,7 +189,6 @@ export default function PackSelect() {
       return
     }
 
-    // Logged in + remote pack
     try {
       const session = await pb.collection('game_sessions').create({
         code,
@@ -193,9 +211,9 @@ export default function PackSelect() {
   if (!isValid) {
     return (
       <div className="text-center py-20">
-        <p className="text-white/60">Tundmatu mäng</p>
+        <p className="text-white/60">{t('packUnknown')}</p>
         <Link to="/dashboard" className="text-gold mt-4 inline-block">
-          ← Tagasi
+          ← {t('packBack')}
         </Link>
       </div>
     )
@@ -207,27 +225,26 @@ export default function PackSelect() {
         to="/dashboard"
         className="inline-flex items-center gap-2 text-white/60 hover:text-gold mb-6 text-sm"
       >
-        <ArrowLeft size={16} /> Tagasi
+        <ArrowLeft size={16} /> {t('packBack')}
       </Link>
 
       <h1 className="font-display text-3xl text-gold mb-2">
-        {meta.emoji} {meta.title}
+        {emoji} {t('packTitle', { game: gameTitle })}
       </h1>
-      <p className="text-white/60 mb-2">Vali küsimuste set ja alusta – konto pole kohustuslik.</p>
+      <p className="text-white/60 mb-2">{t('packSub')}</p>
       {!isLoggedIn && (
-        <p className="text-white/40 text-sm mb-6 flex items-center gap-2">
+        <p className="text-white/40 text-sm mb-6 flex items-center gap-2 flex-wrap">
           <User size={14} />
-          Külalisena mängid offline (sama seade + TV link töötab).{' '}
+          {t('packGuestNote')}{' '}
           <Link to="/login" className="text-gold hover:underline">
-            Logi sisse
-          </Link>{' '}
-          et salvestada omi sette.
+            {t('dashLogin')}
+          </Link>
         </p>
       )}
       {isLoggedIn && <div className="mb-6" />}
 
       {loading ? (
-        <div className="text-center text-gold animate-pulse py-12">Laadin setid...</div>
+        <div className="text-center text-gold animate-pulse py-12">{t('packLoading')}</div>
       ) : (
         <div className="space-y-3">
           {packs.map((pack, i) => (
@@ -243,11 +260,11 @@ export default function PackSelect() {
                   <h3 className="font-display text-xl text-gold">{pack.name}</h3>
                   {pack.is_official && (
                     <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">
-                      Valmis sett
+                      {t('packOfficial')}
                     </span>
                   )}
                 </div>
-                <p className="text-white/50 text-sm">{pack.description || 'Küsimuste set'}</p>
+                <p className="text-white/50 text-sm">{pack.description || ''}</p>
               </div>
               <button
                 type="button"
@@ -256,7 +273,7 @@ export default function PackSelect() {
                 className="btn-gold flex items-center gap-2 shrink-0"
               >
                 <Play size={16} />
-                {starting === pack.id ? 'Alustan...' : 'Mängi'}
+                {starting === pack.id ? t('packStarting') : t('packPlay')}
               </button>
             </motion.div>
           ))}
@@ -266,11 +283,11 @@ export default function PackSelect() {
       <div className="mt-10 text-center">
         {isLoggedIn ? (
           <Link to="/packs/new" className="btn-outline inline-flex items-center gap-2">
-            <Plus size={16} /> Loo oma set
+            <Plus size={16} /> {t('packCreate')}
           </Link>
         ) : (
           <Link to="/login" className="text-gold/80 text-sm hover:underline">
-            Logi sisse, et luua oma küsimuste sette →
+            {t('packLoginCreate')}
           </Link>
         )}
       </div>
