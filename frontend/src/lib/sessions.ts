@@ -179,6 +179,69 @@ export async function createOwnedPack(input: {
 }) {
   ensurePbUrl()
   if (!pb.authStore.token) {
+    throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu.')
+  }
+
+  // Refresh only if SDK thinks token is invalid — avoids extra round-trip that some proxies drop
+  if (!pb.authStore.isValid) {
+    try {
+      await pb.collection('users').authRefresh()
+    } catch (e: any) {
+      if (!pb.authStore.token) {
+        pb.authStore.clear()
+        throw new Error('Sessioon aegus. Logi uuesti sisse.')
+      }
+      console.warn('[ohtu] authRefresh failed, trying create anyway', e)
+    }
+  }
+
+  const uid = getAuthUserId()
+  if (!uid) {
+    throw new Error('Kasutaja ID puudub. Logi välja ja uuesti sisse.')
+  }
+
+  const body: Record<string, unknown> = {
+    name: input.name.slice(0, 120),
+    description: (input.description || '').slice(0, 500),
+    game_type: input.game_type,
+    data: input.data,
+    is_official: false,
+    is_public: false,
+    owner: uid,
+  }
+
+  const tryCreate = async (payload: Record<string, unknown>) => {
+    return await pb.collection('packs').create(payload)
+  }
+
+  try {
+    return await tryCreate(body)
+  } catch (e: any) {
+    const msg = e?.message || ''
+    // Retry without owner once
+    if (e?.status === 400) {
+      try {
+        const { owner: _o, ...rest } = body
+        return await tryCreate(rest)
+      } catch (e2: any) {
+        throw new Error(formatPbError(e2))
+      }
+    }
+    if (e?.status === 0 || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      throw new Error(
+        `Võrgu viga PB poole (${pb.baseUrl}). Login töötab, aga POST blokeeriti — ` +
+          `kontrolli välist Nginx proksit /mangud/pb/ (timeout, body size, WebSocket-only Connection). ` +
+          `Proovi otse: ${pb.baseUrl}/api/health`
+      )
+    }
+    if (e?.status === 401 || e?.status === 403) {
+      throw new Error('Õigused puuduvad. Logi uuesti sisse lehe kontoga (/login).')
+    }
+    throw new Error(formatPbError(e))
+  }
+}) {
+  ensurePbUrl()
+  if (!pb.authStore.token) {
     throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu — PocketBase admin (/_/) ei loe.')
   }
   try {
