@@ -37,7 +37,7 @@ export default function Dashboard() {
       return
     }
     pb.collection('packs')
-      .getList<Pack>(1, 50, { filter: `owner = "${user.id}"`, sort: '-created' })
+      .getList<Pack>(1, 50, { filter: `owner = "${user.id}"` })
       .then((r) => setMyPacks(r.items))
       .catch(() => setMyPacks([]))
   }, [user?.id])

@@ -157,7 +157,6 @@ export default function PackSelect() {
       // Avoid server-side filter (some PB + listRule combos return 400)
       try {
         const list = await pb.collection('packs').getList<Pack>(1, 200, {
-          sort: '-created',
           requestKey: null,
         })
         remote = list.items
@@ -165,7 +164,6 @@ export default function PackSelect() {
         console.warn('[ohtu] packs list page1', e1)
         try {
           remote = await pb.collection('packs').getFullList<Pack>({
-            sort: '-created',
             requestKey: null,
           })
         } catch (e2) {
