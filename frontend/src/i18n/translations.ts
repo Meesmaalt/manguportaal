@@ -208,6 +208,9 @@ export const translations = {
     myPacks: 'Minu setid',
     waitingHost: 'Ootan hosti…',
 
+    duplicateOk: 'Sett kopeeritud sinu kontole',
+    duplicateOk: 'Pack copied to your account',
+    duplicateOk: 'Набор скопирован в ваш аккаунт',
     duplicatePack: 'Kopeeri omale',
     editPack: 'Muuda',
     editOnlyOwn: 'Saad muuta ainult oma sette',

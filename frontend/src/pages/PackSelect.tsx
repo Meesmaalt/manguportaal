@@ -153,21 +153,31 @@ export default function PackSelect() {
     const local = localOfficial(gameType!)
     try {
       let remote: Pack[] = []
+      const uid = user?.id
+      // Avoid server-side filter (some PB + listRule combos return 400)
       try {
-        const list = await pb.collection('packs').getList<Pack>(1, 100, {
-          filter: `game_type = "${gameType}"`,
+        const list = await pb.collection('packs').getList<Pack>(1, 200, {
           sort: '-created',
+          requestKey: null,
         })
-        const uid = user?.id
-        remote = list.items.filter(
-          (p) =>
-            p.is_official ||
-            p.is_public ||
-            (uid && p.owner === uid)
-        )
-      } catch (e) {
-        console.warn('[ohtu] packs list', e)
+        remote = list.items
+      } catch (e1) {
+        console.warn('[ohtu] packs list page1', e1)
+        try {
+          remote = await pb.collection('packs').getFullList<Pack>({
+            sort: '-created',
+            requestKey: null,
+          })
+        } catch (e2) {
+          console.warn('[ohtu] packs list full', e2)
+        }
       }
+      remote = remote.filter((p) => {
+        if (p.game_type !== gameType) return false
+        if (p.is_official || p.is_public) return true
+        if (uid && p.owner === uid) return true
+        return false
+      })
       const names = new Set(local.map((x) => x.name))
       remote = remote.filter((p) => !names.has(p.name))
       setPacks([...local, ...remote])
@@ -187,12 +197,15 @@ export default function PackSelect() {
     setStarting('dup-' + pack.id)
     setStartError('')
     try {
-      await createOwnedPack({
+      const created = await createOwnedPack({
         name: `${pack.name} (koopia)`,
         description: pack.description || '',
         game_type: pack.game_type,
         data: pack.data,
       })
+      setStartError('') // clear
+      // success banner via same error slot (green) — use a short message
+      setStartError(`✓ ${t('duplicateOk')}: ${created?.name || pack.name + ' (koopia)'}`)
       await loadPacks()
     } catch (e: any) {
       setStartError(e?.message || formatPbError(e))
@@ -258,7 +271,13 @@ export default function PackSelect() {
       {isLoggedIn && <div className="mb-6" />}
 
       {startError && (
-        <div className="mb-4 p-3 rounded-xl border border-accent-red/40 bg-accent-red/10 text-accent-red text-sm">
+        <div
+          className={`mb-4 p-3 rounded-xl text-sm border ${
+            startError.startsWith('✓')
+              ? 'border-accent-green/40 bg-accent-green/10 text-accent-green'
+              : 'border-accent-red/40 bg-accent-red/10 text-accent-red'
+          }`}
+        >
           {startError}
         </div>
       )}
