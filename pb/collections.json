@@ -170,7 +170,7 @@
         "maxSelect": 1,
         "minSelect": 0,
         "name": "host",
-        "required": true,
+        "required": false,
         "system": false,
         "type": "relation"
       },
@@ -203,8 +203,8 @@
     ],
     "listRule": "",
     "viewRule": "",
-    "createRule": "@request.auth.id != \"\"",
-    "updateRule": "host = @request.auth.id",
-    "deleteRule": "host = @request.auth.id"
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
   }
 ]
