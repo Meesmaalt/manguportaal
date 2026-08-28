@@ -8,15 +8,20 @@ services:
     volumes:
       - pb_data:/pb_data
       - ./pb/pb_migrations:/pb_migrations:ro
+    # CRITICAL: args must start with "-" so entrypoint still runs superuser upsert
+    # and then: pocketbase serve --dir=/pb_data ... --migrationsDir=/pb_migrations
+    command:
+      - --migrationsDir=/pb_migrations
     environment:
-      PB_ADMIN_EMAIL: admin@ohtu.local
-      PB_ADMIN_PASSWORD: ohtu123456
+      # muchobien entrypoint: superuser upsert on start
+      PB_ADMIN_EMAIL: "${PB_ADMIN_EMAIL:-admin@ohtu.local}"
+      PB_ADMIN_PASSWORD: "${PB_ADMIN_PASSWORD:-ohtu123456}"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/api/health"]
       interval: 8s
       timeout: 5s
       retries: 8
-      start_period: 20s
+      start_period: 25s
 
   frontend:
     build:
@@ -30,8 +35,6 @@ services:
       - "3000:80"
     environment:
       BASE_PATH: "/mangud"
-      # Brauser peab PB-ni jõudma. Vaikimisi proovi sama hosti /mangud/pb proksit.
-      # Kui 404, sea .env-is otse: PB_PUBLIC_URL=https://tools.thormen.com:8090
       PB_PUBLIC_URL: "${PB_PUBLIC_URL:-/mangud/pb}"
     depends_on:
       pocketbase:
