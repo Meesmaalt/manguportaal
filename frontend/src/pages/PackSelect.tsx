@@ -196,14 +196,14 @@ export default function PackSelect() {
     setStartError('')
     try {
       const created = await createOwnedPack({
-        name: `${pack.name} (koopia)`,
+        name: `${pack.name} (${t('packCopySuffix')})`,
         description: pack.description || '',
         game_type: pack.game_type,
         data: pack.data,
       })
       setStartError('') // clear
       // success banner via same error slot (green) — use a short message
-      setStartError(`✓ ${t('duplicateOk')}: ${created?.name || pack.name + ' (koopia)'}`)
+      setStartError(`✓ ${t('duplicateOk')}: ${created?.name || pack.name + ' (' + t('packCopySuffix') + ')'}`)
       await loadPacks()
     } catch (e: any) {
       setStartError(e?.message || formatPbError(e))

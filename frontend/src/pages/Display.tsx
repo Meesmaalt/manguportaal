@@ -14,6 +14,7 @@ import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { useI18n } from '@/i18n/I18nContext'
 import { applyTheme, getStoredTheme } from '@/lib/themes'
+import { PublicGuideOverlay } from '@/components/GameHelpModal'
 import type { TranslationKey } from '@/i18n/translations'
 
 export default function Display() {
@@ -200,6 +201,7 @@ export default function Display() {
         )}
       </div>
 
+      {state.publicGuide && <PublicGuideOverlay gameType={gt} />}
       {gt === 'kuldvillak' && (
         <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
       )}
