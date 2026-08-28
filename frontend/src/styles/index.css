@@ -62,3 +62,43 @@ body {
 .game-display-zoom button:hover{background:rgba(223,179,66,.14);color:#dfb342}
 .game-display-zoom-value{font-size:10px;font-weight:800;letter-spacing:.04em;min-width:46px!important}
 @media(max-width:640px){.game-display-zoom-value{display:none}.game-display-zoom button{min-width:28px}.game-display-content{padding:8px}}
+
+
+/* Theme overrides (keep Tailwind tokens stable for build) */
+html[data-theme="wedding"] body {
+  background: radial-gradient(ellipse at 30% 20%, #3d2030 0%, #1a0f14 50%, #0d080a 100%) !important;
+}
+html[data-theme="wedding"] {
+  --gold: #e8b4bc;
+}
+html[data-theme="wedding"] .text-gold,
+html[data-theme="wedding"] .border-gold,
+html[data-theme="wedding"] .bg-gold {
+  /* approximate via filter on key UI — full recolor is CSS-var based below */
+}
+html[data-theme="wedding"] .text-gold { color: #e8b4bc !important; }
+html[data-theme="wedding"] .border-gold,
+html[data-theme="wedding"] .border-gold\/20,
+html[data-theme="wedding"] .border-gold\/30,
+html[data-theme="wedding"] .border-gold\/40 {
+  border-color: rgba(232, 180, 188, 0.45) !important;
+}
+html[data-theme="wedding"] .bg-gold { background-color: #e8b4bc !important; color: #1a0f14 !important; }
+html[data-theme="wedding"] .btn-outline { border-color: #e8b4bc; color: #e8b4bc; }
+html[data-theme="wedding"] .btn-gold { background-color: #e8b4bc; color: #1a0f14; }
+
+html[data-theme="midnight"] body {
+  background: radial-gradient(ellipse at center, #0c1929 0%, #020617 70%) !important;
+}
+html[data-theme="midnight"] .text-gold { color: #7dd3fc !important; }
+html[data-theme="midnight"] .bg-gold { background-color: #7dd3fc !important; color: #020617 !important; }
+html[data-theme="midnight"] .btn-outline { border-color: #7dd3fc; color: #7dd3fc; }
+html[data-theme="midnight"] .btn-gold { background-color: #7dd3fc; color: #020617; }
+
+html[data-theme="emerald"] body {
+  background: radial-gradient(ellipse at center, #0a2e22 0%, #04140f 70%) !important;
+}
+html[data-theme="emerald"] .text-gold { color: #34d399 !important; }
+html[data-theme="emerald"] .bg-gold { background-color: #34d399 !important; color: #04140f !important; }
+html[data-theme="emerald"] .btn-outline { border-color: #34d399; color: #34d399; }
+html[data-theme="emerald"] .btn-gold { background-color: #34d399; color: #04140f; }

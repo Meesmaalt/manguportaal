@@ -40,6 +40,7 @@ export default function Layout() {
               <span className="hidden sm:inline">{t('navGames')}</span>
             </Link>
 
+            <ThemePicker />
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value as Lang)}
