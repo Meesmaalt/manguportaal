@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
-import { createGameSession, downloadJson, packExportPayload, CloudSessionError } from '@/lib/sessions'
+import { createGameSession, downloadJson, packExportPayload, CloudSessionError, createOwnedPack } from '@/lib/sessions'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
@@ -180,25 +180,22 @@ export default function PackSelect() {
 
 
   async function duplicatePack(pack: Pack) {
-    if (!isLoggedIn || !user) {
+    if (!isLoggedIn) {
       setStartError(t('importNeedLogin'))
       return
     }
     setStarting('dup-' + pack.id)
     setStartError('')
     try {
-      await pb.collection('packs').create({
+      await createOwnedPack({
         name: `${pack.name} (koopia)`,
         description: pack.description || '',
         game_type: pack.game_type,
         data: pack.data,
-        is_official: false,
-        is_public: false,
-        owner: user.id,
       })
       await loadPacks()
     } catch (e: any) {
-      setStartError(formatPbError(e))
+      setStartError(e?.message || formatPbError(e))
     } finally {
       setStarting(null)
     }

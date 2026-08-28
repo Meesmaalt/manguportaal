@@ -168,3 +168,51 @@ export async function checkPbHealth(): Promise<boolean> {
     }
   }
 }
+
+
+/** Create a pack owned by the currently authenticated *users* record. */
+export async function createOwnedPack(input: {
+  name: string
+  description?: string
+  game_type: string
+  data: unknown
+}) {
+  if (!pb.authStore.isValid) {
+    throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu — PocketBase admin (/_/) ei loe.')
+  }
+  try {
+    await pb.collection('users').authRefresh()
+  } catch {
+    pb.authStore.clear()
+    throw new Error('Sessioon aegus. Logi uuesti sisse.')
+  }
+  const uid = (pb.authStore.record || pb.authStore.model)?.id
+  if (!uid) {
+    throw new Error('Kasutaja ID puudub. Logi uuesti sisse.')
+  }
+  // Only fields that packs collection expects
+  const body: Record<string, unknown> = {
+    name: input.name.slice(0, 120),
+    description: (input.description || '').slice(0, 500),
+    game_type: input.game_type,
+    data: input.data,
+    is_official: false,
+    is_public: false,
+    owner: uid,
+  }
+  try {
+    return await pb.collection('packs').create(body)
+  } catch (e: any) {
+    // Retry without owner (some PB setups reject relation write)
+    if (e?.status === 400) {
+      try {
+        const { owner: _o, ...rest } = body
+        return await pb.collection('packs').create(rest)
+      } catch (e2: any) {
+        const detail = formatPbError(e2)
+        throw new Error(detail)
+      }
+    }
+    throw new Error(formatPbError(e))
+  }
+}

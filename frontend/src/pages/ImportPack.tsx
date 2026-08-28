@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { pb, formatPbError } from '@/lib/pocketbase'
+import { formatPbError } from '@/lib/pocketbase'
+import { createOwnedPack } from '@/lib/sessions'
 import { parseImportedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
@@ -32,14 +33,11 @@ export default function ImportPack() {
     try {
       const text = await file.text()
       const parsed = parseImportedPack(JSON.parse(text))
-      await pb.collection('packs').create({
+      await createOwnedPack({
         name: parsed.name,
         description: parsed.description,
         game_type: parsed.game_type,
         data: parsed.data,
-        is_official: false,
-        is_public: false,
-        owner: user!.id,
       })
       setOk(t('importSuccess'))
       setTimeout(() => navigate(`/play/${parsed.game_type}`), 800)

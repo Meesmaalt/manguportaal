@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { pb, formatPbError } from '@/lib/pocketbase'
+import { formatPbError } from '@/lib/pocketbase'
+import { createOwnedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 import { GAME_META, type GameType } from '@/lib/types'
@@ -121,14 +122,11 @@ export default function CreatePack() {
     setSaving(true)
     setError('')
     try {
-      await pb.collection('packs').create({
+      await createOwnedPack({
         name: name.trim(),
         description: description.trim(),
         game_type: gameType,
         data: buildData(),
-        is_official: false,
-        is_public: false,
-        owner: user.id,
       })
       navigate(`/play/${gameType}`)
     } catch (err: any) {
