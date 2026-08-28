@@ -15,6 +15,7 @@ import Playlist from '@/pages/Playlist'
 import WeddingEvening from '@/pages/WeddingEvening'
 import Buzzer from '@/pages/Buzzer'
 import PrintPack from '@/pages/PrintPack'
+import ImportPack from '@/pages/ImportPack'
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/playlist" element={<Playlist />} />
         <Route path="/pulm" element={<WeddingEvening />} />
         <Route path="/print" element={<PrintPack />} />
+        <Route path="/packs/import" element={<ImportPack />} />
         <Route path="/play/:gameType" element={<PackSelect />} />
         <Route path="/play/kuldvillak/:sessionId" element={<PlayKuldvillak />} />
         <Route path="/play/roosidesoda/:sessionId" element={<PlayRoosidesoda />} />

@@ -9,6 +9,7 @@ import type { ConnectionStatus } from '@/hooks/useGameSession'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
+import BuzzQrOverlay from '@/components/BuzzQrOverlay'
 
 type Props = {
   state: KuldvillakState
@@ -20,7 +21,7 @@ type Props = {
 }
 
 export default function KuldvillakBoard({ state, update, isHost = true, sessionCode, connection = 'offline', lastSync = 0 }: Props) {
-  const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek, buzzEnabled, buzz, finalPhase = 'none', finalWagers = [] } = state
+  const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek, buzzEnabled, showBuzzQr, buzz, finalPhase = 'none', finalWagers = [] } = state
   const { t } = useI18n()
   const categories = packData?.categories || []
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
@@ -228,6 +229,14 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               >
                 {buzzEnabled ? t('buzzOn') : t('buzzOff')}
               </button>
+              <button
+                type="button"
+                className={`btn-outline text-xs !py-1.5 !px-3 ${showBuzzQr ? 'bg-gold/20 border-gold text-gold' : ''}`}
+                onClick={() => update({ showBuzzQr: !showBuzzQr })}
+                disabled={!buzzEnabled}
+              >
+                {showBuzzQr ? t('buzzQrOn') : t('buzzQrOff')}
+              </button>
               {packData?.finalJeopardy && finalPhase === 'none' && (
                 <button
                   type="button"
@@ -257,6 +266,9 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             {appUrl(`/buzzer/${sessionCode}`)}
           </a>
         </p>
+      )}
+      {showBuzzQr && sessionCode && buzzEnabled && (
+        <BuzzQrOverlay code={sessionCode} compact />
       )}
       {buzz && (
         <div className="mb-4 text-center animate-pulse">

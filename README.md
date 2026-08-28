@@ -146,3 +146,11 @@ The project still uses PocketBase realtime sessions and the existing local-sessi
 - Host: QR + link + code + connection status
 - TV: `/ekraan` or `/ekraan/CODE`, connection chip, no admin chrome
 - Rooside Sõda aligned with Kuldvillak show presentation
+
+
+## v2.7 – Buzzer multi-device + pack import
+
+After deploy, restart PocketBase so migration `1730000004_guest_sessions_and_buzz.js` runs.
+This allows guest session create/update so **buzzer and TV work across networks**.
+
+Wedding pack is **not** in the public list. Use `/pulm` → Export JSON → (logged in) Import pack.

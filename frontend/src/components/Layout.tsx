@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
 import type { Lang } from '@/i18n/translations'
 import { LogOut, User, LayoutGrid } from 'lucide-react'
+import { APP_VERSION } from '@/lib/version'
 
 export default function Layout() {
   const { user, logout, isLoggedIn } = useAuth()
@@ -73,7 +74,11 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-gold/10 py-6 text-center text-white/40 text-sm">{t('footer')}</footer>
+      <footer className="border-t border-gold/10 py-6 text-center text-white/40 text-sm">
+        {t('footer')}
+        <span className="mx-2 opacity-40">·</span>
+        <span className="text-white/25 text-xs tabular-nums">v{APP_VERSION}</span>
+      </footer>
     </div>
   )
 }

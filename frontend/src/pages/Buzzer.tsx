@@ -55,7 +55,7 @@ export default function Buzzer() {
       }
       if (!cancelled) {
         setStatus('error')
-        setMsg(t('errorSession'))
+        setMsg(t('buzzSessionMissing'))
       }
     })()
     return () => {

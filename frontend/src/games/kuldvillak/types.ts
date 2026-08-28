@@ -26,6 +26,8 @@ export type KuldvillakState = {
   hostPeek?: boolean
   /** Buzzer: first player to press */
   buzzEnabled?: boolean
+  /** Show buzzer QR on host + TV */
+  showBuzzQr?: boolean
   buzz?: BuzzState
   /** Final Jeopardy */
   finalPhase?: FinalPhase

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
+import { createGameSession, downloadJson, packExportPayload } from '@/lib/sessions'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
@@ -23,6 +24,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
         code,
         buzzEnabled: true,
+        showBuzzQr: false,
         buzz: null,
         finalPhase: 'none',
         finalWagers: [0, 0],
@@ -168,45 +170,18 @@ export default function PackSelect() {
     setStarting(pack.id)
     const code = generateCode()
     const initialState = buildInitialState(gameType!, pack.data, code)
-
-    if (!isLoggedIn || pack.id.startsWith('local-')) {
-      try {
-        if (isLoggedIn && user) {
-          const session = await pb.collection('game_sessions').create({
-            code,
-            game_type: gameType,
-            pack: null,
-            host: user.id,
-            state: initialState,
-            status: 'playing',
-          })
-          navigate(`/play/${gameType}/${session.id}`)
-          return
-        }
-      } catch {
-        /* local */
-      }
-      const localId = `local-${Date.now()}`
-      localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
-      navigate(`/play/${gameType}/${localId}`)
-      setStarting(null)
-      return
-    }
-
     try {
-      const session = await pb.collection('game_sessions').create({
-        code,
-        game_type: gameType,
-        pack: pack.id,
-        host: user!.id,
-        state: initialState,
-        status: 'playing',
+      const { sessionId, isLocal } = await createGameSession({
+        gameType: gameType!,
+        packId: pack.id.startsWith('local-') ? null : pack.id,
+        hostId: user?.id || null,
+        state: initialState as Record<string, unknown>,
       })
-      navigate(`/play/${gameType}/${session.id}`)
-    } catch {
-      const localId = `local-${Date.now()}`
-      localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
-      navigate(`/play/${gameType}/${localId}`)
+      if (isLocal) {
+        // multi-device buzz/TV need PB — warn in console only
+        console.warn('[ohtu] local session — buzzer/TV on other devices will not see this game')
+      }
+      navigate(`/play/${gameType}/${sessionId}`)
     } finally {
       setStarting(null)
     }
@@ -270,8 +245,20 @@ export default function PackSelect() {
                 </div>
                 <p className="text-white/50 text-sm">{pack.description || ''}</p>
               </div>
-              <div className="flex gap-2 shrink-0">
-                {pack.game_type === 'kuldvillak' && (
+              <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                <button
+                  type="button"
+                  className="btn-outline text-xs !py-2 !px-3"
+                  onClick={() =>
+                    downloadJson(
+                      `${pack.game_type}-${pack.name.slice(0, 40).replace(/\s+/g, '-')}.json`,
+                      packExportPayload(pack)
+                    )
+                  }
+                >
+                  {t('exportPack')}
+                </button>
+                {pack.game_type === 'kuldvillak' && pack.id.startsWith('local-') && (
                   <Link
                     to={`/print?name=${encodeURIComponent(pack.name)}`}
                     className="btn-outline text-xs !py-2 !px-3"
@@ -296,9 +283,14 @@ export default function PackSelect() {
 
       <div className="mt-10 text-center">
         {isLoggedIn ? (
-          <Link to="/packs/new" className="btn-outline inline-flex items-center gap-2">
-            <Plus size={16} /> {t('packCreate')}
-          </Link>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Link to="/packs/new" className="btn-outline inline-flex items-center gap-2">
+              <Plus size={16} /> {t('packCreate')}
+            </Link>
+            <Link to="/packs/import" className="btn-outline inline-flex items-center gap-2">
+              {t('importPack')}
+            </Link>
+          </div>
         ) : (
           <Link to="/login" className="text-gold/80 text-sm hover:underline">
             {t('packLoginCreate')}

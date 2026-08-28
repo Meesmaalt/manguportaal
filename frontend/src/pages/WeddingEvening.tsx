@@ -1,24 +1,29 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { generateCode } from '@/lib/pocketbase'
+import { createGameSession, downloadJson, packExportPayload } from '@/lib/sessions'
+import { KULDVILLAK_PULM_ALEKSANDER_RIINA, WEDDING_PACK_META } from '@/data/wedding-pack-template'
 import { useI18n } from '@/i18n/I18nContext'
-import { Heart, Play, Printer } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { Heart, Play, Download, Upload } from 'lucide-react'
 
-const WEDDING_NAME = 'Kuldvillak – Pulm Aleksander & Riina'
-
-/**
- * Simple wedding evening flow — not a full playlist product.
- * 1) Kuldvillak wedding pack  2) suggest short next games
- */
 export default function WeddingEvening() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const { user, isLoggedIn } = useAuth()
   const [starting, setStarting] = useState(false)
-  const pack = OFFICIAL_PACKS.find((p) => p.name === WEDDING_NAME)
 
-  function startKuldvillak() {
-    if (!pack) return
+  function exportPack() {
+    const payload = packExportPayload({
+      name: WEDDING_PACK_META.name,
+      description: WEDDING_PACK_META.description,
+      game_type: WEDDING_PACK_META.game_type,
+      data: KULDVILLAK_PULM_ALEKSANDER_RIINA,
+    })
+    downloadJson('kuldvillak-pulm-aleksander-riina.json', payload)
+  }
+
+  async function startKuldvillak() {
     setStarting(true)
     const code = generateCode()
     const initialState = {
@@ -29,17 +34,27 @@ export default function WeddingEvening() {
       disabledCards: [],
       currentQuestion: null,
       showAnswer: false,
-      packData: pack.data,
+      packData: KULDVILLAK_PULM_ALEKSANDER_RIINA,
       code,
       buzzEnabled: true,
+      showBuzzQr: false,
       buzz: null,
       finalPhase: 'none',
       finalWagers: [0, 0],
     }
-    const localId = `local-${Date.now()}`
-    localStorage.setItem(`session_${localId}`, JSON.stringify(initialState))
-    localStorage.setItem('ohtu_evening', JSON.stringify({ step: 'kuldvillak', startedAt: Date.now() }))
-    navigate(`/play/kuldvillak/${localId}`)
+    try {
+      const { sessionId, isLocal } = await createGameSession({
+        gameType: 'kuldvillak',
+        hostId: user?.id || null,
+        state: initialState,
+      })
+      if (isLocal) {
+        alert(t('sessionLocalWarn'))
+      }
+      navigate(`/play/kuldvillak/${sessionId}`)
+    } finally {
+      setStarting(false)
+    }
   }
 
   return (
@@ -50,6 +65,22 @@ export default function WeddingEvening() {
           {t('weddingTitle')}
         </h1>
         <p className="text-white/60">{t('weddingSub')}</p>
+        <p className="text-white/40 text-sm mt-2">{t('weddingPrivate')}</p>
+      </div>
+
+      <div className="card-panel p-5 border-gold/40 mb-6 flex flex-wrap gap-2 justify-center">
+        <button type="button" onClick={exportPack} className="btn-outline text-sm flex items-center gap-2">
+          <Download size={14} /> {t('exportPack')}
+        </button>
+        {isLoggedIn ? (
+          <Link to="/packs/import" className="btn-outline text-sm flex items-center gap-2">
+            <Upload size={14} /> {t('importPack')}
+          </Link>
+        ) : (
+          <Link to="/login" className="btn-outline text-sm">
+            {t('importNeedLogin')}
+          </Link>
+        )}
       </div>
 
       <ol className="space-y-4 mb-10">
@@ -57,24 +88,14 @@ export default function WeddingEvening() {
           <div className="text-gold/60 text-xs uppercase tracking-widest mb-1">1</div>
           <h2 className="font-display text-xl text-gold mb-2">{t('game_kuldvillak')}</h2>
           <p className="text-white/55 text-sm mb-4">{t('weddingStep1')}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!pack || starting}
-              onClick={startKuldvillak}
-              className="btn-gold flex items-center gap-2"
-            >
-              <Play size={16} /> {t('weddingStart')}
-            </button>
-            {pack && (
-              <Link
-                to={`/print?name=${encodeURIComponent(WEDDING_NAME)}`}
-                className="btn-outline text-sm flex items-center gap-2"
-              >
-                <Printer size={14} /> {t('printPdf')}
-              </Link>
-            )}
-          </div>
+          <button
+            type="button"
+            disabled={starting}
+            onClick={startKuldvillak}
+            className="btn-gold flex items-center gap-2"
+          >
+            <Play size={16} /> {t('weddingStart')}
+          </button>
         </li>
         <li className="card-panel p-5 opacity-90">
           <div className="text-gold/60 text-xs uppercase tracking-widest mb-1">2</div>

@@ -180,7 +180,7 @@ export default function Display() {
       </div>
 
       {gt === 'kuldvillak' && (
-        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} />
+        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
       )}
       {gt === 'roosidesoda' && (
         <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
