@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { pb, generateCode, type Pack } from '@/lib/pocketbase'
+import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
 import { createGameSession, downloadJson, packExportPayload, CloudSessionError } from '@/lib/sessions'
-import { formatPbError } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
@@ -153,7 +152,6 @@ export default function PackSelect() {
     setLoading(true)
     const local = localOfficial(gameType!)
     try {
-      const ownerFilter = user?.id ? ` || owner = "${user.id}"` : ''
       let remote: Pack[] = []
       try {
         const list = await pb.collection('packs').getList<Pack>(1, 100, {

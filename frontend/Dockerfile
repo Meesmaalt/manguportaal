@@ -1,17 +1,19 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# Install deps first (better layer cache)
+# Ensure devDependencies (vite, etc.) install even if NODE_ENV=production is set by the host
+ENV NODE_ENV=development
+
 COPY package.json ./
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund --include=dev
 
 COPY . .
 
-# Must match public URL subpath, e.g. /mangud/
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 
-# Build (vite only – no tsc -b which needs project references)
+# Production build output only
+ENV NODE_ENV=production
 RUN npm run build
 
 FROM nginx:alpine
