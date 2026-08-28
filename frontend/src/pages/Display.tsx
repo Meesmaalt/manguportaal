@@ -13,12 +13,14 @@ import type { ConnectionStatus } from '@/hooks/useGameSession'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { useI18n } from '@/i18n/I18nContext'
+import { applyTheme, getStoredTheme } from '@/lib/themes'
 import type { TranslationKey } from '@/i18n/translations'
 
 export default function Display() {
   const { code: codeParam } = useParams<{ code: string }>()
   const navigate = useNavigate()
   const { t } = useI18n()
+  useEffect(() => { applyTheme(getStoredTheme()) }, [])
   const [codeInput, setCodeInput] = useState('')
   const [session, setSession] = useState<GameSession | null>(null)
   const [state, setState] = useState<any>(null)

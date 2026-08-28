@@ -4,7 +4,7 @@ import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
 import { createGameSession, downloadJson, packExportPayload, CloudSessionError, createOwnedPack } from '@/lib/sessions'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Play, Plus, User } from 'lucide-react'
+import { ArrowLeft, Play, Plus, User, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import { useI18n } from '@/i18n/I18nContext'
@@ -212,6 +212,24 @@ export default function PackSelect() {
     }
   }
 
+
+  async function deletePack(pack: Pack) {
+    if (!isLoggedIn || !user || pack.owner !== user.id || pack.id.startsWith('local-')) return
+    if (pack.is_official) return
+    if (!confirm(t('deletePackConfirm'))) return
+    setStarting('del-' + pack.id)
+    setStartError('')
+    try {
+      await pb.collection('packs').delete(pack.id)
+      setStartError(`✓ ${t('deletePackOk')}`)
+      await loadPacks()
+    } catch (e: any) {
+      setStartError(e?.message || formatPbError(e))
+    } finally {
+      setStarting(null)
+    }
+  }
+
   async function startSession(pack: Pack) {
     setStarting(pack.id)
     setStartError('')
@@ -326,13 +344,24 @@ export default function PackSelect() {
                     {t('duplicatePack')}
                   </button>
                 )}
-                {isLoggedIn && user && pack.owner === user.id && !pack.id.startsWith('local-') && (
-                  <Link
-                    to={`/packs/${pack.id}/edit`}
-                    className="btn-outline text-xs !py-2 !px-3"
-                  >
-                    {t('editPack')}
-                  </Link>
+                {isLoggedIn && user && pack.owner === user.id && !pack.id.startsWith('local-') && !pack.is_official && (
+                  <>
+                    <Link
+                      to={`/packs/${pack.id}/edit`}
+                      className="btn-outline text-xs !py-2 !px-3"
+                    >
+                      {t('editPack')}
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn-outline text-xs !py-2 !px-3 border-accent-red/50 text-accent-red"
+                      disabled={!!starting}
+                      onClick={() => deletePack(pack)}
+                    >
+                      <Trash2 size={12} className="inline mr-1" />
+                      {t('deletePack')}
+                    </button>
+                  </>
                 )}
                 {pack.game_type === 'kuldvillak' && pack.id.startsWith('local-') && (
                   <Link

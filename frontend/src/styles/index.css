@@ -63,42 +63,115 @@ body {
 .game-display-zoom-value{font-size:10px;font-weight:800;letter-spacing:.04em;min-width:46px!important}
 @media(max-width:640px){.game-display-zoom-value{display:none}.game-display-zoom button{min-width:28px}.game-display-content{padding:8px}}
 
-
-/* Theme overrides (keep Tailwind tokens stable for build) */
-html[data-theme="wedding"] body {
-  background: radial-gradient(ellipse at 30% 20%, #3d2030 0%, #1a0f14 50%, #0d080a 100%) !important;
+/* ========== Themes (site-wide + games) ========== */
+html[data-theme="classic"] {
+  --theme-accent: #dfb342;
+  --theme-accent-rgb: 223, 179, 66;
+  --theme-bg-deep: #030a16;
 }
+
 html[data-theme="wedding"] {
-  --gold: #e8b4bc;
+  --theme-accent: #e8b4bc;
+  --theme-accent-rgb: 232, 180, 188;
+  --theme-bg-deep: #1a0f14;
 }
-html[data-theme="wedding"] .text-gold,
-html[data-theme="wedding"] .border-gold,
-html[data-theme="wedding"] .bg-gold {
-  /* approximate via filter on key UI — full recolor is CSS-var based below */
+html[data-theme="wedding"] body {
+  background: radial-gradient(ellipse at 30% 15%, #4a2035 0%, #1a0f14 45%, #0a0608 100%) fixed !important;
 }
-html[data-theme="wedding"] .text-gold { color: #e8b4bc !important; }
-html[data-theme="wedding"] .border-gold,
-html[data-theme="wedding"] .border-gold\/20,
-html[data-theme="wedding"] .border-gold\/30,
-html[data-theme="wedding"] .border-gold\/40 {
-  border-color: rgba(232, 180, 188, 0.45) !important;
-}
-html[data-theme="wedding"] .bg-gold { background-color: #e8b4bc !important; color: #1a0f14 !important; }
-html[data-theme="wedding"] .btn-outline { border-color: #e8b4bc; color: #e8b4bc; }
-html[data-theme="wedding"] .btn-gold { background-color: #e8b4bc; color: #1a0f14; }
 
+html[data-theme="midnight"] {
+  --theme-accent: #7dd3fc;
+  --theme-accent-rgb: 125, 211, 252;
+  --theme-bg-deep: #020617;
+}
 html[data-theme="midnight"] body {
-  background: radial-gradient(ellipse at center, #0c1929 0%, #020617 70%) !important;
+  background: radial-gradient(ellipse at 50% 0%, #0c4a6e 0%, #020617 55%, #000 100%) fixed !important;
 }
-html[data-theme="midnight"] .text-gold { color: #7dd3fc !important; }
-html[data-theme="midnight"] .bg-gold { background-color: #7dd3fc !important; color: #020617 !important; }
-html[data-theme="midnight"] .btn-outline { border-color: #7dd3fc; color: #7dd3fc; }
-html[data-theme="midnight"] .btn-gold { background-color: #7dd3fc; color: #020617; }
 
-html[data-theme="emerald"] body {
-  background: radial-gradient(ellipse at center, #0a2e22 0%, #04140f 70%) !important;
+html[data-theme="emerald"] {
+  --theme-accent: #34d399;
+  --theme-accent-rgb: 52, 211, 153;
+  --theme-bg-deep: #04140f;
 }
-html[data-theme="emerald"] .text-gold { color: #34d399 !important; }
-html[data-theme="emerald"] .bg-gold { background-color: #34d399 !important; color: #04140f !important; }
-html[data-theme="emerald"] .btn-outline { border-color: #34d399; color: #34d399; }
-html[data-theme="emerald"] .btn-gold { background-color: #34d399; color: #04140f; }
+html[data-theme="emerald"] body {
+  background: radial-gradient(ellipse at 40% 10%, #065f46 0%, #04140f 50%, #020a07 100%) fixed !important;
+}
+
+/* Accent color sweep */
+html[data-theme]:not([data-theme="classic"]) .text-gold,
+html[data-theme]:not([data-theme="classic"]) .text-gold\/90,
+html[data-theme]:not([data-theme="classic"]) .text-gold\/80,
+html[data-theme]:not([data-theme="classic"]) .text-gold\/60,
+html[data-theme]:not([data-theme="classic"]) .text-gold\/50 {
+  color: var(--theme-accent) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .border-gold,
+html[data-theme]:not([data-theme="classic"]) [class*="border-gold"] {
+  border-color: rgba(var(--theme-accent-rgb), 0.45) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .bg-gold {
+  background-color: var(--theme-accent) !important;
+  color: var(--theme-bg-deep) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .btn-gold {
+  background-color: var(--theme-accent) !important;
+  color: var(--theme-bg-deep) !important;
+  box-shadow: 0 0 24px rgba(var(--theme-accent-rgb), 0.35);
+}
+html[data-theme]:not([data-theme="classic"]) .btn-outline {
+  border-color: var(--theme-accent) !important;
+  color: var(--theme-accent) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .btn-outline:hover {
+  background-color: var(--theme-accent) !important;
+  color: var(--theme-bg-deep) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .card-panel {
+  border-color: rgba(var(--theme-accent-rgb), 0.28) !important;
+  box-shadow: 0 0 40px rgba(var(--theme-accent-rgb), 0.08);
+}
+html[data-theme]:not([data-theme="classic"]) .input-field {
+  border-color: rgba(var(--theme-accent-rgb), 0.35) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .input-field:focus {
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 0 2px rgba(var(--theme-accent-rgb), 0.25);
+}
+html[data-theme]:not([data-theme="classic"]) .shadow-gold,
+html[data-theme]:not([data-theme="classic"]) .shadow-gold-lg {
+  box-shadow: 0 0 28px rgba(var(--theme-accent-rgb), 0.4) !important;
+}
+
+/* Game show frame / board accents */
+html[data-theme]:not([data-theme="classic"]) .game-show-brand,
+html[data-theme]:not([data-theme="classic"]) .game-show-topbar {
+  color: var(--theme-accent);
+  border-bottom-color: rgba(var(--theme-accent-rgb), 0.2) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .game-card:not(:disabled) {
+  border-color: rgba(var(--theme-accent-rgb), 0.55) !important;
+  color: var(--theme-accent) !important;
+}
+html[data-theme]:not([data-theme="classic"]) .game-show-display {
+  background:
+    radial-gradient(circle at 50% 15%, rgba(var(--theme-accent-rgb), 0.18), transparent 42%),
+    var(--theme-bg-deep) !important;
+}
+html[data-theme="wedding"] .game-show-display {
+  background:
+    radial-gradient(circle at 30% 10%, rgba(232, 180, 188, 0.25), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(245, 208, 197, 0.12), transparent 35%),
+    #120a0e !important;
+}
+html[data-theme="midnight"] .game-show-display {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.2), transparent 45%),
+    #020617 !important;
+}
+html[data-theme="emerald"] .game-show-display {
+  background:
+    radial-gradient(circle at 40% 10%, rgba(52, 211, 153, 0.22), transparent 42%),
+    #03140f !important;
+}
+
+/* Category headers / score panels pick up gold class already */
