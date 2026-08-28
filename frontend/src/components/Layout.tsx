@@ -4,11 +4,20 @@ import { useI18n } from '@/i18n/I18nContext'
 import type { Lang } from '@/i18n/translations'
 import { LogOut, User, LayoutGrid } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
+import { checkPbHealth } from '@/lib/sessions'
+import { useEffect, useState } from 'react'
 
 export default function Layout() {
   const { user, logout, isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const { t, lang, setLang, langs } = useI18n()
+  const [pbOk, setPbOk] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    checkPbHealth().then(setPbOk)
+    const id = window.setInterval(() => checkPbHealth().then(setPbOk), 30000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -78,6 +87,10 @@ export default function Layout() {
         {t('footer')}
         <span className="mx-2 opacity-40">·</span>
         <span className="text-white/25 text-xs tabular-nums">v{APP_VERSION}</span>
+        <span className="mx-2 opacity-40">·</span>
+        <span className={`text-xs tabular-nums ${pbOk === true ? 'text-accent-green/70' : pbOk === false ? 'text-accent-red/80' : 'text-white/25'}`}>
+          PB {pbOk === true ? 'ok' : pbOk === false ? 'fail' : '…'}
+        </span>
       </footer>
     </div>
   )

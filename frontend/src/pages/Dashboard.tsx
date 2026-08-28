@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { Plus, Layers } from 'lucide-react'
+import { pb, type Pack } from '@/lib/pocketbase'
+import { Plus, Layers, Upload } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
@@ -27,6 +29,18 @@ const EMOJI: Record<GameType, string> = {
 export default function Dashboard() {
   const { user, isLoggedIn } = useAuth()
   const { t } = useI18n()
+  const [myPacks, setMyPacks] = useState<Pack[]>([])
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMyPacks([])
+      return
+    }
+    pb.collection('packs')
+      .getList<Pack>(1, 50, { filter: `owner = "${user.id}"`, sort: '-created' })
+      .then((r) => setMyPacks(r.items))
+      .catch(() => setMyPacks([]))
+  }, [user?.id])
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -50,6 +64,32 @@ export default function Dashboard() {
               {t('dashEnter')}
             </Link>
           </div>
+        )}
+
+        {isLoggedIn && myPacks.length > 0 && (
+          <section className="mb-10">
+            <h2 className="font-display text-xl text-gold mb-3 flex items-center gap-2">
+              <Layers size={20} /> {t('myPacks')}
+            </h2>
+            <div className="space-y-2">
+              {myPacks.map((p) => (
+                <div
+                  key={p.id}
+                  className="card-panel p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div>
+                    <div className="font-display text-gold">{p.name}</div>
+                    <div className="text-white/45 text-xs">
+                      {t(('game_' + p.game_type) as TranslationKey)} · {p.description || ''}
+                    </div>
+                  </div>
+                  <Link to={`/play/${p.game_type}`} className="btn-gold text-sm shrink-0">
+                    {t('packPlay')}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
@@ -86,9 +126,14 @@ export default function Dashboard() {
             </div>
           </div>
           {isLoggedIn ? (
-            <Link to="/packs/new" className="btn-outline flex items-center gap-2 text-sm">
-              <Plus size={16} /> {t('dashNewPack')}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/packs/new" className="btn-outline flex items-center gap-2 text-sm">
+                <Plus size={16} /> {t('dashNewPack')}
+              </Link>
+              <Link to="/packs/import" className="btn-outline flex items-center gap-2 text-sm">
+                <Upload size={16} /> {t('importPack')}
+              </Link>
+            </div>
           ) : (
             <Link to="/login" className="btn-outline text-sm">
               {t('dashLogin')}

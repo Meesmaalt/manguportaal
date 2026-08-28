@@ -1,15 +1,23 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useGameSession } from '@/hooks/useGameSession'
 import RoosidesodaHost from '@/games/roosidesoda/RoosidesodaHost'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, LogOut } from 'lucide-react'
 import { useI18n } from '@/i18n/I18nContext'
+import { endGameSession } from '@/lib/sessions'
 
 export default function PlayRoosidesoda() {
   const { sessionId } = useParams<{ sessionId: string }>()
+  const navigate = useNavigate()
   const { session, state, update, loading, error, connection, lastSync } =
     useGameSession<RoosidesodaState>(sessionId!)
   const { t } = useI18n()
+
+  async function endSession() {
+    if (!confirm(t('endSessionConfirm'))) return
+    await endGameSession(sessionId!)
+    navigate('/play/roosidesoda')
+  }
 
   if (loading) {
     return (
@@ -32,7 +40,7 @@ export default function PlayRoosidesoda() {
 
   return (
     <div className="py-4 px-2">
-      <div className="max-w-5xl mx-auto mb-2 flex items-center justify-between px-2">
+      <div className="max-w-5xl mx-auto mb-2 flex items-center justify-between px-2 gap-2 flex-wrap">
         <Link
           to="/play/roosidesoda"
           className="inline-flex items-center gap-2 text-white/50 hover:text-gold text-sm"
@@ -42,7 +50,13 @@ export default function PlayRoosidesoda() {
         <h1 className="font-display text-xl text-gold hidden sm:block">
           {t('game_roosidesoda')} · {t('hostLabel')}
         </h1>
-        <div className="w-20" />
+        <button
+          type="button"
+          onClick={endSession}
+          className="btn-outline text-xs !py-1.5 !px-3 border-accent-red/50 text-accent-red flex items-center gap-1"
+        >
+          <LogOut size={14} /> {t('endSession')}
+        </button>
       </div>
 
       <RoosidesodaHost

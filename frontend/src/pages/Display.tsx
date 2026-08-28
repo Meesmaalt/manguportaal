@@ -25,6 +25,7 @@ export default function Display() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(Boolean(codeParam))
   const [connection, setConnection] = useState<ConnectionStatus>('offline')
+  const [hostStale, setHostStale] = useState(false)
   const lastBeat = useRef(0)
 
   const code = (codeParam || '').toUpperCase()
@@ -120,6 +121,18 @@ export default function Display() {
     }
   }, [code, t])
 
+  useEffect(() => {
+    if (!state) return
+    const tick = () => {
+      const beat = (state as any).hostBeat || 0
+      if (beat) lastBeat.current = Math.max(lastBeat.current, beat)
+      setHostStale(lastBeat.current > 0 && Date.now() - lastBeat.current > 12000)
+    }
+    tick()
+    const id = window.setInterval(tick, 2000)
+    return () => clearInterval(id)
+  }, [state])
+
   function joinWithCode(e: React.FormEvent) {
     e.preventDefault()
     const c = codeInput.trim().toUpperCase()
@@ -169,14 +182,20 @@ export default function Display() {
     )
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks — runs only after session loaded in practice; use effect instead
   const gt = session.game_type
   const noop = () => {}
   const title = t(('game_' + gt) as TranslationKey).toUpperCase()
 
   return (
     <div className="relative">
-      <div className="fixed top-3 right-3 z-[60]">
+      <div className="fixed top-3 right-3 z-[60] flex flex-col items-end gap-2">
         <ConnectionChip connection={connection} />
+        {hostStale && (
+          <div className="text-[10px] uppercase tracking-wider text-amber-200/90 bg-black/50 border border-amber-500/40 rounded-full px-3 py-1">
+            {t('waitingHost')}
+          </div>
+        )}
       </div>
 
       {gt === 'kuldvillak' && (

@@ -24,10 +24,13 @@ export default function CreatePack() {
   const [error, setError] = useState('')
 
   // Kuldvillak
+  const [finalQ, setFinalQ] = useState('')
+  const [finalA, setFinalA] = useState('')
+  const [finalNote, setFinalNote] = useState('')
   const [categories, setCategories] = useState([
     {
       name: 'Kategooria 1',
-      questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '' })),
+      questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '', hostNote: '' })),
     },
   ])
 
@@ -58,7 +61,13 @@ export default function CreatePack() {
   function buildData() {
     switch (gameType) {
       case 'kuldvillak':
-        return { categories }
+        return {
+          categories,
+          finalJeopardy:
+            finalQ.trim() || finalA.trim()
+              ? { q: finalQ, a: finalA, hostNote: finalNote || undefined }
+              : undefined,
+        }
       case 'roosidesoda':
         return { rounds }
       case 'sonaseletus':
@@ -203,7 +212,7 @@ export default function CreatePack() {
                   )}
                 </div>
                 {cat.questions.map((q, qIdx) => (
-                  <div key={qIdx} className="grid grid-cols-[50px_1fr_1fr] gap-2 mb-2">
+                  <div key={qIdx} className="grid grid-cols-[50px_1fr_1fr] gap-2 mb-1">
                     <div className="text-gold font-bold text-sm flex items-center">{q.points}p</div>
                     <input
                       className="input-field text-sm"
@@ -225,6 +234,18 @@ export default function CreatePack() {
                         setCategories(next)
                       }}
                     />
+                    <div className="col-span-3 mb-2">
+                      <input
+                        className="input-field text-xs text-amber-100/90"
+                        placeholder="Hosti märkus (ainult adminile)"
+                        value={q.hostNote || ''}
+                        onChange={(e) => {
+                          const next = [...categories]
+                          next[cIdx].questions[qIdx].hostNote = e.target.value
+                          setCategories(next)
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -236,7 +257,7 @@ export default function CreatePack() {
                   ...categories,
                   {
                     name: `Kategooria ${categories.length + 1}`,
-                    questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '' })),
+                    questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '', hostNote: '' })),
                   },
                 ])
               }
@@ -244,6 +265,12 @@ export default function CreatePack() {
             >
               <Plus size={16} /> Lisa kategooria
             </button>
+            <div className="card-panel p-4 border-gold/30 space-y-2">
+              <div className="font-display text-gold text-sm">Final Jeopardy (valikuline)</div>
+              <input className="input-field text-sm" placeholder="Final küsimus" value={finalQ} onChange={(e) => setFinalQ(e.target.value)} />
+              <input className="input-field text-sm" placeholder="Final vastus" value={finalA} onChange={(e) => setFinalA(e.target.value)} />
+              <input className="input-field text-xs" placeholder="Final hosti märkus" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+            </div>
           </div>
         )}
 

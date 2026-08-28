@@ -6,15 +6,24 @@ export type StartSessionResult = {
   isLocal: boolean
 }
 
+export class CloudSessionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CloudSessionError'
+  }
+}
+
 /**
- * Prefer PocketBase so TV + buzzer work on other devices/networks.
- * Falls back to localStorage only if PB is unreachable.
+ * Create a PocketBase session so TV + buzzer work across devices.
+ * By default does NOT fall back to localStorage (party multi-device).
+ * Pass allowLocal: true only for explicit offline emergency.
  */
 export async function createGameSession(opts: {
   gameType: string
   packId?: string | null
   hostId?: string | null
   state: Record<string, unknown>
+  allowLocal?: boolean
 }): Promise<StartSessionResult> {
   const code = (opts.state.code as string) || generateCode()
   const state = { ...opts.state, code }
@@ -34,11 +43,69 @@ export async function createGameSession(opts: {
     }
     const session = await pb.collection('game_sessions').create<GameSession>(body)
     return { sessionId: session.id, code, isLocal: false }
-  } catch (e) {
-    console.warn('[ohtu] PB session create failed, using local', e)
-    const localId = `local-${Date.now()}`
-    localStorage.setItem(`session_${localId}`, JSON.stringify(state))
-    return { sessionId: localId, code, isLocal: true }
+  } catch (e: any) {
+    if (opts.allowLocal) {
+      const localId = `local-${Date.now()}`
+      localStorage.setItem(`session_${localId}`, JSON.stringify(state))
+      return { sessionId: localId, code, isLocal: true }
+    }
+    const detail = e?.message || String(e)
+    throw new CloudSessionError(
+      `Cloud-sessioon ebaõnnestus (TV/buzzer ei töötaks teises seadmes). Kontrolli PocketBase ühendust. ${detail}`
+    )
+  }
+}
+
+/** Mark session finished (best-effort). */
+export async function endGameSession(sessionId: string) {
+  if (sessionId.startsWith('local-')) {
+    localStorage.removeItem(`session_${sessionId}`)
+    return
+  }
+  try {
+    await pb.collection('game_sessions').update(sessionId, { status: 'finished' })
+  } catch {
+    try {
+      await pb.collection('game_sessions').delete(sessionId)
+    } catch {}
+  }
+}
+
+/**
+ * First-writer-wins buzz. Re-fetches before write to reduce races.
+ */
+export async function tryClaimBuzz(opts: {
+  sessionId: string
+  isLocal: boolean
+  name: string
+}): Promise<{ ok: true } | { ok: false; reason: 'disabled' | 'taken' | 'error'; by?: string }> {
+  const payload = { name: opts.name.trim(), at: Date.now() }
+  try {
+    if (opts.isLocal) {
+      const key = `session_${opts.sessionId}`
+      const raw = localStorage.getItem(key)
+      if (!raw) return { ok: false, reason: 'error' }
+      const data = JSON.parse(raw)
+      if (data.buzzEnabled === false) return { ok: false, reason: 'disabled' }
+      if (data.buzz) return { ok: false, reason: 'taken', by: data.buzz.name }
+      data.buzz = payload
+      localStorage.setItem(key, JSON.stringify(data))
+      return { ok: true }
+    }
+    const rec = await pb.collection('game_sessions').getOne(opts.sessionId)
+    const st = { ...(rec.state as any) }
+    if (st.buzzEnabled === false) return { ok: false, reason: 'disabled' }
+    if (st.buzz) return { ok: false, reason: 'taken', by: st.buzz.name }
+    st.buzz = payload
+    // second read to reduce double-claim window
+    const rec2 = await pb.collection('game_sessions').getOne(opts.sessionId)
+    const st2 = { ...(rec2.state as any) }
+    if (st2.buzz) return { ok: false, reason: 'taken', by: st2.buzz.name }
+    st2.buzz = payload
+    await pb.collection('game_sessions').update(opts.sessionId, { state: st2 })
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: 'error' }
   }
 }
 
@@ -76,7 +143,6 @@ export function parseImportedPack(raw: unknown): {
 } {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid JSON')
   const o = raw as Record<string, unknown>
-  // accept both ohtu export and bare pack
   const name = String(o.name || '')
   const game_type = String(o.game_type || '')
   const data = o.data
@@ -88,5 +154,20 @@ export function parseImportedPack(raw: unknown): {
     description: String(o.description || ''),
     game_type,
     data,
+  }
+}
+
+export async function checkPbHealth(): Promise<boolean> {
+  try {
+    await pb.health.check()
+    return true
+  } catch {
+    try {
+      // older pb
+      await fetch(`${pb.baseUrl}/api/health`)
+      return true
+    } catch {
+      return false
+    }
   }
 }

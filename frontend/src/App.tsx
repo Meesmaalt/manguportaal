@@ -12,7 +12,6 @@ import PlayGeneric from '@/pages/PlayGeneric'
 import Display from '@/pages/Display'
 import CreatePack from '@/pages/CreatePack'
 import Playlist from '@/pages/Playlist'
-import WeddingEvening from '@/pages/WeddingEvening'
 import Buzzer from '@/pages/Buzzer'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
@@ -39,7 +38,6 @@ export default function App() {
         {/* Dashboard & mängud avatud ka külalisele */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/playlist" element={<Playlist />} />
-        <Route path="/pulm" element={<WeddingEvening />} />
         <Route path="/print" element={<PrintPack />} />
         <Route path="/packs/import" element={<ImportPack />} />
         <Route path="/play/:gameType" element={<PackSelect />} />

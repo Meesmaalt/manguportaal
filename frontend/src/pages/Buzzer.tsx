@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
+import { tryClaimBuzz } from '@/lib/sessions'
 import { useI18n } from '@/i18n/I18nContext'
 
-/**
- * Guest buzzer: open /buzzer/CODE on a phone, enter name, press "MINA!".
- * First write wins into session state.buzz (host clears).
- */
 export default function Buzzer() {
   const { code: codeParam } = useParams<{ code: string }>()
   const code = (codeParam || '').toUpperCase()
@@ -28,7 +25,7 @@ export default function Buzzer() {
     ;(async () => {
       try {
         const list = await pb.collection('game_sessions').getList<GameSession>(1, 1, {
-          filter: `code = "${code}"`,
+          filter: `code = "${code}" && status != "finished"`,
         })
         if (cancelled) return
         if (list.items.length) {
@@ -38,7 +35,6 @@ export default function Buzzer() {
           return
         }
       } catch {}
-      // local
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (!key?.startsWith('session_')) continue
@@ -49,6 +45,7 @@ export default function Buzzer() {
             setSessionId(key.replace('session_', ''))
             setIsLocal(true)
             setStatus('ready')
+            setMsg(t('sessionLocalWarn'))
             return
           }
         } catch {}
@@ -67,46 +64,17 @@ export default function Buzzer() {
     if (!name.trim() || !sessionId || locked) return
     localStorage.setItem('ohtu_buzz_name', name.trim())
     setLocked(true)
-    const payload = { name: name.trim(), at: Date.now() }
-    try {
-      if (isLocal) {
-        const key = `session_${sessionId}`
-        const raw = localStorage.getItem(key)
-        if (!raw) throw new Error('missing')
-        const data = JSON.parse(raw)
-        if (data.buzzEnabled === false) {
-          setMsg(t('buzzDisabled'))
-          setLocked(false)
-          return
-        }
-        if (data.buzz) {
-          setStatus('buzzed')
-          setMsg(`${t('buzzTooLate')}: ${data.buzz.name}`)
-          return
-        }
-        data.buzz = payload
-        localStorage.setItem(key, JSON.stringify(data))
-        setStatus('buzzed')
-        setMsg(t('buzzYou'))
-      } else {
-        const rec = await pb.collection('game_sessions').getOne<GameSession>(sessionId)
-        const st = { ...(rec.state as any) }
-        if (st.buzzEnabled === false) {
-          setMsg(t('buzzDisabled'))
-          setLocked(false)
-          return
-        }
-        if (st.buzz) {
-          setStatus('buzzed')
-          setMsg(`${t('buzzTooLate')}: ${st.buzz.name}`)
-          return
-        }
-        st.buzz = payload
-        await pb.collection('game_sessions').update(sessionId, { state: st })
-        setStatus('buzzed')
-        setMsg(t('buzzYou'))
-      }
-    } catch {
+    const res = await tryClaimBuzz({ sessionId, isLocal, name: name.trim() })
+    if (res.ok) {
+      setStatus('buzzed')
+      setMsg(t('buzzYou'))
+    } else if (res.reason === 'taken') {
+      setStatus('buzzed')
+      setMsg(`${t('buzzTooLate')}: ${res.by || '?'}`)
+    } else if (res.reason === 'disabled') {
+      setMsg(t('buzzDisabled'))
+      setLocked(false)
+    } else {
       setMsg(t('buzzError'))
       setLocked(false)
     }
@@ -121,8 +89,8 @@ export default function Buzzer() {
 
       {status === 'loading' && <p className="text-gold animate-pulse">{t('connecting')}</p>}
       {status === 'error' && (
-        <div className="text-center">
-          <p className="text-accent-red mb-4">{msg}</p>
+        <div className="text-center max-w-md">
+          <p className="text-accent-red mb-4 text-sm leading-relaxed">{msg}</p>
           <Link to="/" className="text-gold text-sm">
             ← {t('packBack')}
           </Link>
@@ -131,6 +99,7 @@ export default function Buzzer() {
 
       {(status === 'ready' || status === 'buzzed') && (
         <div className="w-full max-w-sm space-y-4">
+          {msg && status === 'ready' && <p className="text-amber-200/80 text-xs text-center">{msg}</p>}
           <input
             className="input-field text-center text-lg"
             placeholder={t('buzzName')}
@@ -147,7 +116,7 @@ export default function Buzzer() {
           >
             {t('buzzMe')}
           </button>
-          {msg && <p className="text-center text-white/70">{msg}</p>}
+          {msg && status === 'buzzed' && <p className="text-center text-white/70">{msg}</p>}
           {status === 'buzzed' && (
             <button
               type="button"

@@ -154,3 +154,16 @@ After deploy, restart PocketBase so migration `1730000004_guest_sessions_and_buz
 This allows guest session create/update so **buzzer and TV work across networks**.
 
 Wedding pack is **not** in the public list. Use `/pulm` → Export JSON → (logged in) Import pack.
+
+
+## v2.8
+
+- No special wedding homepage entry — packs listed normally
+- Cloud session required for multi-device (clear error if PB down)
+- End session on host
+- Host answer sheet (spikker)
+- Safer buzzer claim
+- My packs on dashboard
+- CreatePack: hostNote + Final Jeopardy
+- TV: waiting for host if heartbeat stale
+- Footer: version + PB ok/fail

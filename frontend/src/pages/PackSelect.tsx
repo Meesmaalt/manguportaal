@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
-import { createGameSession, downloadJson, packExportPayload } from '@/lib/sessions'
+import { createGameSession, downloadJson, packExportPayload, CloudSessionError } from '@/lib/sessions'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
@@ -120,6 +120,7 @@ export default function PackSelect() {
   const [packs, setPacks] = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState<string | null>(null)
+  const [startError, setStartError] = useState('')
 
   const isValid = [
     'kuldvillak',
@@ -168,20 +169,20 @@ export default function PackSelect() {
 
   async function startSession(pack: Pack) {
     setStarting(pack.id)
+    setStartError('')
     const code = generateCode()
     const initialState = buildInitialState(gameType!, pack.data, code)
     try {
-      const { sessionId, isLocal } = await createGameSession({
+      const { sessionId } = await createGameSession({
         gameType: gameType!,
         packId: pack.id.startsWith('local-') ? null : pack.id,
         hostId: user?.id || null,
         state: initialState as Record<string, unknown>,
+        allowLocal: false,
       })
-      if (isLocal) {
-        // multi-device buzz/TV need PB — warn in console only
-        console.warn('[ohtu] local session — buzzer/TV on other devices will not see this game')
-      }
       navigate(`/play/${gameType}/${sessionId}`)
+    } catch (e: any) {
+      setStartError(e?.message || 'Sessiooni loomine ebaõnnestus')
     } finally {
       setStarting(null)
     }
@@ -221,6 +222,12 @@ export default function PackSelect() {
         </p>
       )}
       {isLoggedIn && <div className="mb-6" />}
+
+      {startError && (
+        <div className="mb-4 p-3 rounded-xl border border-accent-red/40 bg-accent-red/10 text-accent-red text-sm">
+          {startError}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center text-gold animate-pulse py-12">{t('packLoading')}</div>

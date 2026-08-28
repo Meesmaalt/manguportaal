@@ -10,6 +10,7 @@ import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
 import BuzzQrOverlay from '@/components/BuzzQrOverlay'
+import HostSheet from '@/components/HostSheet'
 
 type Props = {
   state: KuldvillakState
@@ -27,6 +28,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
 
   const [musicOn, setMusicOn] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [pulseTeam, setPulseTeam] = useState<number | null>(null)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
   const lastConfetti = useRef<number>(0)
@@ -197,6 +199,13 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               >
                 <EyeIcon size={14} />
                 {hostPeek ? t('toolbarHideAnswers') : t('toolbarShowAnswers')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="btn-outline text-xs !py-1.5 !px-3"
+              >
+                {t('hostSheet')}
               </button>
               <button
                 type="button"
@@ -618,6 +627,10 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         </div>
       )}
     </div>
+      {isHost && sheetOpen && packData && (
+        <HostSheet packData={packData} onClose={() => setSheetOpen(false)} />
+      )}
     </GameShowFrame>
   )
 }
+
