@@ -1,4 +1,4 @@
-import { pb, generateCode, type GameSession, formatPbError } from '@/lib/pocketbase'
+import { pb, generateCode, type GameSession, formatPbError, ensurePbUrl, getAuthUserId } from '@/lib/pocketbase'
 
 export type StartSessionResult = {
   sessionId: string
@@ -177,20 +177,24 @@ export async function createOwnedPack(input: {
   game_type: string
   data: unknown
 }) {
-  if (!pb.authStore.isValid) {
+  ensurePbUrl()
+  if (!pb.authStore.token) {
     throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu — PocketBase admin (/_/) ei loe.')
   }
   try {
     await pb.collection('users').authRefresh()
-  } catch {
-    pb.authStore.clear()
-    throw new Error('Sessioon aegus. Logi uuesti sisse.')
+  } catch (e: any) {
+    // Soft-fail refresh: if token still present, try create anyway
+    if (!pb.authStore.token) {
+      pb.authStore.clear()
+      throw new Error('Sessioon aegus. Logi uuesti sisse.')
+    }
+    console.warn('[ohtu] authRefresh failed, continuing with existing token', e)
   }
-  const uid = (pb.authStore.record || pb.authStore.model)?.id
+  const uid = getAuthUserId()
   if (!uid) {
-    throw new Error('Kasutaja ID puudub. Logi uuesti sisse.')
+    throw new Error('Kasutaja ID puudub. Logi välja ja uuesti sisse.')
   }
-  // Only fields that packs collection expects
   const body: Record<string, unknown> = {
     name: input.name.slice(0, 120),
     description: (input.description || '').slice(0, 500),
@@ -203,15 +207,16 @@ export async function createOwnedPack(input: {
   try {
     return await pb.collection('packs').create(body)
   } catch (e: any) {
-    // Retry without owner (some PB setups reject relation write)
     if (e?.status === 400) {
       try {
         const { owner: _o, ...rest } = body
         return await pb.collection('packs').create(rest)
       } catch (e2: any) {
-        const detail = formatPbError(e2)
-        throw new Error(detail)
+        throw new Error(formatPbError(e2))
       }
+    }
+    if (e?.status === 401 || e?.status === 403) {
+      throw new Error('Õigused puuduvad. Logi uuesti sisse lehe kontoga (/login).')
     }
     throw new Error(formatPbError(e))
   }

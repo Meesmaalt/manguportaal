@@ -11,10 +11,31 @@ function createPb() {
 
 export const pb = createPb()
 
-/** Call after env.js loads if pbUrl might have changed (usually not needed). */
+/** Keep client base URL in sync with runtime env.js (subpath / reverse proxy). */
+export function ensurePbUrl() {
+  try {
+    const { pbUrl } = getConfig()
+    if (!pbUrl) return
+    const normalized = pbUrl.replace(/\/$/, '')
+    const current = String(pb.baseUrl || '').replace(/\/$/, '')
+    if (normalized && normalized !== current) {
+      pb.baseUrl = normalized
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export function getPb(): PocketBase {
+  ensurePbUrl()
   return pb
 }
+
+export function getAuthUserId(): string | null {
+  const rec = pb.authStore.record || pb.authStore.model
+  return rec && (rec as { id?: string }).id ? (rec as { id: string }).id : null
+}
+
 
 export type User = {
   id: string
