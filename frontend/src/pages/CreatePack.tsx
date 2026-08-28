@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { pb } from '@/lib/pocketbase'
+import { pb, formatPbError } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 import { GAME_META, type GameType } from '@/lib/types'
@@ -114,6 +114,10 @@ export default function CreatePack() {
       setError('Nimi on kohustuslik')
       return
     }
+    if (!user?.id || !pb.authStore.isValid) {
+      setError('Salvestamiseks pead olema sisse logitud (lehe konto, mitte ainult PocketBase admin).')
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -124,12 +128,12 @@ export default function CreatePack() {
         data: buildData(),
         is_official: false,
         is_public: false,
-        owner: user!.id,
+        owner: user.id,
       })
       navigate(`/play/${gameType}`)
     } catch (err: any) {
       console.error(err)
-      setError('Salvestamine ebaõnnestus. Kas PocketBase töötab?')
+      setError(formatPbError(err))
     } finally {
       setSaving(false)
     }

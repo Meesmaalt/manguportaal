@@ -15,6 +15,7 @@ import Playlist from '@/pages/Playlist'
 import Buzzer from '@/pages/Buzzer'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
+import EditPack from '@/pages/EditPack'
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -40,6 +41,14 @@ export default function App() {
         <Route path="/playlist" element={<Playlist />} />
         <Route path="/print" element={<PrintPack />} />
         <Route path="/packs/import" element={<ImportPack />} />
+        <Route
+          path="/packs/:id/edit"
+          element={
+            <PrivateRoute>
+              <EditPack />
+            </PrivateRoute>
+          }
+        />
         <Route path="/play/:gameType" element={<PackSelect />} />
         <Route path="/play/kuldvillak/:sessionId" element={<PlayKuldvillak />} />
         <Route path="/play/roosidesoda/:sessionId" element={<PlayRoosidesoda />} />

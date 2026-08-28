@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
 import { createGameSession, downloadJson, packExportPayload, CloudSessionError } from '@/lib/sessions'
+import { formatPbError } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User } from 'lucide-react'
@@ -153,17 +154,55 @@ export default function PackSelect() {
     const local = localOfficial(gameType!)
     try {
       const ownerFilter = user?.id ? ` || owner = "${user.id}"` : ''
-      const list = await pb.collection('packs').getList<Pack>(1, 50, {
-        filter: `game_type = "${gameType}" && (is_official = true || is_public = true${ownerFilter})`,
-        sort: '-is_official,-created',
-      })
-      const names = new Set(local.map((p) => p.name))
-      const remote = list.items.filter((p) => !names.has(p.name))
+      let remote: Pack[] = []
+      try {
+        const list = await pb.collection('packs').getList<Pack>(1, 100, {
+          filter: `game_type = "${gameType}"`,
+          sort: '-created',
+        })
+        const uid = user?.id
+        remote = list.items.filter(
+          (p) =>
+            p.is_official ||
+            p.is_public ||
+            (uid && p.owner === uid)
+        )
+      } catch (e) {
+        console.warn('[ohtu] packs list', e)
+      }
+      const names = new Set(local.map((x) => x.name))
+      remote = remote.filter((p) => !names.has(p.name))
       setPacks([...local, ...remote])
     } catch {
       setPacks(local)
     } finally {
       setLoading(false)
+    }
+  }
+
+
+  async function duplicatePack(pack: Pack) {
+    if (!isLoggedIn || !user) {
+      setStartError(t('importNeedLogin'))
+      return
+    }
+    setStarting('dup-' + pack.id)
+    setStartError('')
+    try {
+      await pb.collection('packs').create({
+        name: `${pack.name} (koopia)`,
+        description: pack.description || '',
+        game_type: pack.game_type,
+        data: pack.data,
+        is_official: false,
+        is_public: false,
+        owner: user.id,
+      })
+      await loadPacks()
+    } catch (e: any) {
+      setStartError(formatPbError(e))
+    } finally {
+      setStarting(null)
     }
   }
 
@@ -265,6 +304,24 @@ export default function PackSelect() {
                 >
                   {t('exportPack')}
                 </button>
+                {isLoggedIn && (
+                  <button
+                    type="button"
+                    className="btn-outline text-xs !py-2 !px-3"
+                    disabled={!!starting}
+                    onClick={() => duplicatePack(pack)}
+                  >
+                    {t('duplicatePack')}
+                  </button>
+                )}
+                {isLoggedIn && user && pack.owner === user.id && !pack.id.startsWith('local-') && (
+                  <Link
+                    to={`/packs/${pack.id}/edit`}
+                    className="btn-outline text-xs !py-2 !px-3"
+                  >
+                    {t('editPack')}
+                  </Link>
+                )}
                 {pack.game_type === 'kuldvillak' && pack.id.startsWith('local-') && (
                   <Link
                     to={`/print?name=${encodeURIComponent(pack.name)}`}

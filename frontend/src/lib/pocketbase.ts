@@ -100,16 +100,34 @@ export function formatPbError(e: unknown): string {
   const err = e as any
   const msg = err?.message || String(e)
   const status = err?.status
+  const data = err?.data || err?.response?.data
+  let fieldHints = ''
+  if (data && typeof data === 'object') {
+    const parts: string[] = []
+    for (const [k, v] of Object.entries(data)) {
+      if (k === 'code' || k === 'message') continue
+      const m = (v as any)?.message || (typeof v === 'string' ? v : JSON.stringify(v))
+      if (m) parts.push(`${k}: ${m}`)
+    }
+    if (parts.length) fieldHints = ' — ' + parts.join('; ')
+  }
   if (msg.includes('collection context') || msg.includes('Missing or invalid')) {
     return (
       'PocketBase ei leia kollektsiooni (packs / game_sessions). ' +
-      'Ava PB admin → Collections. Kui puuduvad, taaskäivita pb konteiner migratsioonidega, ' +
-      'või impordi pb/collections.json. ' +
+      'Ava PB admin → Collections või impordi pb/collections.json. ' +
       `URL: ${getConfig().pbUrl}`
     )
   }
   if (status === 0 || msg.includes('Failed to fetch')) {
     return `PocketBase ei vasta (${getConfig().pbUrl}). Kontrolli PB_PUBLIC_URL / proksit.`
   }
-  return msg
+  if (status === 400 || msg.includes('Failed to create')) {
+    return (
+      msg +
+      fieldHints +
+      '. Kontrolli: oled sisse logitud lehe kontoga (mitte ainult PB admin)? ' +
+      'packs Create rule: @request.auth.id != "". owner = sinu user id.'
+    )
+  }
+  return msg + fieldHints
 }

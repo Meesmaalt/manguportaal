@@ -5,6 +5,9 @@ import App from './App'
 import './styles/index.css'
 import { getConfig } from '@/lib/config'
 import { I18nProvider } from '@/i18n/I18nContext'
+import { applyTheme, getStoredTheme } from '@/lib/themes'
+
+applyTheme(getStoredTheme())
 
 const { basePath } = getConfig()
 
