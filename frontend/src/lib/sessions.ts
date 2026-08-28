@@ -1,4 +1,11 @@
-import { pb, generateCode, type GameSession, formatPbError, ensurePbUrl, getAuthUserId } from '@/lib/pocketbase'
+import {
+  pb,
+  generateCode,
+  type GameSession,
+  formatPbError,
+  ensurePbUrl,
+  getAuthUserId,
+} from '@/lib/pocketbase'
 
 export type StartSessionResult = {
   sessionId: string
@@ -16,7 +23,6 @@ export class CloudSessionError extends Error {
 /**
  * Create a PocketBase session so TV + buzzer work across devices.
  * By default does NOT fall back to localStorage (party multi-device).
- * Pass allowLocal: true only for explicit offline emergency.
  */
 export async function createGameSession(opts: {
   gameType: string
@@ -25,6 +31,7 @@ export async function createGameSession(opts: {
   state: Record<string, unknown>
   allowLocal?: boolean
 }): Promise<StartSessionResult> {
+  ensurePbUrl()
   const code = (opts.state.code as string) || generateCode()
   const state = { ...opts.state, code }
 
@@ -43,7 +50,7 @@ export async function createGameSession(opts: {
     }
     const session = await pb.collection('game_sessions').create<GameSession>(body)
     return { sessionId: session.id, code, isLocal: false }
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (opts.allowLocal) {
       const localId = `local-${Date.now()}`
       localStorage.setItem(`session_${localId}`, JSON.stringify(state))
@@ -53,7 +60,6 @@ export async function createGameSession(opts: {
   }
 }
 
-/** Mark session finished (best-effort). */
 export async function endGameSession(sessionId: string) {
   if (sessionId.startsWith('local-')) {
     localStorage.removeItem(`session_${sessionId}`)
@@ -64,13 +70,13 @@ export async function endGameSession(sessionId: string) {
   } catch {
     try {
       await pb.collection('game_sessions').delete(sessionId)
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
 }
 
-/**
- * First-writer-wins buzz. Re-fetches before write to reduce races.
- */
+/** First-writer-wins buzz. */
 export async function tryClaimBuzz(opts: {
   sessionId: string
   isLocal: boolean
@@ -90,14 +96,18 @@ export async function tryClaimBuzz(opts: {
       return { ok: true }
     }
     const rec = await pb.collection('game_sessions').getOne(opts.sessionId)
-    const st = { ...(rec.state as any) }
+    const st = { ...(rec.state as Record<string, unknown>) }
     if (st.buzzEnabled === false) return { ok: false, reason: 'disabled' }
-    if (st.buzz) return { ok: false, reason: 'taken', by: st.buzz.name }
-    st.buzz = payload
-    // second read to reduce double-claim window
+    if (st.buzz) {
+      const b = st.buzz as { name?: string }
+      return { ok: false, reason: 'taken', by: b.name }
+    }
     const rec2 = await pb.collection('game_sessions').getOne(opts.sessionId)
-    const st2 = { ...(rec2.state as any) }
-    if (st2.buzz) return { ok: false, reason: 'taken', by: st2.buzz.name }
+    const st2 = { ...(rec2.state as Record<string, unknown>) }
+    if (st2.buzz) {
+      const b = st2.buzz as { name?: string }
+      return { ok: false, reason: 'taken', by: b.name }
+    }
     st2.buzz = payload
     await pb.collection('game_sessions').update(opts.sessionId, { state: st2 })
     return { ok: true }
@@ -160,7 +170,6 @@ export async function checkPbHealth(): Promise<boolean> {
     return true
   } catch {
     try {
-      // older pb
       await fetch(`${pb.baseUrl}/api/health`)
       return true
     } catch {
@@ -169,8 +178,7 @@ export async function checkPbHealth(): Promise<boolean> {
   }
 }
 
-
-/** Create a pack owned by the currently authenticated *users* record. */
+/** Create a pack owned by the currently authenticated users record. */
 export async function createOwnedPack(input: {
   name: string
   description?: string
@@ -182,11 +190,10 @@ export async function createOwnedPack(input: {
     throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu.')
   }
 
-  // Refresh only if SDK thinks token is invalid — avoids extra round-trip that some proxies drop
   if (!pb.authStore.isValid) {
     try {
       await pb.collection('users').authRefresh()
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (!pb.authStore.token) {
         pb.authStore.clear()
         throw new Error('Sessioon aegus. Logi uuesti sisse.')
@@ -210,75 +217,26 @@ export async function createOwnedPack(input: {
     owner: uid,
   }
 
-  const tryCreate = async (payload: Record<string, unknown>) => {
-    return await pb.collection('packs').create(payload)
-  }
-
-  try {
-    return await tryCreate(body)
-  } catch (e: any) {
-    const msg = e?.message || ''
-    // Retry without owner once
-    if (e?.status === 400) {
-      try {
-        const { owner: _o, ...rest } = body
-        return await tryCreate(rest)
-      } catch (e2: any) {
-        throw new Error(formatPbError(e2))
-      }
-    }
-    if (e?.status === 0 || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
-      throw new Error(
-        `Võrgu viga PB poole (${pb.baseUrl}). Login töötab, aga POST blokeeriti — ` +
-          `kontrolli välist Nginx proksit /mangud/pb/ (timeout, body size, WebSocket-only Connection). ` +
-          `Proovi otse: ${pb.baseUrl}/api/health`
-      )
-    }
-    if (e?.status === 401 || e?.status === 403) {
-      throw new Error('Õigused puuduvad. Logi uuesti sisse lehe kontoga (/login).')
-    }
-    throw new Error(formatPbError(e))
-  }
-}) {
-  ensurePbUrl()
-  if (!pb.authStore.token) {
-    throw new Error('Pole sisse logitud (lehe konto). Logi sisse /login kaudu — PocketBase admin (/_/) ei loe.')
-  }
-  try {
-    await pb.collection('users').authRefresh()
-  } catch (e: any) {
-    // Soft-fail refresh: if token still present, try create anyway
-    if (!pb.authStore.token) {
-      pb.authStore.clear()
-      throw new Error('Sessioon aegus. Logi uuesti sisse.')
-    }
-    console.warn('[ohtu] authRefresh failed, continuing with existing token', e)
-  }
-  const uid = getAuthUserId()
-  if (!uid) {
-    throw new Error('Kasutaja ID puudub. Logi välja ja uuesti sisse.')
-  }
-  const body: Record<string, unknown> = {
-    name: input.name.slice(0, 120),
-    description: (input.description || '').slice(0, 500),
-    game_type: input.game_type,
-    data: input.data,
-    is_official: false,
-    is_public: false,
-    owner: uid,
-  }
   try {
     return await pb.collection('packs').create(body)
-  } catch (e: any) {
-    if (e?.status === 400) {
+  } catch (e: unknown) {
+    const err = e as { status?: number; message?: string }
+    const msg = err?.message || ''
+    if (err?.status === 400) {
       try {
         const { owner: _o, ...rest } = body
         return await pb.collection('packs').create(rest)
-      } catch (e2: any) {
+      } catch (e2: unknown) {
         throw new Error(formatPbError(e2))
       }
     }
-    if (e?.status === 401 || e?.status === 403) {
+    if (err?.status === 0 || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      throw new Error(
+        `Võrgu viga PB poole (${pb.baseUrl}). Login töötab, aga POST blokeeriti — ` +
+          `kontrolli välist Nginx proksit /mangud/pb/. Proovi: ${pb.baseUrl}/api/health`
+      )
+    }
+    if (err?.status === 401 || err?.status === 403) {
       throw new Error('Õigused puuduvad. Logi uuesti sisse lehe kontoga (/login).')
     }
     throw new Error(formatPbError(e))
