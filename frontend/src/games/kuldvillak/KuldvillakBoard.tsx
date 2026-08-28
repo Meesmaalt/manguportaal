@@ -57,7 +57,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   useEffect(() => {
     if (!isHost) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && currentQuestion) closeQuestion()
+      if (e.key === 'Escape' && currentQuestion) dismissQuestion()
       if (e.key.toLowerCase() === 'm') toggleMusic()
       if (e.key.toLowerCase() === 'r') resetGame()
     }
@@ -85,14 +85,25 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     })
   }
 
-  function closeQuestion(awardTo?: number) {
+  /** Close modal only — card stays on the board (can reopen). */
+  function dismissQuestion() {
+    if (!currentQuestion) return
+    update({ currentQuestion: null, showAnswer: false })
+  }
+
+  /**
+   * Finish this card: remove from board.
+   * awardTo = team index → points + confetti; undefined → "nobody knows".
+   */
+  function resolveQuestion(awardTo?: number) {
     if (!currentQuestion) return
     const cardId = `${currentQuestion.col}-${currentQuestion.row}`
-    if (awardTo !== undefined) playFx('correct')
-    else playFx('wrong')
     if (awardTo !== undefined) {
+      playFx('correct')
       setPulseTeam(awardTo)
       window.setTimeout(() => setPulseTeam(null), 650)
+    } else {
+      playFx('wrong')
     }
     update((prev) => {
       const next: KuldvillakState = { ...prev }
@@ -103,7 +114,6 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         next.teams = prev.teams.map((t, i) =>
           i === awardTo ? { ...t, score: t.score + currentQuestion.points } : t
         )
-        // Trigger confetti on Display screens via state sync
         next.confettiAt = Date.now()
       }
       next.currentQuestion = null
@@ -311,9 +321,18 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       )}
 
       {currentQuestion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="question-reveal card-panel max-w-2xl w-full p-6 md:p-10 relative border-2 border-gold/60 shadow-gold-lg bg-gradient-to-b from-[#0c1a30] to-[#050c18]">
-            <button type="button" onClick={() => closeQuestion()} className="absolute top-4 right-4 text-white/50 hover:text-white">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+          onClick={() => isHost && dismissQuestion()}
+          role="presentation"
+        >
+          <div
+            className="question-reveal card-panel max-w-2xl w-full p-6 md:p-10 relative border-2 border-gold/60 shadow-gold-lg bg-gradient-to-b from-[#0c1a30] to-[#050c18]"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <button type="button" onClick={() => dismissQuestion()} className="absolute top-4 right-4 text-white/50 hover:text-white">
               <X size={24} />
             </button>
 
@@ -348,13 +367,23 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                 {showAnswer && (
                   <div className="flex flex-wrap gap-3 justify-center">
                     {teams.map((t, i) => (
-                      <button key={i} type="button" onClick={() => closeQuestion(i)} className="btn-gold flex items-center gap-2">
+                      <button key={i} type="button" onClick={() => resolveQuestion(i)} className="btn-gold flex items-center gap-2">
                         <Trophy size={16} />
                         {t.name} (+{currentQuestion.points})
                       </button>
                     ))}
-                    <button type="button" onClick={() => closeQuestion()} className="btn-outline">
+                    <button type="button" onClick={() => resolveQuestion()} className="btn-outline">
                       {t('nobodyKnows')}
+                    </button>
+                    <button type="button" onClick={() => dismissQuestion()} className="btn-outline text-white/60">
+                      {t('closeKeepCard')}
+                    </button>
+                  </div>
+                )}
+                {!showAnswer && (
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    <button type="button" onClick={() => dismissQuestion()} className="btn-outline text-white/60">
+                      {t('closeKeepCard')}
                     </button>
                   </div>
                 )}
