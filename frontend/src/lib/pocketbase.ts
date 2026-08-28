@@ -32,6 +32,16 @@ export type KuldvillakQuestion = {
   points: number
   q: string
   a: string
+  /** Host-only tip shown in admin modal */
+  hostNote?: string
+}
+
+export type KuldvillakFinalJeopardy = {
+  q: string
+  a: string
+  hostNote?: string
+  /** Default wager cap hint (optional) */
+  maxWager?: number
 }
 
 export type KuldvillakPackData = {
@@ -39,6 +49,7 @@ export type KuldvillakPackData = {
     name: string
     questions: KuldvillakQuestion[]
   }[]
+  finalJeopardy?: KuldvillakFinalJeopardy
 }
 
 export type RoosidesodaAnswer = {

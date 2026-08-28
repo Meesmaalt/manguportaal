@@ -476,8 +476,8 @@ export const KULDVILLAK_PULM_ALEKSANDER_RIINA: KuldvillakPackData = {
     {
       name: 'Aleksander–Riina',
       questions: [
-        { points: 100, q: 'Kumb on suurem hommikune unemüts?', a: 'Aprill' },
-        { points: 200, q: 'Kuhu pulmapaar lähevad pulmareisile?', a: 'Kreeka' },
+        { points: 100, q: 'Kumb on suurem hommikune unemüts?', a: 'Aprill', hostNote: 'Naljakas sissejuhatus – ära kiirusta vastusega.' },
+        { points: 200, q: 'Kuhu pulmapaar lähevad pulmareisile?', a: 'Kreeka', hostNote: 'Võib lisada: „Pakkige päikesekreem!“' },
         { points: 300, q: 'Mis kuul hakkasid Aleksander ja Riina kurameerima?', a: 'Aprill' },
         { points: 400, q: 'Mis oli Riina esimene töökoht?', a: 'Maxima' },
         { points: 500, q: 'Mis on Aleksandri esimese kodukoguduse nimi?', a: 'RCCG' },
@@ -506,14 +506,20 @@ export const KULDVILLAK_PULM_ALEKSANDER_RIINA: KuldvillakPackData = {
     {
       name: '5. klass',
       questions: [
-        { points: 100, q: 'Mitu kraadi on täisnurk?', a: '90' },
+        { points: 100, q: 'Mitu kraadi on täisnurk?', a: '90', hostNote: 'Klassikaline algus – las lapsed kaasa mängida.' },
         { points: 200, q: 'Mis on Eesti pealinn?', a: 'Tallinn' },
-        { points: 300, q: 'Mitu planeeti on Päikesesüsteemis (ametlikult praegu)?', a: '8' },
+        { points: 300, q: 'Mitu planeeti on Päikesesüsteemis (ametlikult praegu)?', a: '8', hostNote: 'Pluuto ei ole enam planeet (2006).' },
         { points: 400, q: 'Mis on vee keemiline valem?', a: 'H₂O' },
         { points: 500, q: 'Kes kirjutas „Kalevipoja“?', a: 'Friedrich Reinhold Kreutzwald' },
       ],
     },
   ],
+  finalJeopardy: {
+    q: 'Mis aastal algas Aleksandri ja Riina lugu aprillis – st mis aastal nad kurameerima hakkasid? (Host: kui täpset aastat ei tea, kasuta „aprill“-nalja ja anna punktid hea vastuse eest.)',
+    a: 'Host otsustab / paar teab täpset aastat',
+    hostNote: 'Kui aastat ei ole ette antud, lase paaril endal öelda õige aasta ja kinnita. Panus: iga meeskond panustab enne küsimust.',
+    maxWager: 2000,
+  },
 }
 
 export const OFFICIAL_PACKS = [

@@ -8,6 +8,7 @@ import TvJoinPanel from '@/components/TvJoinPanel'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
+import { appUrl } from '@/lib/config'
 
 type Props = {
   state: KuldvillakState
@@ -19,7 +20,7 @@ type Props = {
 }
 
 export default function KuldvillakBoard({ state, update, isHost = true, sessionCode, connection = 'offline', lastSync = 0 }: Props) {
-  const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek } = state
+  const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek, buzzEnabled, buzz, finalPhase = 'none', finalWagers = [] } = state
   const { t } = useI18n()
   const categories = packData?.categories || []
   const maxRows = Math.max(...categories.map((c) => c.questions.length), 0)
@@ -80,8 +81,10 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         q: q.q,
         a: q.a,
         points: q.points,
+        hostNote: q.hostNote,
       },
       showAnswer: false,
+      buzz: null,
     })
   }
 
@@ -162,7 +165,10 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const showPeek = isHost && hostPeek
   const totalCards = categories.reduce((n, c) => n + c.questions.length, 0)
   const playedCards = disabledCards.length
-  const finished = totalCards > 0 && playedCards >= totalCards && !currentQuestion
+  const fj = packData?.finalJeopardy
+  const boardClear = totalCards > 0 && playedCards >= totalCards && !currentQuestion
+  const finished = boardClear && (!fj || finalPhase === 'done')
+  const showFinalPrompt = boardClear && fj && finalPhase === 'none' && isHost
   const leader = [...teams].sort((a,b) => b.score-a.score)[0]
 
   return (
@@ -215,12 +221,57 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               >
                 {t('toolbarRemoveTeam')}
               </button>
+              <button
+                type="button"
+                className={`btn-outline text-xs !py-1.5 !px-3 ${buzzEnabled ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan' : ''}`}
+                onClick={() => update({ buzzEnabled: !buzzEnabled, buzz: null })}
+              >
+                {buzzEnabled ? t('buzzOn') : t('buzzOff')}
+              </button>
+              {packData?.finalJeopardy && finalPhase === 'none' && (
+                <button
+                  type="button"
+                  className="btn-outline text-xs !py-1.5 !px-3 border-gold text-gold"
+                  onClick={() =>
+                    update({
+                      finalPhase: 'wager',
+                      finalWagers: teams.map(() => 0),
+                      currentQuestion: null,
+                      showAnswer: false,
+                    })
+                  }
+                >
+                  {t('finalJeopardy')}
+                </button>
+              )}
             </>
           }
         />
       )}
 
       {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} />}
+      {isHost && sessionCode && (
+        <p className="text-center text-white/45 text-xs mb-3">
+          {t('buzzLink')}:{' '}
+          <a className="text-accent-cyan underline" href={appUrl(`/buzzer/${sessionCode}`)} target="_blank" rel="noreferrer">
+            {appUrl(`/buzzer/${sessionCode}`)}
+          </a>
+        </p>
+      )}
+      {buzz && (
+        <div className="mb-4 text-center animate-pulse">
+          <div className="inline-block bg-accent-cyan/20 border-2 border-accent-cyan text-accent-cyan font-display font-black text-2xl md:text-4xl px-6 py-3 rounded-2xl">
+            🔔 {buzz.name}
+          </div>
+          {isHost && (
+            <div className="mt-2">
+              <button type="button" className="btn-outline text-xs" onClick={() => update({ buzz: null })}>
+                {t('buzzClear')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div id="game-scale-root">
         <h1 className="font-display text-center text-3xl md:text-4xl font-black text-gold mb-5 tracking-wide drop-shadow-[0_0_20px_rgba(223,179,66,0.4)]">
@@ -308,6 +359,155 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         </div>
       </div>
 
+      {showFinalPrompt && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/75 backdrop-blur-md">
+          <div className="card-panel max-w-md w-full p-8 text-center border-gold/50">
+            <p className="font-display text-2xl text-gold mb-4">{t('boardClear')}</p>
+            <p className="text-white/60 text-sm mb-6">{t('finalPrompt')}</p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button
+                type="button"
+                className="btn-gold"
+                onClick={() =>
+                  update({
+                    finalPhase: 'wager',
+                    finalWagers: teams.map(() => 0),
+                  })
+                }
+              >
+                {t('finalJeopardy')}
+              </button>
+              <button type="button" className="btn-outline" onClick={() => update({ finalPhase: 'done' })}>
+                {t('skipFinal')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {finalPhase === 'wager' && fj && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="card-panel max-w-lg w-full p-6 border-gold/50" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-2xl text-gold text-center mb-2">{t('finalJeopardy')}</h2>
+            <p className="text-white/50 text-sm text-center mb-6">{t('finalWagerHint')}</p>
+            {isHost ? (
+              <div className="space-y-3 mb-6">
+                {teams.map((tm, i) => (
+                  <div key={i} className="flex items-center gap-3 justify-between">
+                    <span className="text-gold font-bold">{tm.name}</span>
+                    <span className="text-white/40 text-xs">max {tm.score}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.max(tm.score, 0)}
+                      className="input-field w-28 text-center"
+                      value={finalWagers[i] ?? 0}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(tm.score, Number(e.target.value) || 0))
+                        const next = teams.map((_, j) => (j === i ? v : finalWagers[j] ?? 0))
+                        update({ finalWagers: next })
+                      }}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn-gold w-full mt-4"
+                  onClick={() => update({ finalPhase: 'question', showAnswer: false })}
+                >
+                  {t('finalShowQ')}
+                </button>
+              </div>
+            ) : (
+              <p className="text-center text-white/70 text-lg py-8">{t('finalWagerWait')}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(finalPhase === 'question' || finalPhase === 'reveal') && fj && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="card-panel max-w-2xl w-full p-8 border-2 border-gold/60">
+            <div className="text-gold text-xs uppercase tracking-[0.3em] font-bold mb-3 text-center">
+              {t('finalJeopardy')}
+            </div>
+            <p className="text-xl md:text-3xl text-white font-semibold text-center leading-relaxed mb-6">
+              {fj.q}
+            </p>
+            {isHost && fj.hostNote && (
+              <div className="mb-4 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+                <span className="font-bold text-xs text-amber-400/80 uppercase">Host · </span>
+                {fj.hostNote}
+              </div>
+            )}
+            {isHost && finalPhase === 'question' && (
+              <button type="button" className="btn-outline mx-auto block mb-4" onClick={() => update({ finalPhase: 'reveal' })}>
+                {t('showAnswer')}
+              </button>
+            )}
+            {(finalPhase === 'reveal' || (!isHost && false)) && isHost && (
+              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3 mb-6 text-accent-green font-bold text-center">
+                {fj.a}
+              </div>
+            )}
+            {isHost && finalPhase === 'reveal' && (
+              <div className="space-y-3">
+                {teams.map((tm, i) => (
+                  <div key={i} className="flex flex-wrap items-center justify-between gap-2 border border-white/10 rounded-xl px-3 py-2">
+                    <span className="text-gold font-bold">{tm.name}</span>
+                    <span className="text-white/50 text-sm">±{finalWagers[i] ?? 0}</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="btn-gold text-xs !py-1"
+                        onClick={() => {
+                          const w = finalWagers[i] ?? 0
+                          update((prev) => ({
+                            ...prev,
+                            teams: prev.teams.map((x, j) =>
+                              j === i ? { ...x, score: x.score + w } : x
+                            ),
+                            confettiAt: Date.now(),
+                          }))
+                        }}
+                      >
+                        ✓ +
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline text-xs !py-1 border-accent-red text-accent-red"
+                        onClick={() => {
+                          const w = finalWagers[i] ?? 0
+                          update((prev) => ({
+                            ...prev,
+                            teams: prev.teams.map((x, j) =>
+                              j === i ? { ...x, score: Math.max(0, x.score - w) } : x
+                            ),
+                          }))
+                        }}
+                      >
+                        ✗ −
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" className="btn-gold w-full mt-2" onClick={() => update({ finalPhase: 'done' })}>
+                  {t('finalFinish')}
+                </button>
+              </div>
+            )}
+            {!isHost && finalPhase === 'question' && (
+              <p className="text-center text-white/50">{t('finalThink')}</p>
+            )}
+            {!isHost && finalPhase === 'reveal' && (
+              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3 text-accent-green font-bold text-center">
+                {fj.a}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {finished && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/80 backdrop-blur-lg">
           <div className="winner-stage text-center max-w-xl w-full">
@@ -343,9 +543,16 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               {currentQuestion.points} PUNKTI
             </div>
 
-            <p className="text-xl md:text-2xl text-white leading-relaxed mb-8 font-semibold">
+            <p className="text-xl md:text-2xl text-white leading-relaxed mb-6 font-semibold">
               {currentQuestion.q}
             </p>
+
+            {isHost && currentQuestion.hostNote && (
+              <div className="mb-6 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+                <span className="font-bold uppercase tracking-wider text-xs text-amber-400/80">Host · </span>
+                {currentQuestion.hostNote}
+              </div>
+            )}
 
             {isHost && (
               <>

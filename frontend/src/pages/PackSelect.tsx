@@ -22,6 +22,10 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         showAnswer: false,
         packData,
         code,
+        buzzEnabled: true,
+        buzz: null,
+        finalPhase: 'none',
+        finalWagers: [0, 0],
       }
     case 'roosidesoda':
       return {
@@ -266,15 +270,25 @@ export default function PackSelect() {
                 </div>
                 <p className="text-white/50 text-sm">{pack.description || ''}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => startSession(pack)}
-                disabled={!!starting}
-                className="btn-gold flex items-center gap-2 shrink-0"
-              >
-                <Play size={16} />
-                {starting === pack.id ? t('packStarting') : t('packPlay')}
-              </button>
+              <div className="flex gap-2 shrink-0">
+                {pack.game_type === 'kuldvillak' && (
+                  <Link
+                    to={`/print?name=${encodeURIComponent(pack.name)}`}
+                    className="btn-outline text-xs !py-2 !px-3"
+                  >
+                    {t('printPdf')}
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => startSession(pack)}
+                  disabled={!!starting}
+                  className="btn-gold flex items-center gap-2"
+                >
+                  <Play size={16} />
+                  {starting === pack.id ? t('packStarting') : t('packPlay')}
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>
