@@ -167,3 +167,29 @@ Wedding pack is **not** in the public list. Use `/pulm` → Export JSON → (log
 - CreatePack: hostNote + Final Jeopardy
 - TV: waiting for host if heartbeat stale
 - Footer: version + PB ok/fail
+
+
+## "Missing or invalid collection context"
+
+See tähendab, et brauser ei leia PB kollektsioone `packs` / `game_sessions`.
+
+1. **Kontrolli URL** (brauseri konsool): `window.__APP_CONFIG__`  
+   `pbUrl` peaks olema nt `https://tools.thormen.com/mangud/pb` või `https://…:8090`  
+   Testi: ava `pbUrl + "/api/health"` → peab JSON-i andma, mitte HTML-i.
+
+2. **Taaskäivita PocketBase migratsioonidega**
+   ```bash
+   docker compose restart pocketbase
+   docker compose logs pocketbase | tail -50
+   ```
+   Logis peaks olema `[ohtu] packs` / `game_sessions`.
+
+3. **Käsitsi import** (kui migratsioon ei jookse):  
+   PB Admin → Settings → Import collections → `pb/collections.json`
+
+4. **.env**
+   ```env
+   BASE_PATH=/mangud
+   PB_PUBLIC_URL=/mangud/pb
+   ```
+   või otse port: `PB_PUBLIC_URL=https://sinu-host:8090`

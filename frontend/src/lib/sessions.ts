@@ -1,4 +1,4 @@
-import { pb, generateCode, type GameSession } from '@/lib/pocketbase'
+import { pb, generateCode, type GameSession, formatPbError } from '@/lib/pocketbase'
 
 export type StartSessionResult = {
   sessionId: string
@@ -49,10 +49,7 @@ export async function createGameSession(opts: {
       localStorage.setItem(`session_${localId}`, JSON.stringify(state))
       return { sessionId: localId, code, isLocal: true }
     }
-    const detail = e?.message || String(e)
-    throw new CloudSessionError(
-      `Cloud-sessioon ebaõnnestus (TV/buzzer ei töötaks teises seadmes). Kontrolli PocketBase ühendust. ${detail}`
-    )
+    throw new CloudSessionError(formatPbError(e))
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { pb } from '@/lib/pocketbase'
+import { pb, formatPbError } from '@/lib/pocketbase'
 import { parseImportedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
@@ -44,7 +44,7 @@ export default function ImportPack() {
       setOk(t('importSuccess'))
       setTimeout(() => navigate(`/play/${parsed.game_type}`), 800)
     } catch (e: any) {
-      setError(e?.message || t('importError'))
+      setError(formatPbError(e) || t('importError'))
     } finally {
       setBusy(false)
     }

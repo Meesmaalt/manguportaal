@@ -3,10 +3,18 @@ import { getConfig } from '@/lib/config'
 
 function createPb() {
   const { pbUrl } = getConfig()
-  return new PocketBase(pbUrl)
+  const client = new PocketBase(pbUrl)
+  // auto-cancel can cause weird errors in React StrictMode; disable
+  client.autoCancellation(false)
+  return client
 }
 
 export const pb = createPb()
+
+/** Call after env.js loads if pbUrl might have changed (usually not needed). */
+export function getPb(): PocketBase {
+  return pb
+}
 
 export type User = {
   id: string
@@ -32,7 +40,6 @@ export type KuldvillakQuestion = {
   points: number
   q: string
   a: string
-  /** Host-only tip shown in admin modal */
   hostNote?: string
 }
 
@@ -40,7 +47,6 @@ export type KuldvillakFinalJeopardy = {
   q: string
   a: string
   hostNote?: string
-  /** Default wager cap hint (optional) */
   maxWager?: number
 }
 
@@ -88,4 +94,22 @@ export function generateCode(length = 6): string {
     code += chars[Math.floor(Math.random() * chars.length)]
   }
   return code
+}
+
+export function formatPbError(e: unknown): string {
+  const err = e as any
+  const msg = err?.message || String(e)
+  const status = err?.status
+  if (msg.includes('collection context') || msg.includes('Missing or invalid')) {
+    return (
+      'PocketBase ei leia kollektsiooni (packs / game_sessions). ' +
+      'Ava PB admin → Collections. Kui puuduvad, taaskäivita pb konteiner migratsioonidega, ' +
+      'või impordi pb/collections.json. ' +
+      `URL: ${getConfig().pbUrl}`
+    )
+  }
+  if (status === 0 || msg.includes('Failed to fetch')) {
+    return `PocketBase ei vasta (${getConfig().pbUrl}). Kontrolli PB_PUBLIC_URL / proksit.`
+  }
+  return msg
 }

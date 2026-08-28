@@ -20,27 +20,42 @@ export function normalizeBasePath(p?: string): string {
   return s
 }
 
+/**
+ * PocketBase SDK needs a full origin URL in many setups.
+ * Relative "/mangud/pb" → "https://host/mangud/pb"
+ */
+export function resolvePbUrl(raw?: string): string {
+  let u = (raw || '').trim()
+  if (!u) u = 'http://127.0.0.1:8090'
+  // strip trailing slash
+  u = u.replace(/\/$/, '')
+  if (typeof window !== 'undefined') {
+    if (u.startsWith('/')) {
+      u = `${window.location.origin}${u}`
+    } else if (u.startsWith('./')) {
+      u = `${window.location.origin}${normalizeBasePath(window.__APP_CONFIG__?.basePath) || ''}/pb`
+    }
+  }
+  return u
+}
+
 export function getConfig(): AppConfig {
   const c = (typeof window !== 'undefined' && window.__APP_CONFIG__) || {}
-  // Prefer runtime config, then build-time import.meta.env
   const rawBase =
     c.basePath ??
     (typeof window !== 'undefined' ? window.__BASE_PATH__ : undefined) ??
     import.meta.env.VITE_BASE_PATH ??
     import.meta.env.BASE_URL
 
-  const basePath = normalizeBasePath(
-    // Vite BASE_URL is like "/mangud/"
-    rawBase === './' ? '' : rawBase
-  )
+  const basePath = normalizeBasePath(rawBase === './' ? '' : rawBase)
 
-  const pbUrl =
+  const rawPb =
     c.pbUrl ||
     (typeof window !== 'undefined' ? window.__PB_URL__ : undefined) ||
     import.meta.env.VITE_PB_URL ||
-    'http://127.0.0.1:8090'
+    (basePath ? `${basePath}/pb` : 'http://127.0.0.1:8090')
 
-  return { basePath, pbUrl }
+  return { basePath, pbUrl: resolvePbUrl(rawPb) }
 }
 
 export function appPath(path: string): string {
@@ -55,11 +70,9 @@ export function appUrl(path: string): string {
   return `${window.location.origin}${pathWithBase}`
 }
 
-/** Asset under base, e.g. assetUrl('sounds/x.mp3') -> /mangud/sounds/x.mp3 */
 export function assetUrl(rel: string): string {
   const { basePath } = getConfig()
   const r = rel.replace(/^\//, '')
-  // import.meta.env.BASE_URL already has trailing slash when set
   const base = import.meta.env.BASE_URL || (basePath ? basePath + '/' : '/')
   return base + r
 }
