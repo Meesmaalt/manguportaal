@@ -151,34 +151,43 @@ export default function PackSelect() {
   async function loadPacks() {
     setLoading(true)
     const local = localOfficial(gameType!)
+    const uid = user?.id
     try {
       let remote: Pack[] = []
-      const uid = user?.id
+      let pbOk = false
       // Avoid server-side filter (some PB + listRule combos return 400)
       try {
         const list = await pb.collection('packs').getList<Pack>(1, 200, {
           requestKey: null,
         })
         remote = list.items
+        pbOk = true
       } catch (e1) {
         console.warn('[ohtu] packs list page1', e1)
         try {
           remote = await pb.collection('packs').getFullList<Pack>({
             requestKey: null,
           })
+          pbOk = true
         } catch (e2) {
           console.warn('[ohtu] packs list full', e2)
         }
       }
-      remote = remote.filter((p) => {
-        if (p.game_type !== gameType) return false
-        if (p.is_official || p.is_public) return true
-        if (uid && p.owner === uid) return true
-        return false
-      })
-      const names = new Set(local.map((x) => x.name))
-      remote = remote.filter((p) => !names.has(p.name))
-      setPacks([...local, ...remote])
+
+      if (pbOk) {
+        // Database is the source of truth for public packs.
+        // Admin can seed/delete/toggle is_official & is_public — code templates are only a seed source.
+        remote = remote.filter((p) => {
+          if (p.game_type !== gameType) return false
+          if (p.is_official || p.is_public) return true
+          if (uid && p.owner === uid) return true
+          return false
+        })
+        setPacks(remote)
+      } else {
+        // PocketBase unreachable — fall back to built-in code templates so guests can still play offline
+        setPacks(local)
+      }
     } catch {
       setPacks(local)
     } finally {
@@ -300,6 +309,11 @@ export default function PackSelect() {
 
       {loading ? (
         <div className="text-center text-gold animate-pulse py-12">{t('packLoading')}</div>
+      ) : packs.length === 0 ? (
+        <div className="card-panel p-6 text-center space-y-2">
+          <p className="text-white/60 text-sm">{t('packEmptyDb')}</p>
+          <p className="text-white/35 text-xs">{t('packEmptyDbHint')}</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {packs.map((pack, i) => (
@@ -363,9 +377,9 @@ export default function PackSelect() {
                     </button>
                   </>
                 )}
-                {pack.game_type === 'kuldvillak' && pack.id.startsWith('local-') && (
+                {pack.game_type === 'kuldvillak' && (
                   <Link
-                    to={`/print?name=${encodeURIComponent(pack.name)}`}
+                    to={`/print?name=${encodeURIComponent(pack.name)}${!pack.id.startsWith('local-') ? `&id=${pack.id}` : ''}`}
                     className="btn-outline text-xs !py-2 !px-3"
                   >
                     {t('printPdf')}

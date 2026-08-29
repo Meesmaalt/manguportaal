@@ -1,19 +1,66 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
-import type { KuldvillakPackData } from '@/lib/pocketbase'
+import { pb, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useI18n } from '@/i18n/I18nContext'
 
 /** Host printout – use browser Print → PDF. Works offline once loaded. */
 export default function PrintPack() {
   const [params] = useSearchParams()
   const name = params.get('name') || ''
+  const id = params.get('id') || ''
   const { t } = useI18n()
+  const [pack, setPack] = useState<{
+    name: string
+    description?: string
+    data: KuldvillakPackData
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const pack = useMemo(
-    () => OFFICIAL_PACKS.find((p) => p.name === name && p.game_type === 'kuldvillak'),
-    [name]
-  )
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      // Prefer DB pack by id
+      if (id && !id.startsWith('local-')) {
+        try {
+          const rec = await pb.collection('packs').getOne<Pack>(id)
+          if (!cancelled && rec.game_type === 'kuldvillak') {
+            setPack({
+              name: rec.name,
+              description: rec.description,
+              data: rec.data as KuldvillakPackData,
+            })
+            setLoading(false)
+            return
+          }
+        } catch {
+          /* fall through */
+        }
+      }
+      const local = OFFICIAL_PACKS.find((p) => p.name === name && p.game_type === 'kuldvillak')
+      if (!cancelled) {
+        setPack(
+          local
+            ? {
+                name: local.name,
+                description: local.description,
+                data: local.data as KuldvillakPackData,
+              }
+            : null
+        )
+        setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [id, name])
+
+  if (loading) {
+    return <div className="p-8 text-center text-gold animate-pulse">…</div>
+  }
 
   if (!pack) {
     return (
@@ -26,7 +73,7 @@ export default function PrintPack() {
     )
   }
 
-  const data = pack.data as KuldvillakPackData
+  const data = pack.data
 
   return (
     <div className="print-pack bg-white text-black min-h-screen p-6 md:p-10">
