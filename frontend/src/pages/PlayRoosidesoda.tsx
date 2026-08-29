@@ -5,6 +5,7 @@ import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { ArrowLeft, LogOut, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 import GameHelpModal from '@/components/GameHelpModal'
+import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 import { useI18n } from '@/i18n/I18nContext'
 import { endGameSession } from '@/lib/sessions'
 
@@ -63,6 +64,15 @@ export default function PlayRoosidesoda() {
         </div>
       </div>
 
+      <div className="max-w-4xl mx-auto px-3 mb-3 relative z-10">
+        <ThemeStudio
+          bgMedia={(state as any).bgMedia || null}
+          onBgMedia={(m) => update({ bgMedia: m } as any)}
+          compact
+        />
+      </div>
+      <SessionBgLayer media={(state as any).bgMedia} />
+      <div className="relative z-10">
       <RoosidesodaHost
         state={state}
         update={update}
@@ -71,6 +81,7 @@ export default function PlayRoosidesoda() {
         connection={connection}
         lastSync={lastSync}
       />
+      </div>
       <GameHelpModal
         gameType="roosidesoda"
         open={helpOpen}

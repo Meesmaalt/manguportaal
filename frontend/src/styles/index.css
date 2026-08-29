@@ -175,3 +175,30 @@ html[data-theme="emerald"] .game-show-display {
 }
 
 /* Category headers / score panels pick up gold class already */
+
+
+/* Theme polish */
+html[data-theme]:not([data-theme="classic"]) header {
+  border-bottom-color: rgba(var(--theme-accent-rgb), 0.25) !important;
+  box-shadow: 0 4px 30px rgba(var(--theme-accent-rgb), 0.08);
+}
+html[data-theme]:not([data-theme="classic"]) .font-display {
+  text-shadow: 0 0 40px rgba(var(--theme-accent-rgb), 0.25);
+}
+html[data-theme="wedding"] .card-panel {
+  background: rgba(40, 20, 28, 0.88) !important;
+  backdrop-filter: blur(12px);
+}
+html[data-theme="midnight"] .card-panel {
+  background: rgba(8, 20, 40, 0.9) !important;
+  backdrop-filter: blur(12px);
+}
+html[data-theme="emerald"] .card-panel {
+  background: rgba(6, 28, 20, 0.9) !important;
+  backdrop-filter: blur(12px);
+}
+.theme-glass {
+  background: rgba(10, 20, 35, 0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--theme-accent-rgb, 223, 179, 66), 0.25);
+}

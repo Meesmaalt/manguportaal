@@ -90,6 +90,8 @@ export default function Layout() {
         <span className="mx-2 opacity-40">·</span>
         <span className="text-white/25 text-xs tabular-nums">v{APP_VERSION}</span>
         <span className="mx-2 opacity-40">·</span>
+        <Link to="/admin" className="text-white/20 text-xs hover:text-gold/60">admin</Link>
+        <span className="mx-2 opacity-40">·</span>
         <span className={`text-xs tabular-nums ${pbOk === true ? 'text-accent-green/70' : pbOk === false ? 'text-accent-red/80' : 'text-white/25'}`}>
           PB {pbOk === true ? 'ok' : pbOk === false ? 'fail' : '…'}
         </span>

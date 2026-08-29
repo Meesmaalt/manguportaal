@@ -16,6 +16,7 @@ import Buzzer from '@/pages/Buzzer'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
 import EditPack from '@/pages/EditPack'
+import Admin from '@/pages/Admin'
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/playlist" element={<Playlist />} />
         <Route path="/print" element={<PrintPack />} />
         <Route path="/packs/import" element={<ImportPack />} />
+        <Route path="/admin" element={<Admin />} />
         <Route
           path="/packs/:id/edit"
           element={

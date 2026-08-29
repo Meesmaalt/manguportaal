@@ -11,6 +11,7 @@ import GameShowFrame from '@/components/GameShowFrame'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/translations'
 import GameHelpModal from '@/components/GameHelpModal'
+import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
@@ -63,6 +64,15 @@ export default function PlayGeneric() {
           </button>
         </div>
 
+        <div className="max-w-3xl mx-auto mb-3 relative z-10">
+          <ThemeStudio
+            bgMedia={state.bgMedia || null}
+            onBgMedia={(m) => update({ bgMedia: m })}
+            compact
+          />
+        </div>
+        <SessionBgLayer media={state.bgMedia} />
+        <div className="relative z-10">
         {gameType === 'sonaseletus' && (
           <SonaseletusGame state={state as SonaseletusState} update={update} isHost sessionCode={code} />
         )}
@@ -75,6 +85,7 @@ export default function PlayGeneric() {
         {gameType === 'tode_voi_tegu' && (
           <TodeVoiTeguGame state={state as TodeVoiTeguState} update={update} isHost sessionCode={code} />
         )}
+        </div>
       </div>
 
       <GameHelpModal

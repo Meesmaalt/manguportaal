@@ -268,12 +268,57 @@ export const translations = {
     helpShowPublic: 'Näita publikule (TV)',
     helpHidePublic: 'Peida publiku juhend',
     helpClose: 'Sulge',
-    guide_kuldvillak: 'KULDVILLAK\n• Host valib telefonis kaardi (kategooria + punktid).\n• Küsimus tuleb ekraanile / TV-le.\n• Meeskond vastab; host märgib õige või vale.\n• X või taust: sulgeb küsimuse (kaart jääb lauale).\n• «Näita vastust» / punktid: kaart kaob laualt.\n• Final Jeopardy: panused, siis üks küsimus lõpus.\n• Buzzer: külalised skannivad QR / lingi ja vajutavad «MINA!».\n• Hosti spikker: kõik vastused ühes vaates.',
-    guide_roosidesoda: 'ROOSIDE SÕDA\n• Üks meeskond mängib; teine ootab.\n• Host loeb küsimuse; publik / meeskond arvab vastuseid.\n• Õige vastus: ava vastus, lisa punktid banki.\n• Vale: streik (X). Kolm streiki → voor läbi, bank võib minna teisele.\n• «Anna bank»: punktid aktiivsele meeskonnale.\n• Vaheta meeskonda / vooru hosti nuppudest.\n• TV näitab skoori, banki ja avatud vastuseid.',
-    guide_sonaseletus: 'SÕNASELETUS\n• Mängija seletab sõnu ilma keelatud sõnadeta (või lihtsalt seletab).\n• Taimer jookseb (nt 60 s).\n• Õige = punkt; vahele / skip = järgmine sõna.\n• Tiimid vahetuvad voorude kaupa.\n• Host juhib taimerit ja skoori telefonis; TV näitab sõna/skoori kui ühendatud.',
-    guide_ma_ei_ole_kunagi: 'MA EI OLE KUNAGI\n• Host loeb väite: «Ma ei ole kunagi…»\n• Kes ON teinud, tunnustab (nt sõrm, lonks, punkt).\n• Järgmine väide.\n• Soft party mäng — reeglid lepitakse kohapeal (alkohol / punktid / naljad).',
-    guide_viimane_pusti: 'VIIMANE PÜSTI\n• Igaühel on elud (nt 3).\n• Host loeb väite; kui oled teinud / kehtib sinu kohta — kaotad elu.\n• Elud otsas = välja.\n• Viimane püsti jäänu võidab.\n• Host uuendab elusid telefonis.',
-    guide_tode_voi_tegu: 'TÕDE VÕI TEGU\n• Mängija valib: tõde või tegu.\n• Host loeb kaardi settist.\n• Mängija vastab / teeb; järgmine mängija.\n• Host võib vahele jätta sobimatu kaardi.\n• TV võib näidata praegust kaarti, kui host on ühendanud.',},
+    guide_kuldvillak: 'Klassikaline teadmistemäng stiilis „Kuldvillak“.
+
+Kaks (või rohkem) meeskonda võistlevad punktide nimel. Laual on kategooriad ja erineva väärtusega küsimused — kergemad annavad vähem, raskemad rohkem.
+
+Meeskond valib teema ja panuse, vastab küsimusele ning teenib või kaotab punkte. Mängu lõpus võib tulla „viimane voor“ suurema panusega.
+
+Sobib: peod, pulmad, sünnipäevad, kus tahad nutikat võistlust ja suurt ekraani.',
+    guide_roosidesoda: 'Kiire peremäng stiilis „perevõistlus“: üks meeskond mängib, teine ootab järge.
+
+Host loeb küsimuse; meeskond püüab arvata populaarseid vastuseid. Õiged vastused koguvad banki, valed annavad streike. Kolm streiki — voor lõpeb ja bank võib vahetada omanikku.
+
+Tempo on kõrge, nalja on palju. Sobib suurtele seltskondadele ja telerile.',
+    guide_sonaseletus: 'Sõnaseletusmäng: üks mängija seletab sõnu, teised arvavad.
+
+Voorul on taimer; õiged arvamused annavad punkte. Tiimid vahetuvad, kuni sett või kokkulepitud voorud on läbi.
+
+Sobib: lõbus keelemäng, mis sobib nii noortele kui täiskasvanutele.',
+    guide_ma_ei_ole_kunagi: 'Klassikaline peomäng „Ma ei ole kunagi…“.
+
+Loetakse väiteid; need, kelle kohta väide kehtib, tunnustavad (sõrm, lonks, punkt — nagu seltskond lepib).
+
+Kerge, sotsiaalne, hea jäämurdja. Reeglite rangekus on teie otsustada.',
+    guide_viimane_pusti: 'Ellujäämismäng väidetega.
+
+Igaühel on elud. Kui väide kehtib sinu kohta, kaotad elu. Elud otsas — välja. Viimane püsti jäänu võidab.
+
+Pinge kasvab voor voorult. Sobib peole, kus tahad dramaatilist lõppu.',
+    guide_tode_voi_tegu: 'Tõde või tegu — julged küsimused ja ülesanded.
+
+Mängija valib: vastata ausalt või teha tegu. Sett annab ideid; seltskond hoiab piire.
+
+Klassikaline peomäng, sobib sõpradele, kes tahavad naerda ja üksteist proovile panna.',
+    themeBg: 'Taust',
+    themeBgImage: 'Taustapilt',
+    themeBgVideo: 'Taustavideo',
+    themeBgClear: 'Eemalda taust',
+    themeBgHint: 'Pilt või lühike video (max ~8 MB). Kehtib sellele mängule (ka TV).',
+    themePreset: 'Värviteema',
+    adminTitle: 'Lehe admin',
+    adminSub: 'PocketBase superuser · ametlikud setid',
+    adminLogin: 'Sisene adminina',
+    adminHint: 'Sama konto mis PB dashboard (/_/). Vaikimisi: admin@ohtu.local / ohtu123456. Tavaline lehe kasutaja siia ei pääse.',
+    adminLoggedIn: 'Superuser sessioon aktiivne',
+    adminRefresh: 'Uuenda',
+    adminPacksHint: 'Siin saad märkida sete ametlikuks / avalikuks, muuta või kustutada. Ametlikud ilmuvad kõigile valmis settidena.',
+    adminNoPacks: 'Ühtegi setti baasis pole. Loo lehel sett või impordi JSON.',
+    adminPublic: 'avalik',
+    adminSetOfficial: 'Ametlikuks',
+    adminUnsetOfficial: 'Eemalda ametlik',
+    adminSetPublic: 'Avalikuks',
+    adminUnsetPublic: 'Peida',},
   en: {
     brand: 'EVENING',
     brandSub: 'games',
@@ -534,13 +579,58 @@ export const translations = {
     helpShowPublic: 'Show on TV / audience',
     helpHidePublic: 'Hide audience guide',
     helpClose: 'Close',
-    guide_kuldvillak: 'JEOPARDY-STYLE\n• Host picks a card (category + points) on the phone.\n• Question appears on the TV screen.\n• Team answers; host marks correct or wrong.\n• X or backdrop: closes question (card stays on the board).\n• Reveal answer / award points: card is removed.\n• Final Jeopardy: wagers, then one last question.\n• Buzzer: guests open the link/QR and press ME!\n• Host sheet: all answers in one list.',
-    guide_roosidesoda: 'FAMILY FEUD-STYLE\n• One team plays; the other waits.\n• Host reads the question; team guesses answers.\n• Correct: reveal answer, add points to the bank.\n• Wrong: strike. Three strikes end the round.\n• Award bank to the active team.\n• Switch team / round from host controls.\n• TV shows score, bank and revealed answers.',
-    guide_sonaseletus: 'WORD EXPLANATION\n• Player explains words (avoid banned words if you use that rule).\n• Timer runs (e.g. 60s).\n• Correct = point; skip = next word.\n• Teams alternate rounds.\n• Host controls timer and score; TV can show the word.',
-    guide_ma_ei_ole_kunagi: 'NEVER HAVE I EVER\n• Host reads: “Never have I ever…”\n• Anyone who has done it acknowledges (finger, sip, point).\n• Next statement.\n• Soft party rules — agree on house rules on the spot.',
-    guide_viimane_pusti: 'LAST ONE STANDING\n• Everyone starts with lives (e.g. 3).\n• Host reads a statement; if it applies to you — lose a life.\n• No lives left = out.\n• Last player standing wins.\n• Host updates lives on the phone.',
-    guide_tode_voi_tegu: 'TRUTH OR DARE\n• Player picks truth or dare.\n• Host reads a card from the pack.\n• Player answers or does it; next player.\n• Host may skip unsuitable cards.\n• TV can show the current card if connected.',
-    packCopySuffix: 'copy',},
+    guide_kuldvillak: 'A classic quiz show in the spirit of Jeopardy.
+
+Teams compete for points across categories and valued questions — easier ones pay less, harder ones more.
+
+Pick a topic and stake, answer, and score. A high-stakes final round can close the game.
+
+Great for parties, weddings, and birthdays when you want a smart contest on a big screen.',
+    guide_roosidesoda: 'A fast family-feud style game: one team plays while the other waits.
+
+A question is read; the team tries popular answers. Correct answers fill the bank; misses add strikes. Three strikes end the round and the bank may change hands.
+
+High energy, lots of laughs — ideal for large groups and a TV.',
+    guide_sonaseletus: 'Word explanation: one player describes words, others guess.
+
+Rounds run on a timer; correct guesses score. Teams take turns until the pack or agreed rounds are done.
+
+A lively language game for mixed ages.',
+    guide_ma_ei_ole_kunagi: 'The classic party game “Never have I ever…”.
+
+Statements are read; anyone it applies to acknowledges (finger, sip, point — house rules).
+
+Light, social, a great icebreaker. Strictness is up to you.',
+    guide_viimane_pusti: 'A survival game of statements.
+
+Everyone has lives. If a statement applies to you, you lose a life. No lives left — you’re out. Last one standing wins.
+
+Tension builds every round — perfect for a dramatic party finish.',
+    guide_tode_voi_tegu: 'Truth or dare — bold questions and challenges.
+
+Players choose honesty or action. The pack suggests prompts; the group sets the limits.
+
+Classic party fun for friends who want laughs and a little courage.',
+    packCopySuffix: 'copy',
+    themeBg: 'Background',
+    themeBgImage: 'Background image',
+    themeBgVideo: 'Background video',
+    themeBgClear: 'Clear background',
+    themeBgHint: 'Image or short video (max ~8 MB). Applies to this game (including TV).',
+    themePreset: 'Color theme',
+    adminTitle: 'Site admin',
+    adminSub: 'PocketBase superuser · official packs',
+    adminLogin: 'Sign in as admin',
+    adminHint: 'Same account as the PB dashboard (/_/). Default: admin@ohtu.local / ohtu123456. Regular site users cannot access this.',
+    adminLoggedIn: 'Superuser session active',
+    adminRefresh: 'Refresh',
+    adminPacksHint: 'Mark packs official/public, edit or delete. Official packs show up as ready templates for everyone.',
+    adminNoPacks: 'No packs in the database yet.',
+    adminPublic: 'public',
+    adminSetOfficial: 'Make official',
+    adminUnsetOfficial: 'Remove official',
+    adminSetPublic: 'Make public',
+    adminUnsetPublic: 'Hide',},
   ru: {
     brand: 'ВЕЧЕР',
     brandSub: 'игры',
@@ -801,13 +891,58 @@ export const translations = {
     helpShowPublic: 'Показать зрителям (ТВ)',
     helpHidePublic: 'Скрыть у зрителей',
     helpClose: 'Закрыть',
-    guide_kuldvillak: 'СВОЯ ИГРА\n• Ведущий выбирает карточку на телефоне.\n• Вопрос появляется на ТВ.\n• Команда отвечает; ведущий отмечает верно/неверно.\n• X или фон: закрыть вопрос (карточка остаётся).\n• Показать ответ / очки: карточка снимается.\n• Финал: ставки, затем последний вопрос.\n• Баззер: гости по QR жмут «Я!».\n• Шпаргалка ведущего: все ответы списком.',
-    guide_roosidesoda: 'СВОЯ ИГРА / СЕМЕЙНАЯ ВРАЖДА\n• Одна команда играет.\n• Ведущий читает вопрос; команда называет ответы.\n• Верно: открыть ответ, очки в банк.\n• Ошибка: штраф. Три штрафа — конец раунда.\n• Отдать банк активной команде.\n• Смена команды / раунда у ведущего.\n• На ТВ — счёт, банк и открытые ответы.',
-    guide_sonaseletus: 'ОБЪЯСНЕНИЕ СЛОВ\n• Игрок объясняет слова.\n• Таймер (напр. 60 с).\n• Верно = очко; пропуск = следующее слово.\n• Команды по очереди.\n• Ведущий управляет таймером и счётом.',
-    guide_ma_ei_ole_kunagi: 'Я НИКОГДА НЕ\n• Ведущий: «Я никогда не…»\n• Кто делал — отмечает (палец, глоток, очко).\n• Следующая фраза.\n• Правила компании — на месте.',
-    guide_viimane_pusti: 'ПОСЛЕДНИЙ ОСТАВШИЙСЯ\n• У всех жизни (напр. 3).\n• Фраза про вас — минус жизнь.\n• Без жизней — вылет.\n• Последний побеждает.',
-    guide_tode_voi_tegu: 'ПРАВДА ИЛИ ДЕЙСТВИЕ\n• Игрок выбирает правду или действие.\n• Ведущий читает карточку.\n• Ответ / действие; следующий игрок.\n• Неподходящее можно пропустить.',
-    packCopySuffix: 'копия',},
+    guide_kuldvillak: 'Классическая викторина в духе «Своей игры».
+
+Команды соревнуются за очки: категории и вопросы разной стоимости — проще меньше, сложнее больше.
+
+Выбор темы и ставки, ответ, счёт. В финале возможен раунд с высокой ставкой.
+
+Для вечеринок, свадеб и дней рождения — умное состязание на большом экране.',
+    guide_roosidesoda: 'Быстрая игра в стиле семейной вражды: одна команда играет, другая ждёт.
+
+Вопрос читают; команда угадывает популярные ответы. Верные пополняют банк, ошибки — штрафы. Три штрафа — конец раунда, банк может сменить хозяина.
+
+Много энергии и смеха — для большой компании и ТВ.',
+    guide_sonaseletus: 'Объяснение слов: один объясняет, другие угадывают.
+
+Раунды на таймере; верные ответы дают очки. Команды по очереди.
+
+Живая языковая игра для разного возраста.',
+    guide_ma_ei_ole_kunagi: 'Классика «Я никогда не…».
+
+Читают фразы; кого это касается — отмечает (палец, глоток, очко — ваши правила).
+
+Лёгкая, социальная, отличный лёд. Строгость — на ваш вкус.',
+    guide_viimane_pusti: 'Игра на выживание.
+
+У всех есть жизни. Фраза про вас — минус жизнь. Без жизней — вылет. Последний побеждает.
+
+Напряжение растёт с каждым раундом.',
+    guide_tode_voi_tegu: 'Правда или действие — смелые вопросы и задания.
+
+Игрок выбирает: ответить честно или сделать. Набор подсказывает; границы — у компании.
+
+Классика вечеринки для друзей, которые любят смех и вызов.',
+    packCopySuffix: 'копия',
+    themeBg: 'Фон',
+    themeBgImage: 'Фоновое изображение',
+    themeBgVideo: 'Фоновое видео',
+    themeBgClear: 'Убрать фон',
+    themeBgHint: 'Картинка или короткое видео (до ~8 МБ). Для этой игры (и ТВ).',
+    themePreset: 'Цветовая тема',
+    adminTitle: 'Админ сайта',
+    adminSub: 'Superuser PocketBase · официальные наборы',
+    adminLogin: 'Войти как админ',
+    adminHint: 'Тот же аккаунт, что и панель PB (/_/). По умолчанию: admin@ohtu.local / ohtu123456.',
+    adminLoggedIn: 'Сессия superuser активна',
+    adminRefresh: 'Обновить',
+    adminPacksHint: 'Официальные / публичные наборы, правка и удаление.',
+    adminNoPacks: 'Наборов в базе нет.',
+    adminPublic: 'публичный',
+    adminSetOfficial: 'Официальный',
+    adminUnsetOfficial: 'Снять офиц.',
+    adminSetPublic: 'Публичный',
+    adminUnsetPublic: 'Скрыть',},
 } as const
 
 export type TranslationKey = keyof typeof translations.et
