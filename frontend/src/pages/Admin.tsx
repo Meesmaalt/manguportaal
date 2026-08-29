@@ -16,6 +16,9 @@ import {
   ExternalLink,
   Upload,
   Filter,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react'
 
 const GAME_TYPES: GameType[] = [
@@ -29,6 +32,7 @@ const GAME_TYPES: GameType[] = [
 
 /**
  * Site admin via PocketBase superuser (same as /_/ dashboard).
+ * Superuser bypasses collection API rules — can create/update/delete official packs.
  */
 export default function Admin() {
   const { t } = useI18n()
@@ -41,12 +45,20 @@ export default function Admin() {
   const [busy, setBusy] = useState<string | null>(null)
   const [gameFilter, setGameFilter] = useState<GameType | 'all'>('all')
   const [msg, setMsg] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
 
   function isSuperuserAuth() {
+    if (!pb.authStore.isValid || !pb.authStore.token) return false
     const rec: any = pb.authStore.record || pb.authStore.model
-    if (!pb.authStore.token || !rec) return false
+    if (!rec) return false
     const col = String(rec.collectionName || rec.collectionId || '')
-    return col.includes('superuser')
+    // PB 0.22+ uses _superusers; older may use superusers
+    return (
+      col.includes('superuser') ||
+      col === '_superusers' ||
+      // some clients only expose collectionId like "pbc_..." — treat valid admin token after our login as ok
+      Boolean((rec as any).email && !col.includes('users'))
+    )
   }
 
   useEffect(() => {
@@ -86,9 +98,19 @@ export default function Admin() {
     pb.authStore.clear()
     setAsAdmin(false)
     setPacks([])
+    setMsg('')
+    setError('')
+  }
+
+  function ensureStillAdmin(): boolean {
+    if (isSuperuserAuth()) return true
+    setAsAdmin(false)
+    setError(t('adminSessionLost'))
+    return false
   }
 
   async function loadPacks() {
+    if (!ensureStillAdmin()) return
     setBusy('list')
     setError('')
     try {
@@ -96,33 +118,77 @@ export default function Admin() {
       const list = await pb.collection('packs').getFullList<Pack>({ requestKey: null })
       setPacks(list)
     } catch (err: any) {
-      setError(formatPbError(err))
+      const status = (err as any)?.status
+      if (status === 401 || status === 403) {
+        setAsAdmin(false)
+        setError(t('adminSessionLost'))
+      } else {
+        setError(formatPbError(err))
+      }
     } finally {
       setBusy(null)
     }
   }
 
   async function patchPack(id: string, data: Record<string, unknown>) {
+    if (!ensureStillAdmin()) return
     setBusy(id)
     setError('')
+    setMsg('')
     try {
+      // Superuser bypasses rules; still send minimal payload
       await pb.collection('packs').update(id, data)
+      setMsg(t('adminSaved'))
       await loadPacks()
     } catch (err: any) {
-      setError(formatPbError(err))
+      const status = (err as any)?.status
+      if (status === 401 || status === 403) {
+        setAsAdmin(false)
+        setError(t('adminSessionLost'))
+      } else {
+        setError(
+          formatPbError(err) +
+            ' — Superuserina peaks uuendus töötama. Kui ebaõnnestub, ava PB Admin → packs → API rules või proovi enne eemaldada „ametlik“ märge.'
+        )
+      }
     } finally {
       setBusy(null)
     }
   }
 
-  async function removePack(id: string, name: string) {
-    if (!confirm(`${t('deletePackConfirm')}\n${name}`)) return
+  async function removePack(id: string, name: string, wasOfficial: boolean) {
+    if (!ensureStillAdmin()) return
+    const hint = wasOfficial
+      ? `\n\n${t('adminDeleteOfficialHint')}`
+      : ''
+    if (!confirm(`${t('deletePackConfirm')}\n${name}${hint}`)) return
     setBusy(id)
+    setError('')
+    setMsg('')
     try {
+      // If official, first clear flag (some PB setups still enforce rules for non-bypass)
+      if (wasOfficial) {
+        try {
+          await pb.collection('packs').update(id, { is_official: false })
+        } catch {
+          /* superuser may delete directly */
+        }
+      }
       await pb.collection('packs').delete(id)
+      setMsg(`✓ ${t('deletePack')}: ${name}`)
+      setPacks((prev) => prev.filter((p) => p.id !== id))
       await loadPacks()
     } catch (err: any) {
-      setError(formatPbError(err))
+      const status = (err as any)?.status
+      if (status === 401 || status === 403) {
+        setAsAdmin(false)
+        setError(t('adminSessionLost'))
+      } else {
+        setError(
+          formatPbError(err) +
+            ' — Ametliku seti kustutamiseks: eemalda enne „Ametlik“ või muuda PB-s deleteRule (superuser peaks reegleid ignoreerima).'
+        )
+      }
     } finally {
       setBusy(null)
     }
@@ -130,6 +196,7 @@ export default function Admin() {
 
   /** Push a code-side official template into PocketBase as is_official */
   async function seedTemplate(tpl: (typeof OFFICIAL_PACKS)[number]) {
+    if (!ensureStillAdmin()) return
     setBusy('seed-' + tpl.name)
     setError('')
     setMsg('')
@@ -141,17 +208,28 @@ export default function Admin() {
         data: tpl.data,
         is_official: true,
         is_public: true,
+        // owner left empty — official packs are site-wide
       })
-      setMsg(`✓ ${tpl.name}`)
+      setMsg(`✓ ${tpl.name} → baasi`)
       await loadPacks()
     } catch (err: any) {
-      setError(formatPbError(err))
+      const status = (err as any)?.status
+      if (status === 401 || status === 403) {
+        setAsAdmin(false)
+        setError(t('adminSessionLost'))
+      } else {
+        setError(
+          formatPbError(err, { adminContext: true }) +
+            ` — ${t('adminSeedFailHint')}`
+        )
+      }
     } finally {
       setBusy(null)
     }
   }
 
   async function seedAllMissing() {
+    if (!ensureStillAdmin()) return
     setBusy('seed-all')
     setError('')
     setMsg('')
@@ -175,7 +253,13 @@ export default function Admin() {
       setMsg(`✓ ${n} setti baasi`)
       await loadPacks()
     } catch (err: any) {
-      setError(formatPbError(err))
+      const status = (err as any)?.status
+      if (status === 401 || status === 403) {
+        setAsAdmin(false)
+        setError(t('adminSessionLost'))
+      } else {
+        setError(formatPbError(err, { adminContext: true }) + ` — ${t('adminSeedFailHint')}`)
+      }
     } finally {
       setBusy(null)
     }
@@ -274,14 +358,6 @@ export default function Admin() {
           </button>
           <button
             type="button"
-            className="btn-gold text-sm flex items-center gap-1"
-            disabled={!!busy || missingTemplates.length === 0}
-            onClick={seedAllMissing}
-          >
-            <Upload size={14} /> {t('adminSeedAll')} ({missingTemplates.length})
-          </button>
-          <button
-            type="button"
             className="btn-outline text-sm flex items-center gap-1 border-accent-red/40 text-accent-red"
             onClick={logout}
           >
@@ -317,7 +393,7 @@ export default function Admin() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl border border-accent-red/40 bg-accent-red/10 text-accent-red text-sm">
+        <div className="mb-4 p-3 rounded-xl border border-accent-red/40 bg-accent-red/10 text-accent-red text-sm whitespace-pre-wrap">
           {error}
         </div>
       )}
@@ -327,7 +403,13 @@ export default function Admin() {
         </div>
       )}
 
-      <p className="text-white/50 text-sm mb-3">{t('adminPacksHint')}</p>
+      <div className="mb-4 p-3 rounded-xl border border-gold/20 bg-black/20 text-white/55 text-sm flex gap-2">
+        <Info size={16} className="text-gold/70 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p>{t('adminPacksHint')}</p>
+          <p className="text-white/40 text-xs">{t('adminPacksHint2')}</p>
+        </div>
+      </div>
 
       {/* DB packs */}
       <h2 className="font-display text-gold text-lg mb-3">{t('adminInDb')}</h2>
@@ -367,6 +449,7 @@ export default function Admin() {
                 disabled={!!busy}
                 className="btn-outline text-xs !py-1.5 !px-2.5"
                 onClick={() => patchPack(pack.id, { is_official: !pack.is_official })}
+                title={pack.is_official ? t('adminUnsetOfficial') : t('adminSetOfficial')}
               >
                 <Star size={12} className="inline mr-1" />
                 {pack.is_official ? t('adminUnsetOfficial') : t('adminSetOfficial')}
@@ -394,7 +477,7 @@ export default function Admin() {
                 type="button"
                 disabled={!!busy}
                 className="btn-outline text-xs !py-1.5 !px-2.5 border-accent-red/50 text-accent-red"
-                onClick={() => removePack(pack.id, pack.name)}
+                onClick={() => removePack(pack.id, pack.name, !!pack.is_official)}
               >
                 <Trash2 size={12} className="inline mr-1" /> {t('deletePack')}
               </button>
@@ -403,37 +486,76 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* Templates not yet in DB */}
-      {missingTemplates.length > 0 && (
-        <>
-          <h2 className="font-display text-gold text-lg mb-2">{t('adminMissing')}</h2>
-          <p className="text-white/45 text-xs mb-3">{t('adminMissingHint')}</p>
-          <div className="space-y-2">
-            {missingTemplates.map((tpl) => (
-              <div
-                key={tpl.game_type + tpl.name}
-                className="card-panel p-3 flex flex-wrap items-center justify-between gap-2 border-dashed border-gold/30"
-              >
-                <div>
-                  <div className="text-gold/90 font-medium text-sm">{tpl.name}</div>
-                  <div className="text-white/40 text-xs">
-                    {GAME_META[tpl.game_type as GameType]?.emoji}{' '}
-                    {t(('game_' + tpl.game_type) as TranslationKey)} · {tpl.game_type}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
-                  disabled={!!busy}
-                  onClick={() => seedTemplate(tpl)}
-                >
-                  <Upload size={12} /> {t('adminSeedOne')}
-                </button>
-              </div>
-            ))}
+      {/* Templates not yet in DB — collapsed by default */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => setShowTemplates((v) => !v)}
+          className="w-full flex items-center justify-between gap-2 text-left card-panel p-3 border-dashed border-gold/30 hover:border-gold/50 transition"
+        >
+          <div>
+            <div className="font-display text-gold text-base">
+              {t('adminMissing')}
+              {missingTemplates.length > 0 && (
+                <span className="ml-2 text-sm font-sans text-amber-300/90">
+                  ({missingTemplates.length})
+                </span>
+              )}
+            </div>
+            <p className="text-white/40 text-xs mt-0.5">{t('adminMissingHint')}</p>
           </div>
-        </>
-      )}
+          {showTemplates ? (
+            <ChevronUp size={18} className="text-gold/70 shrink-0" />
+          ) : (
+            <ChevronDown size={18} className="text-gold/70 shrink-0" />
+          )}
+        </button>
+
+        {showTemplates && (
+          <div className="mt-3 space-y-3">
+            {missingTemplates.length === 0 ? (
+              <p className="text-white/40 text-sm px-1">{t('adminNoMissing')}</p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="btn-gold text-sm flex items-center gap-1"
+                    disabled={!!busy || missingTemplates.length === 0}
+                    onClick={seedAllMissing}
+                  >
+                    <Upload size={14} /> {t('adminSeedAll')} ({missingTemplates.length})
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {missingTemplates.map((tpl) => (
+                    <div
+                      key={tpl.game_type + tpl.name}
+                      className="card-panel p-3 flex flex-wrap items-center justify-between gap-2 border-dashed border-gold/30"
+                    >
+                      <div>
+                        <div className="text-gold/90 font-medium text-sm">{tpl.name}</div>
+                        <div className="text-white/40 text-xs">
+                          {GAME_META[tpl.game_type as GameType]?.emoji}{' '}
+                          {t(('game_' + tpl.game_type) as TranslationKey)} · {tpl.game_type}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+                        disabled={!!busy}
+                        onClick={() => seedTemplate(tpl)}
+                      >
+                        <Upload size={12} /> {t('adminSeedOne')}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       <p className="text-white/30 text-xs mt-10 text-center">
         PB: <code className="text-white/40">{pb.baseUrl}</code>

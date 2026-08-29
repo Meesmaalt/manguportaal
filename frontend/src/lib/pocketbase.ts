@@ -117,7 +117,10 @@ export function generateCode(length = 6): string {
   return code
 }
 
-export function formatPbError(e: unknown): string {
+export function formatPbError(
+  e: unknown,
+  opts?: { adminContext?: boolean }
+): string {
   const err = e as any
   const msg = err?.message || String(e)
   const status = err?.status
@@ -128,7 +131,7 @@ export function formatPbError(e: unknown): string {
     for (const [k, v] of Object.entries(data)) {
       if (k === 'code' || k === 'message') continue
       const m = (v as any)?.message || (typeof v === 'string' ? v : JSON.stringify(v))
-      if (m) parts.push(`${k}: ${m}`)
+      if (m && m !== '{}') parts.push(`${k}: ${m}`)
     }
     if (parts.length) fieldHints = ' — ' + parts.join('; ')
   }
@@ -143,6 +146,14 @@ export function formatPbError(e: unknown): string {
     return `PocketBase ei vasta (${getConfig().pbUrl}). Kontrolli PB_PUBLIC_URL / proksit.`
   }
   if (status === 400 || msg.includes('Failed to create')) {
+    if (opts?.adminContext) {
+      return (
+        msg +
+        fieldHints +
+        '. Superuserina peaks create töötama (reeglid ignoreeritakse). ' +
+        'Kontrolli packs välju (nt owner relation → users) PB Adminis.'
+      )
+    }
     return (
       msg +
       fieldHints +

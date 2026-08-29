@@ -64,11 +64,12 @@ export default function PlayGeneric() {
           </button>
         </div>
 
-        <div className="max-w-3xl mx-auto mb-3 relative z-10">
+        <div className="max-w-3xl mx-auto mb-1 relative z-10">
           <ThemeStudio
             bgMedia={state.bgMedia || null}
             onBgMedia={(m) => update({ bgMedia: m })}
             compact
+            defaultOpen={false}
           />
         </div>
         <SessionBgLayer media={state.bgMedia} />

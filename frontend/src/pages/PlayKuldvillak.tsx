@@ -43,8 +43,8 @@ export default function PlayKuldvillak() {
   }
 
   return (
-    <div className="py-4 px-2">
-      <div className="max-w-6xl mx-auto mb-2 flex items-center justify-between px-2 gap-2 flex-wrap">
+    <div className="pt-1 px-2 pb-4">
+      <div className="max-w-6xl mx-auto mb-1 flex items-center justify-between px-2 gap-2 flex-wrap">
         <Link
           to="/play/kuldvillak"
           className="inline-flex items-center gap-2 text-white/50 hover:text-gold text-sm"
@@ -72,11 +72,12 @@ export default function PlayKuldvillak() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 mb-3 relative z-10">
+      <div className="max-w-4xl mx-auto px-2 mb-1 relative z-10">
         <ThemeStudio
           bgMedia={(state as any).bgMedia || null}
           onBgMedia={(m) => update({ bgMedia: m } as any)}
           compact
+          defaultOpen={false}
         />
       </div>
       <SessionBgLayer media={(state as any).bgMedia} />

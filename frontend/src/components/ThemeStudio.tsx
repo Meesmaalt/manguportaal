@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useI18n } from '@/i18n/I18nContext'
 import { THEMES, applyTheme, getStoredTheme, type ThemeId } from '@/lib/themes'
-import { ImagePlus, Film, Trash2, Palette } from 'lucide-react'
+import { ImagePlus, Film, Trash2, Palette, ChevronDown, ChevronUp } from 'lucide-react'
 
 export type BgMedia = {
   kind: 'image' | 'video'
@@ -76,12 +76,15 @@ type Props = {
   bgMedia?: BgMedia
   onBgMedia?: (m: BgMedia) => void
   compact?: boolean
+  /** Start collapsed (default true for host UI) */
+  defaultOpen?: boolean
 }
 
-export default function ThemeStudio({ bgMedia, onBgMedia, compact }: Props) {
+export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen = false }: Props) {
   const { t, lang } = useI18n()
   const [themeId, setThemeId] = useState<ThemeId>(getStoredTheme())
   const [err, setErr] = useState('')
+  const [open, setOpen] = useState(defaultOpen)
   const imgRef = useRef<HTMLInputElement>(null)
   const vidRef = useRef<HTMLInputElement>(null)
 
@@ -101,83 +104,107 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact }: Props) {
     }
   }
 
-  return (
-    <div className={`card-panel ${compact ? 'p-3' : 'p-4'} space-y-3 border-gold/25`}>
-      <div className="flex items-center gap-2 text-gold font-display text-sm tracking-wide">
-        <Palette size={16} />
-        {t('themePreset')}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {THEMES.map((th) => (
-          <button
-            key={th.id}
-            type="button"
-            onClick={() => pickTheme(th.id)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition ${
-              themeId === th.id
-                ? 'bg-gold text-bg border-gold font-bold'
-                : 'border-gold/40 text-gold/90 hover:border-gold'
-            }`}
-          >
-            {th.label[lang] || th.label.et}
-          </button>
-        ))}
-      </div>
+  const activeLabel =
+    THEMES.find((th) => th.id === themeId)?.label[lang] ||
+    THEMES.find((th) => th.id === themeId)?.label.et ||
+    themeId
 
-      {onBgMedia && (
-        <>
-          <div className="text-gold/90 text-xs font-medium pt-1">{t('themeBg')}</div>
-          <p className="text-white/40 text-[11px] leading-snug">{t('themeBgHint')}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
-              onClick={() => imgRef.current?.click()}
-            >
-              <ImagePlus size={14} /> {t('themeBgImage')}
-            </button>
-            <button
-              type="button"
-              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
-              onClick={() => vidRef.current?.click()}
-            >
-              <Film size={14} /> {t('themeBgVideo')}
-            </button>
-            {bgMedia && (
-              <button
-                type="button"
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-accent-red/40 text-accent-red"
-                onClick={() => onBgMedia(null)}
-              >
-                <Trash2 size={14} /> {t('themeBgClear')}
-              </button>
-            )}
-          </div>
-          <input
-            ref={imgRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => onFile(e.target.files?.[0], 'image')}
-          />
-          <input
-            ref={vidRef}
-            type="file"
-            accept="video/mp4,video/webm"
-            className="hidden"
-            onChange={(e) => onFile(e.target.files?.[0], 'video')}
-          />
-          {bgMedia && (
-            <div className="rounded-lg overflow-hidden border border-gold/20 max-h-28">
-              {bgMedia.kind === 'image' ? (
-                <img src={bgMedia.dataUrl} alt="" className="w-full h-28 object-cover opacity-80" />
-              ) : (
-                <video src={bgMedia.dataUrl} className="w-full h-28 object-cover" muted playsInline />
-              )}
-            </div>
+  return (
+    <div className={`card-panel ${compact ? 'p-2' : 'p-4'} border-gold/25`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 text-left"
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2 text-gold font-display text-sm tracking-wide">
+          <Palette size={16} />
+          {t('themePreset')}
+          {!open && (
+            <span className="text-white/45 font-sans font-normal text-xs tracking-normal">
+              · {activeLabel}
+              {bgMedia ? ` · ${bgMedia.kind === 'image' ? t('themeBgImage') : t('themeBgVideo')}` : ''}
+            </span>
           )}
-          {err && <p className="text-accent-red text-xs">{err}</p>}
-        </>
+        </span>
+        {open ? <ChevronUp size={16} className="text-gold/70 shrink-0" /> : <ChevronDown size={16} className="text-gold/70 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="space-y-3 mt-3 pt-3 border-t border-gold/15">
+          <div className="flex flex-wrap gap-2">
+            {THEMES.map((th) => (
+              <button
+                key={th.id}
+                type="button"
+                onClick={() => pickTheme(th.id)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                  themeId === th.id
+                    ? 'bg-gold text-bg border-gold font-bold'
+                    : 'border-gold/40 text-gold/90 hover:border-gold'
+                }`}
+              >
+                {th.label[lang] || th.label.et}
+              </button>
+            ))}
+          </div>
+
+          {onBgMedia && (
+            <>
+              <div className="text-gold/90 text-xs font-medium pt-1">{t('themeBg')}</div>
+              <p className="text-white/40 text-[11px] leading-snug">{t('themeBgHint')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+                  onClick={() => imgRef.current?.click()}
+                >
+                  <ImagePlus size={14} /> {t('themeBgImage')}
+                </button>
+                <button
+                  type="button"
+                  className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+                  onClick={() => vidRef.current?.click()}
+                >
+                  <Film size={14} /> {t('themeBgVideo')}
+                </button>
+                {bgMedia && (
+                  <button
+                    type="button"
+                    className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-accent-red/40 text-accent-red"
+                    onClick={() => onBgMedia(null)}
+                  >
+                    <Trash2 size={14} /> {t('themeBgClear')}
+                  </button>
+                )}
+              </div>
+              <input
+                ref={imgRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => onFile(e.target.files?.[0], 'image')}
+              />
+              <input
+                ref={vidRef}
+                type="file"
+                accept="video/mp4,video/webm"
+                className="hidden"
+                onChange={(e) => onFile(e.target.files?.[0], 'video')}
+              />
+              {bgMedia && (
+                <div className="rounded-lg overflow-hidden border border-gold/20 max-h-28">
+                  {bgMedia.kind === 'image' ? (
+                    <img src={bgMedia.dataUrl} alt="" className="w-full h-28 object-cover opacity-80" />
+                  ) : (
+                    <video src={bgMedia.dataUrl} className="w-full h-28 object-cover" muted playsInline />
+                  )}
+                </div>
+              )}
+              {err && <p className="text-accent-red text-xs">{err}</p>}
+            </>
+          )}
+        </div>
       )}
     </div>
   )

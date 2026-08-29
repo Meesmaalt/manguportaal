@@ -64,11 +64,12 @@ export default function PlayRoosidesoda() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 mb-3 relative z-10">
+      <div className="max-w-4xl mx-auto px-2 mb-1 relative z-10">
         <ThemeStudio
           bgMedia={(state as any).bgMedia || null}
           onBgMedia={(m) => update({ bgMedia: m } as any)}
           compact
+          defaultOpen={false}
         />
       </div>
       <SessionBgLayer media={(state as any).bgMedia} />
