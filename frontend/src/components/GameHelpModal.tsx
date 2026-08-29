@@ -1,19 +1,6 @@
 import { useI18n } from '@/i18n/I18nContext'
-import type { TranslationKey } from '@/i18n/translations'
+import { getGuide } from '@/i18n/guides'
 import { X, Monitor } from 'lucide-react'
-
-const GUIDE_KEYS: Record<string, TranslationKey> = {
-  kuldvillak: 'guide_kuldvillak',
-  roosidesoda: 'guide_roosidesoda',
-  sonaseletus: 'guide_sonaseletus',
-  ma_ei_ole_kunagi: 'guide_ma_ei_ole_kunagi',
-  viimane_pusti: 'guide_viimane_pusti',
-  tode_voi_tegu: 'guide_tode_voi_tegu',
-}
-
-export function guideKeyFor(gameType: string): TranslationKey {
-  return GUIDE_KEYS[gameType] || 'guide_kuldvillak'
-}
 
 type Props = {
   gameType: string
@@ -30,9 +17,9 @@ export default function GameHelpModal({
   publicShown,
   onTogglePublic,
 }: Props) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   if (!open) return null
-  const text = t(guideKeyFor(gameType))
+  const text = getGuide(lang, gameType)
 
   return (
     <div
@@ -54,7 +41,7 @@ export default function GameHelpModal({
         <h2 className="font-display text-3xl md:text-4xl text-gold mb-6 pr-10 tracking-wide">
           {t('helpTitle')}
         </h2>
-        <div className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed whitespace-pre-wrap font-sans space-y-3">
+        <div className="text-base md:text-lg lg:text-xl text-white/90 leading-relaxed whitespace-pre-wrap font-sans">
           {text}
         </div>
         <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gold/20">
@@ -78,7 +65,7 @@ export default function GameHelpModal({
 }
 
 export function PublicGuideOverlay({ gameType }: { gameType: string }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 md:p-16 bg-black/92">
       <div className="max-w-4xl w-full">
@@ -86,7 +73,7 @@ export function PublicGuideOverlay({ gameType }: { gameType: string }) {
           {t('helpTitle')}
         </div>
         <div className="text-lg md:text-2xl lg:text-3xl text-white/95 leading-relaxed whitespace-pre-wrap font-sans text-center md:text-left">
-          {t(guideKeyFor(gameType))}
+          {getGuide(lang, gameType)}
         </div>
       </div>
     </div>
