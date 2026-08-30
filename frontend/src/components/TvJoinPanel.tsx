@@ -13,15 +13,17 @@ type Props = {
 
 export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0, onRetry }: Props) {
   const { t } = useI18n()
-  const [copied, setCopied] = useState<'link' | 'code' | null>(null)
+  const [copied, setCopied] = useState<'link' | 'code' | 'buzz' | null>(null)
   if (!code) return null
 
   const url = appUrl(`/ekraan/${code}`)
+  const buzzUrl = appUrl(`/buzz/${code}`)
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&margin=8&data=${encodeURIComponent(url)}`
 
-  async function copy(kind: 'link' | 'code') {
+  async function copy(kind: 'link' | 'code' | 'buzz') {
     try {
-      await navigator.clipboard.writeText(kind === 'link' ? url : code)
+      const text = kind === 'link' ? url : kind === 'buzz' ? buzzUrl : code
+      await navigator.clipboard.writeText(text)
       setCopied(kind)
       setTimeout(() => setCopied(null), 2000)
     } catch {}
@@ -125,6 +127,25 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
               </button>
               <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold text-xs !py-1.5 !px-3">
                 {t('tvOpen')}
+              </a>
+            </div>
+          </div>
+
+
+          <div>
+            <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('buzzLink')}</div>
+            <p className="text-white/45 text-xs mb-2">{t('shareBuzzHint')}</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => copy('buzz')}
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+              >
+                {copied === 'buzz' ? <Check size={12} /> : <Copy size={12} />}
+                {copied === 'buzz' ? t('sessionCopied') : t('shareCopyBuzz')}
+              </button>
+              <a href={buzzUrl} target="_blank" rel="noopener noreferrer" className="btn-outline text-xs !py-1.5 !px-3">
+                {t('shareOpenBuzz')}
               </a>
             </div>
           </div>

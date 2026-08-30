@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
 import { createGameSession, downloadJson, packExportPayload, CloudSessionError, createOwnedPack } from '@/lib/sessions'
 import { rememberHostSession } from '@/hooks/useGameSession'
+import { trackSessionStart } from '@/lib/stats'
+import { packTitle, packDescription } from '@/lib/packI18n'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User, Trash2 } from 'lucide-react'
@@ -117,7 +119,7 @@ export default function PackSelect() {
   const { gameType } = useParams<{ gameType: string }>()
   const navigate = useNavigate()
   const { user, isLoggedIn } = useAuth()
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [packs, setPacks] = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState<string | null>(null)
@@ -254,6 +256,7 @@ export default function PackSelect() {
         allowLocal: false,
       })
       rememberHostSession({ sessionId, code: sessCode, gameType: gameType! })
+      trackSessionStart(gameType!)
       navigate(`/play/${gameType}/${sessionId}`)
     } catch (e: any) {
       setStartError(e?.message || 'Sessiooni loomine ebaõnnestus')
@@ -328,14 +331,14 @@ export default function PackSelect() {
             >
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h3 className="font-display text-xl text-gold">{pack.name}</h3>
+                  <h3 className="font-display text-xl text-gold">{packTitle(pack, lang)}</h3>
                   {pack.is_official && (
                     <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">
                       {t('packOfficial')}
                     </span>
                   )}
                 </div>
-                <p className="text-white/50 text-sm">{pack.description || ''}</p>
+                <p className="text-white/50 text-sm">{packDescription(pack, lang)}</p>
               </div>
               <div className="flex gap-2 shrink-0 flex-wrap justify-end">
                 <button

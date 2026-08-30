@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n/I18nContext'
 import { pb, type Pack } from '@/lib/pocketbase'
 import { Plus, Layers, Upload, RotateCcw } from 'lucide-react'
 import { getRememberedHostSession, clearRememberedHostSession } from '@/hooks/useGameSession'
+import { getStats } from '@/lib/stats'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
@@ -33,6 +34,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [myPacks, setMyPacks] = useState<Pack[]>([])
   const remembered = getRememberedHostSession()
+  const stats = getStats()
 
   useEffect(() => {
     if (!user?.id) {
@@ -96,6 +98,18 @@ export default function Dashboard() {
             <Link to="/login" className="btn-outline text-sm shrink-0">
               {t('dashEnter')}
             </Link>
+          </div>
+        )}
+
+        {(stats.sessionsStarted > 0 || stats.questionsResolved > 0) && (
+          <div className="card-panel p-4 mb-8 border-white/10 text-sm text-white/55 flex flex-wrap gap-4">
+            <span>{t('statsSessions')}: <strong className="text-gold">{stats.sessionsStarted}</strong></span>
+            <span>{t('statsQuestions')}: <strong className="text-gold">{stats.questionsResolved}</strong></span>
+            {stats.lastPlayedAt && (
+              <span className="text-white/35 text-xs w-full sm:w-auto">
+                {t('statsLast')}: {new Date(stats.lastPlayedAt).toLocaleString()}
+              </span>
+            )}
           </div>
         )}
 

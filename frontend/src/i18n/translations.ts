@@ -320,6 +320,15 @@ export const translations = {
     resumeSessionTitle: 'Pooleli mängu sessioon',
     resumeSession: 'Jätka hostina',
     resumeDismiss: 'Unusta',
+    hostAnswerOnly: 'Vastus (ainult hostile — TV ei näe seni, kuni avaldad)',
+    showAnswerTv: 'Näita vastust teleris',
+    hideAnswerTv: 'Peida vastus teleris',
+    shareBuzzHint: 'Saada külalistele — konto pole vaja, ainult nimi + nupp.',
+    shareCopyBuzz: 'Kopeeri buzzeri link',
+    shareOpenBuzz: 'Ava buzzer',
+    statsSessions: 'Alustatud mänge',
+    statsQuestions: 'Lahendatud küsimusi',
+    statsLast: 'Viimati',
 
   },
   en: {
@@ -635,6 +644,15 @@ export const translations = {
     resumeSessionTitle: 'Unfinished session',
     resumeSession: 'Resume as host',
     resumeDismiss: 'Dismiss',
+    hostAnswerOnly: 'Answer (host only — TV stays hidden until you reveal)',
+    showAnswerTv: 'Show answer on TV',
+    hideAnswerTv: 'Hide answer on TV',
+    shareBuzzHint: 'Send to guests — no account, just name + button.',
+    shareCopyBuzz: 'Copy buzzer link',
+    shareOpenBuzz: 'Open buzzer',
+    statsSessions: 'Games started',
+    statsQuestions: 'Questions resolved',
+    statsLast: 'Last played',
 
   },
   ru: {
@@ -950,6 +968,15 @@ export const translations = {
     resumeSessionTitle: 'Незавершённая сессия',
     resumeSession: 'Продолжить как ведущий',
     resumeDismiss: 'Забыть',
+    hostAnswerOnly: 'Ответ (только ведущему — ТВ не видит, пока не откроете)',
+    showAnswerTv: 'Показать ответ на ТВ',
+    hideAnswerTv: 'Скрыть ответ на ТВ',
+    shareBuzzHint: 'Гостям — без аккаунта, имя и кнопка.',
+    shareCopyBuzz: 'Скопировать ссылку баззера',
+    shareOpenBuzz: 'Открыть баззер',
+    statsSessions: 'Начатых игр',
+    statsQuestions: 'Решённых вопросов',
+    statsLast: 'Последняя',
 
   },
 } as const

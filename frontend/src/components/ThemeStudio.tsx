@@ -227,7 +227,7 @@ export default function ThemeStudio({
 /** Full-bleed custom background for host + TV (sits behind game UI). */
 export function SessionBgLayer({ media, display }: { media?: BgMedia; display?: boolean }) {
   if (!media?.dataUrl) return null
-  const opacity = display ? 0.82 : 0.7
+  // Full-strength image; only light vignette so board text stays readable
   return (
     <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
       {media.kind === 'image' ? (
@@ -235,20 +235,25 @@ export function SessionBgLayer({ media, display }: { media?: BgMedia; display?: 
           src={media.dataUrl}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity }}
         />
       ) : (
         <video
           src={media.dataUrl}
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity }}
           autoPlay
           loop
           muted
           playsInline
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-black/55" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background: display
+            ? 'linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.22) 100%)'
+            : 'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.1) 45%, rgba(0,0,0,0.3) 100%)',
+        }}
+      />
     </div>
   )
 }

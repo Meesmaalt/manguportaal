@@ -4,6 +4,7 @@ import type { KuldvillakState } from './types'
 import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon } from 'lucide-react'
 import { createBgm, sounds, playFx } from '@/lib/audio'
 import GameShowFrame from '@/components/GameShowFrame'
+import { trackQuestionResolved } from '@/lib/stats'
 import TvJoinPanel from '@/components/TvJoinPanel'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
 import GameToolbar from '@/components/GameToolbar'
@@ -104,6 +105,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
    */
   function resolveQuestion(awardTo?: number) {
     if (!currentQuestion) return
+    trackQuestionResolved()
     const cardId = `${currentQuestion.col}-${currentQuestion.row}`
     if (awardTo !== undefined) {
       playFx('correct')
@@ -578,44 +580,37 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
 
             {isHost && (
               <>
+                {/* Host always sees the answer; TV only after reveal */}
+                <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4 mb-4 text-lg text-accent-green font-bold">
+                  <div className="text-[10px] uppercase tracking-wider text-accent-green/70 font-sans font-bold mb-1">
+                    {t('hostAnswerOnly')}
+                  </div>
+                  {currentQuestion.a}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => update({ showAnswer: !showAnswer })}
                   className="btn-outline text-sm mb-4 flex items-center gap-2"
                 >
                   {showAnswer ? <EyeOff size={16} /> : <Eye size={16} />}
-                  {showAnswer ? t('hideAnswer') : t('showAnswer')}
+                  {showAnswer ? t('hideAnswerTv') : t('showAnswerTv')}
                 </button>
 
-                {showAnswer && (
-                  <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4 mb-6 text-lg text-accent-green font-bold">
-                    Vastus: {currentQuestion.a}
-                  </div>
-                )}
-
-                {showAnswer && (
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    {teams.map((t, i) => (
-                      <button key={i} type="button" onClick={() => resolveQuestion(i)} className="btn-gold flex items-center gap-2">
-                        <Trophy size={16} />
-                        {t.name} (+{currentQuestion.points})
-                      </button>
-                    ))}
-                    <button type="button" onClick={() => resolveQuestion()} className="btn-outline">
-                      {t('nobodyKnows')}
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {teams.map((tm, i) => (
+                    <button key={i} type="button" onClick={() => resolveQuestion(i)} className="btn-gold flex items-center gap-2">
+                      <Trophy size={16} />
+                      {tm.name} (+{currentQuestion.points})
                     </button>
-                    <button type="button" onClick={() => dismissQuestion()} className="btn-outline text-white/60">
-                      {t('closeKeepCard')}
-                    </button>
-                  </div>
-                )}
-                {!showAnswer && (
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    <button type="button" onClick={() => dismissQuestion()} className="btn-outline text-white/60">
-                      {t('closeKeepCard')}
-                    </button>
-                  </div>
-                )}
+                  ))}
+                  <button type="button" onClick={() => resolveQuestion()} className="btn-outline">
+                    {t('nobodyKnows')}
+                  </button>
+                  <button type="button" onClick={() => dismissQuestion()} className="btn-outline text-white/60">
+                    {t('closeKeepCard')}
+                  </button>
+                </div>
               </>
             )}
 
