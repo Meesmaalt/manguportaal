@@ -175,7 +175,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const leader = [...teams].sort((a,b) => b.score-a.score)[0]
 
   return (
-    <GameShowFrame display={!isHost} title={t('game_kuldvillak').toUpperCase()}>
+    <GameShowFrame display={!isHost} title={t('game_kuldvillak').toUpperCase()} hasSessionBg={!!(state as any).bgMedia?.dataUrl}>
     <div className="w-full max-w-6xl mx-auto px-2 py-2">
       {isHost && (
         <GameToolbar

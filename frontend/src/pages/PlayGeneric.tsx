@@ -43,7 +43,7 @@ export default function PlayGeneric() {
   const titleKey = (`game_${gameType}` as TranslationKey)
 
   return (
-    <GameShowFrame title={(gameType ? t(titleKey) : 'ÕHTU').toUpperCase()}>
+    <GameShowFrame title={(gameType ? t(titleKey) : 'ÕHTU').toUpperCase()} hasSessionBg={!!state.bgMedia?.dataUrl}>
       <div className="py-4 px-2">
         <div className="max-w-3xl mx-auto mb-4 flex items-center justify-between px-2 gap-2 flex-wrap">
           <Link
@@ -68,6 +68,8 @@ export default function PlayGeneric() {
           <ThemeStudio
             bgMedia={state.bgMedia || null}
             onBgMedia={(m) => update({ bgMedia: m })}
+            themeId={state.themeId}
+            onThemeId={(id) => update({ themeId: id })}
             compact
             defaultOpen={false}
           />

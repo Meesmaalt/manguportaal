@@ -76,6 +76,8 @@ export default function PlayKuldvillak() {
         <ThemeStudio
           bgMedia={(state as any).bgMedia || null}
           onBgMedia={(m) => update({ bgMedia: m } as any)}
+          themeId={(state as any).themeId}
+          onThemeId={(id) => update({ themeId: id } as any)}
           compact
           defaultOpen={false}
         />

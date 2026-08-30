@@ -13,7 +13,7 @@ import type { ConnectionStatus } from '@/hooks/useGameSession'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { useI18n } from '@/i18n/I18nContext'
-import { applyTheme, getStoredTheme } from '@/lib/themes'
+import { applyTheme, getStoredTheme, type ThemeId } from '@/lib/themes'
 import { PublicGuideOverlay } from '@/components/GameHelpModal'
 import { SessionBgLayer } from '@/components/ThemeStudio'
 import type { TranslationKey } from '@/i18n/translations'
@@ -31,6 +31,12 @@ export default function Display() {
   const [connection, setConnection] = useState<ConnectionStatus>('offline')
   const [hostStale, setHostStale] = useState(false)
   const lastBeat = useRef(0)
+
+  // Follow host color theme when present in session state
+  useEffect(() => {
+    const id = state?.themeId as ThemeId | undefined
+    if (id) applyTheme(id)
+  }, [state?.themeId])
 
   const code = (codeParam || '').toUpperCase()
 
@@ -203,7 +209,7 @@ export default function Display() {
       </div>
 
       {state.publicGuide && <PublicGuideOverlay gameType={gt} />}
-      <SessionBgLayer media={state.bgMedia} />
+      <SessionBgLayer media={state.bgMedia} display />
       {gt === 'kuldvillak' && (
         <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
       )}
@@ -211,7 +217,7 @@ export default function Display() {
         <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
       )}
       {gt !== 'kuldvillak' && gt !== 'roosidesoda' && (
-        <GameShowFrame display title={title}>
+        <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
           {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
           {gt === 'ma_ei_ole_kunagi' && (
             <MaEiOleKunagiGame state={state} update={noop} isHost={false} />

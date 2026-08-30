@@ -526,6 +526,7 @@ export const KULDVILLAK_PULM_ALEKSANDER_RIINA: KuldvillakPackData = {
 
 export const OFFICIAL_PACKS = [
   {
+    slug: 'kuldvillak-pulm-aleksander-riina',
     name: 'Kuldvillak – Pulm Aleksander & Riina',
     description: '6 kategooriat: Toit, Piibel, Aleksander–Riina, Words of wisdom, Faktid, 5. klass.',
     game_type: 'kuldvillak' as const,
@@ -534,6 +535,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'kuldvillak-klassika',
     name: 'Kuldvillak – Klassika',
     description: 'Tehnika, toit, piibel, mängud, Eesti. Valmis peoks.',
     game_type: 'kuldvillak' as const,
@@ -542,6 +544,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'kuldvillak-peo',
     name: 'Kuldvillak – Peoõhtu',
     description: 'Sünnipäev, film, muusika, sport, juhuslik.',
     game_type: 'kuldvillak' as const,
@@ -550,6 +553,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'kuldvillak-eesti-2',
     name: 'Kuldvillak – Eesti 2',
     description: 'Geograafia, ajalugu, kultuur, toit, loodus.',
     game_type: 'kuldvillak' as const,
@@ -558,6 +562,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'roosidesoda-klassika',
     name: 'Rooside Sõda – Klassika',
     description: 'Viis vooru klassikaliste küsimustega.',
     game_type: 'roosidesoda' as const,
@@ -566,6 +571,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'roosidesoda-kodu',
     name: 'Rooside Sõda – Kodu & argipäev',
     description: 'Köök, nädalavahetus, lemmikloomad, pood, hilinemine.',
     game_type: 'roosidesoda' as const,
@@ -574,6 +580,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'sonaseletus-klassika',
     name: 'Sõnaseletus – Klassika',
     description: '60+ sõna, 60 sekundi voorud.',
     game_type: 'sonaseletus' as const,
@@ -582,6 +589,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'sonaseletus-eesti',
     name: 'Sõnaseletus – Eesti',
     description: 'Eesti teemalised sõnad.',
     game_type: 'sonaseletus' as const,
@@ -590,6 +598,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'ma-ei-ole-kunagi-peo',
     name: 'Ma ei ole kunagi – Peo sett',
     description: '30 lõbusat väidet.',
     game_type: 'ma_ei_ole_kunagi' as const,
@@ -598,6 +607,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'viimane-pusti-klassika',
     name: 'Viimane püsti – Klassika',
     description: '3 elu, 20 väidet.',
     game_type: 'viimane_pusti' as const,
@@ -606,6 +616,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'tode-voi-tegu-peo',
     name: 'Tõde või tegu – Peo sett',
     description: 'Julgemad tõed ja teod.',
     game_type: 'tode_voi_tegu' as const,
@@ -614,6 +625,7 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'tode-voi-tegu-soft',
     name: 'Tõde või tegu – Soft',
     description: 'Rahulikum sett perele / alguseks.',
     game_type: 'tode_voi_tegu' as const,

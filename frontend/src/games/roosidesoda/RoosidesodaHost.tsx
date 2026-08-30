@@ -211,7 +211,7 @@ export default function RoosidesodaHost({
       : null
 
   return (
-    <GameShowFrame display={!isHost} title={t('game_roosidesoda').toUpperCase()}>
+    <GameShowFrame display={!isHost} title={t('game_roosidesoda').toUpperCase()} hasSessionBg={!!(state as any).bgMedia?.dataUrl}>
       {isHost && (
         <GameToolbar
           onReset={resetGame}

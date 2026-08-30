@@ -194,6 +194,27 @@ export default function Admin() {
     }
   }
 
+  /** Upsert code template into DB as official+public (match by name + game_type). */
+  async function upsertTemplate(tpl: (typeof OFFICIAL_PACKS)[number]) {
+    const payload = {
+      name: tpl.name,
+      description: tpl.description || '',
+      game_type: tpl.game_type,
+      data: tpl.data,
+      is_official: true,
+      is_public: true,
+    }
+    const existing = packs.find(
+      (p) => p.name === tpl.name && p.game_type === tpl.game_type
+    )
+    if (existing) {
+      await pb.collection('packs').update(existing.id, payload)
+      return 'updated' as const
+    }
+    await pb.collection('packs').create(payload)
+    return 'created' as const
+  }
+
   /** Push a code-side official template into PocketBase as is_official */
   async function seedTemplate(tpl: (typeof OFFICIAL_PACKS)[number]) {
     if (!ensureStillAdmin()) return
@@ -201,16 +222,8 @@ export default function Admin() {
     setError('')
     setMsg('')
     try {
-      await pb.collection('packs').create({
-        name: tpl.name,
-        description: tpl.description || '',
-        game_type: tpl.game_type,
-        data: tpl.data,
-        is_official: true,
-        is_public: true,
-        // owner left empty — official packs are site-wide
-      })
-      setMsg(`✓ ${tpl.name} → baasi`)
+      const action = await upsertTemplate(tpl)
+      setMsg(action === 'updated' ? `✓ ${tpl.name} uuendatud` : `✓ ${tpl.name} → baasi`)
       await loadPacks()
     } catch (err: any) {
       const status = (err as any)?.status
@@ -233,24 +246,20 @@ export default function Admin() {
     setBusy('seed-all')
     setError('')
     setMsg('')
-    let n = 0
+    let created = 0
+    let updated = 0
     try {
       for (const tpl of OFFICIAL_PACKS) {
+        if (gameFilter !== 'all' && tpl.game_type !== gameFilter) continue
         const exists = packs.some(
           (p) => p.name === tpl.name && p.game_type === tpl.game_type
         )
+        // "Seed all missing" only creates; use seedTemplate for single upsert
         if (exists) continue
-        await pb.collection('packs').create({
-          name: tpl.name,
-          description: tpl.description || '',
-          game_type: tpl.game_type,
-          data: tpl.data,
-          is_official: true,
-          is_public: true,
-        })
-        n++
+        await upsertTemplate(tpl)
+        created++
       }
-      setMsg(`✓ ${n} setti baasi`)
+      setMsg(`✓ ${created} setti baasi` + (updated ? `, ${updated} uuendatud` : ''))
       await loadPacks()
     } catch (err: any) {
       const status = (err as any)?.status

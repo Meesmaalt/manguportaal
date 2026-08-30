@@ -8,18 +8,15 @@ export type BgMedia = {
   dataUrl: string
 } | null
 
-const MAX_BYTES = 2.5 * 1024 * 1024 // keep session JSON reasonable
+/** Keep session JSON small enough for PocketBase realtime (~1 MB practical). */
+const MAX_BYTES = 1.2 * 1024 * 1024
 
 async function fileToDataUrl(file: File): Promise<string> {
-  if (file.size > MAX_BYTES * 1.5) {
-    throw new Error('File too large (max ~2.5 MB)')
-  }
   if (file.type.startsWith('image/')) {
     return compressImage(file)
   }
-  // video: only if under limit
   if (file.size > MAX_BYTES) {
-    throw new Error('Video too large (max ~2.5 MB). Use a short clip.')
+    throw new Error('Video too large (max ~1.2 MB). Use a short clip so TV can sync.')
   }
   return readAsDataUrl(file)
 }
@@ -39,7 +36,7 @@ function compressImage(file: File): Promise<string> {
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)
-      const maxW = 1600
+      const maxW = 1280
       let w = img.width
       let h = img.height
       if (w > maxW) {
@@ -55,11 +52,15 @@ function compressImage(file: File): Promise<string> {
         return
       }
       ctx.drawImage(img, 0, 0, w, h)
-      let q = 0.72
+      let q = 0.68
       let data = canvas.toDataURL('image/jpeg', q)
-      while (data.length > MAX_BYTES * 1.37 && q > 0.4) {
+      while (data.length > MAX_BYTES * 1.37 && q > 0.35) {
         q -= 0.08
         data = canvas.toDataURL('image/jpeg', q)
+      }
+      if (data.length > MAX_BYTES * 1.5) {
+        reject(new Error('Image still too large after compress'))
+        return
       }
       resolve(data)
     }
@@ -72,17 +73,24 @@ function compressImage(file: File): Promise<string> {
 }
 
 type Props = {
-  /** Session media — synced to TV when set via update */
   bgMedia?: BgMedia
   onBgMedia?: (m: BgMedia) => void
+  themeId?: ThemeId
+  onThemeId?: (id: ThemeId) => void
   compact?: boolean
-  /** Start collapsed (default true for host UI) */
   defaultOpen?: boolean
 }
 
-export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen = false }: Props) {
+export default function ThemeStudio({
+  bgMedia,
+  onBgMedia,
+  themeId: controlledTheme,
+  onThemeId,
+  compact,
+  defaultOpen = false,
+}: Props) {
   const { t, lang } = useI18n()
-  const [themeId, setThemeId] = useState<ThemeId>(getStoredTheme())
+  const [themeId, setThemeId] = useState<ThemeId>(controlledTheme || getStoredTheme())
   const [err, setErr] = useState('')
   const [open, setOpen] = useState(defaultOpen)
   const imgRef = useRef<HTMLInputElement>(null)
@@ -91,6 +99,7 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen =
   function pickTheme(id: ThemeId) {
     setThemeId(id)
     applyTheme(id)
+    onThemeId?.(id)
   }
 
   async function onFile(file: File | undefined, kind: 'image' | 'video') {
@@ -104,10 +113,11 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen =
     }
   }
 
+  const activeId = controlledTheme || themeId
   const activeLabel =
-    THEMES.find((th) => th.id === themeId)?.label[lang] ||
-    THEMES.find((th) => th.id === themeId)?.label.et ||
-    themeId
+    THEMES.find((th) => th.id === activeId)?.label[lang] ||
+    THEMES.find((th) => th.id === activeId)?.label.et ||
+    activeId
 
   return (
     <div className={`card-panel ${compact ? 'p-2' : 'p-4'} border-gold/25`}>
@@ -127,7 +137,11 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen =
             </span>
           )}
         </span>
-        {open ? <ChevronUp size={16} className="text-gold/70 shrink-0" /> : <ChevronDown size={16} className="text-gold/70 shrink-0" />}
+        {open ? (
+          <ChevronUp size={16} className="text-gold/70 shrink-0" />
+        ) : (
+          <ChevronDown size={16} className="text-gold/70 shrink-0" />
+        )}
       </button>
 
       {open && (
@@ -139,7 +153,7 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen =
                 type="button"
                 onClick={() => pickTheme(th.id)}
                 className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                  themeId === th.id
+                  activeId === th.id
                     ? 'bg-gold text-bg border-gold font-bold'
                     : 'border-gold/40 text-gold/90 hover:border-gold'
                 }`}
@@ -210,24 +224,31 @@ export default function ThemeStudio({ bgMedia, onBgMedia, compact, defaultOpen =
   )
 }
 
-/** Full-bleed custom background for host + TV */
-export function SessionBgLayer({ media }: { media?: BgMedia }) {
+/** Full-bleed custom background for host + TV (sits behind game UI). */
+export function SessionBgLayer({ media, display }: { media?: BgMedia; display?: boolean }) {
   if (!media?.dataUrl) return null
+  const opacity = display ? 0.55 : 0.4
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
       {media.kind === 'image' ? (
-        <img src={media.dataUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <img
+          src={media.dataUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity }}
+        />
       ) : (
         <video
           src={media.dataUrl}
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity }}
           autoPlay
           loop
           muted
           playsInline
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/70" />
     </div>
   )
 }

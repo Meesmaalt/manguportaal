@@ -157,7 +157,10 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
               setSession(rec as GameSession)
               markSync('live')
             })
-            .catch(() => setConnection('reconnecting'))
+            .catch((err) => {
+              console.warn('[ohtu] session update failed', err)
+              setConnection('reconnecting')
+            })
         }
         return withBeat
       })
