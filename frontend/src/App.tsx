@@ -13,6 +13,7 @@ import Display from '@/pages/Display'
 import CreatePack from '@/pages/CreatePack'
 import Playlist from '@/pages/Playlist'
 import Buzzer from '@/pages/Buzzer'
+import DealPlayer from '@/pages/DealPlayer'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
 import EditPack from '@/pages/EditPack'
@@ -68,6 +69,7 @@ export default function App() {
       <Route path="/ekraan" element={<Display />} />
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="/buzzer/:code" element={<Buzzer />} />
+      <Route path="/deal/:code/:token" element={<DealPlayer />} />
       <Route path="/buzz/:code" element={<Buzzer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

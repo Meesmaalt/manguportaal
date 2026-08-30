@@ -100,12 +100,13 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
         code,
       }
-    case 'kinnistu_deal':
+    case 'kinnistu_deal': {
+      const tok = () => Math.random().toString(36).slice(2, 10)
       return {
         players: [
-          { name: 'Mängija 1', hand: [], bank: [], props: {} },
-          { name: 'Mängija 2', hand: [], bank: [], props: {} },
-          { name: 'Mängija 3', hand: [], bank: [], props: {} },
+          { token: tok(), name: 'Mängija 1', hand: [], bank: [], props: {} },
+          { token: tok(), name: 'Mängija 2', hand: [], bank: [], props: {} },
+          { token: tok(), name: 'Mängija 3', hand: [], bank: [], props: {} },
         ],
         deck: [],
         discard: [],
@@ -116,6 +117,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         code,
         packData: { winSets: packData.winSets || 3, startHand: packData.startHand || 5 },
       }
+    }
     default:
       return { packData, code }
   }

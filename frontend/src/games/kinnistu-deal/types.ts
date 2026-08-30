@@ -26,11 +26,13 @@ export type DealCard =
   | { id: string; kind: 'action'; action: ActionKind; name: string; value: number }
 
 export type PlayerBoard = {
+  /** secret token for private player link */
+  token: string
   name: string
   hand: DealCard[]
   bank: DealCard[]
-  /** properties by color */
   props: Partial<Record<PropColor, DealCard[]>>
+  connected?: boolean
 }
 
 export type DealPhase = 'lobby' | 'turn' | 'pick_target' | 'pay' | 'over'
@@ -38,9 +40,10 @@ export type DealPhase = 'lobby' | 'turn' | 'pick_target' | 'pay' | 'over'
 export type PendingAction = {
   action: ActionKind
   from: number
-  /** rent color if rent */
   color?: PropColor
   cardId: string
+  /** for multi-pay (birthday) remaining targets */
+  remaining?: number[]
 }
 
 export type KinnistuDealState = {
@@ -57,6 +60,7 @@ export type KinnistuDealState = {
   log: string[]
   code?: string
   packData?: { winSets: number; startHand: number }
+  hostBeat?: number
 }
 
 export const SET_SIZE: Record<PropColor, number> = {
@@ -72,31 +76,34 @@ export const SET_SIZE: Record<PropColor, number> = {
   util: 2,
 }
 
-export const COLOR_STYLE: Record<
-  PropColor,
-  { bg: string; label: string; labelEn: string }
-> = {
-  brown: { bg: '#6b3a2a', label: 'Pruun', labelEn: 'Brown' },
-  mint: { bg: '#7dd3c0', label: 'Münt', labelEn: 'Mint' },
-  pink: { bg: '#e879a9', label: 'Roosa', labelEn: 'Pink' },
-  orange: { bg: '#f59e0b', label: 'Oranž', labelEn: 'Orange' },
-  red: { bg: '#ef4444', label: 'Punane', labelEn: 'Red' },
-  yellow: { bg: '#eab308', label: 'Kollane', labelEn: 'Yellow' },
-  green: { bg: '#22c55e', label: 'Roheline', labelEn: 'Green' },
-  blue: { bg: '#3b82f6', label: 'Sinine', labelEn: 'Blue' },
-  rail: { bg: '#1e293b', label: 'Raudtee', labelEn: 'Rail' },
-  util: { bg: '#94a3b8', label: 'Kommunaal', labelEn: 'Utility' },
+export const COLOR_STYLE: Record<PropColor, { bg: string; label: string }> = {
+  brown: { bg: '#6b3a2a', label: 'Pruun' },
+  mint: { bg: '#7dd3c0', label: 'Münt' },
+  pink: { bg: '#e879a9', label: 'Roosa' },
+  orange: { bg: '#f59e0b', label: 'Oranž' },
+  red: { bg: '#ef4444', label: 'Punane' },
+  yellow: { bg: '#eab308', label: 'Kollane' },
+  green: { bg: '#22c55e', label: 'Roheline' },
+  blue: { bg: '#3b82f6', label: 'Sinine' },
+  rail: { bg: '#1e293b', label: 'Raudtee' },
+  util: { bg: '#94a3b8', label: 'Kommunaal' },
 }
 
 export function completeSets(p: PlayerBoard): number {
   let n = 0
   for (const c of Object.keys(SET_SIZE) as PropColor[]) {
-    const arr = p.props[c] || []
-    if (arr.length >= SET_SIZE[c]) n++
+    if ((p.props[c] || []).length >= SET_SIZE[c]) n++
   }
   return n
 }
 
 export function bankTotal(p: PlayerBoard): number {
-  return p.bank.reduce((s, c) => s + (c.kind === 'money' ? c.value : c.value), 0)
+  return p.bank.reduce((s, c) => s + c.value, 0)
+}
+
+export function makeToken(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789'
+  let t = ''
+  for (let i = 0; i < 8; i++) t += chars[Math.floor(Math.random() * chars.length)]
+  return t
 }

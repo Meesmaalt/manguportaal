@@ -1,9 +1,9 @@
-import type { DealCard, PropColor } from './types'
+import type { ActionKind, DealCard, PropColor } from './types'
 
 let seq = 0
 function id(prefix: string) {
   seq += 1
-  return `${prefix}-${seq}-${Math.random().toString(36).slice(2, 7)}`
+  return `${prefix}${seq}${Math.random().toString(36).slice(2, 6)}`
 }
 
 function money(value: number, n: number): DealCard[] {
@@ -20,17 +20,17 @@ function props(color: PropColor, names: string[], value: number): DealCard[] {
   }))
 }
 
-function action(action: DealCard extends { kind: 'action' } ? never : import('./types').ActionKind, name: string, value: number, n: number): DealCard[] {
+function action(kind: ActionKind, name: string, value: number, n: number): DealCard[] {
   return Array.from({ length: n }, () => ({
     id: id('a'),
     kind: 'action' as const,
-    action: action as import('./types').ActionKind,
+    action: kind,
     name,
     value,
   }))
 }
 
-/** Standard-ish party deck (~80 cards). */
+/** Party deck inspired by property-deal card games (~80 cards). */
 export function buildDeck(): DealCard[] {
   seq = 0
   const cards: DealCard[] = [
@@ -59,7 +59,6 @@ export function buildDeck(): DealCard[] {
     ...action('deal_breaker', 'Tehingumurdja', 5, 2),
     ...action('just_say_no', 'Ei, aitäh', 4, 3),
   ]
-  // shuffle
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[cards[i], cards[j]] = [cards[j], cards[i]]
