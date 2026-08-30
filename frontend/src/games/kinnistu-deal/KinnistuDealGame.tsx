@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
 import { emptyPlayer, startGame, endTurn } from './logic'
-import { CardFace, PropPile } from './DealCards'
+import { CardFace, PlayerTableBoard } from './DealCards'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
@@ -123,6 +123,11 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
             )}
           </p>
         )}
+        {phase === 'pick_rent_color' && state.pending && (
+          <p className="text-amber-200 text-sm mt-1">
+            {players[state.pending.from]?.name} valib üüri värvi / maja komplekti
+          </p>
+        )}
         {phase === 'pick_target' && state.pending && (
           <p className="text-amber-200 text-sm mt-1">
             {players[state.pending.from]?.name} valib sihtmärki · {actionLabel(state.pending.action)}
@@ -222,11 +227,11 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-1">
-                {(Object.keys(SET_SIZE) as PropColor[]).map((c) => (
-                  <PropPile key={c} color={c} cards={p.props[c] || []} />
-                ))}
-              </div>
+              {phase !== 'lobby' && (
+                <div className="mt-2">
+                  <PlayerTableBoard player={p} />
+                </div>
+              )}
 
               {phase !== 'lobby' && (
                 <p className="text-white/30 text-[10px] mt-2">
@@ -292,7 +297,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
           </p>
           <div className="flex flex-wrap gap-1.5 justify-center">
             {players[current].hand.map((c) => (
-              <CardFace key={c.id} card={c} small />
+              <CardFace key={c.id} card={c} />
             ))}
             {!players[current].hand.length && <span className="text-white/30 text-sm">tühi</span>}
           </div>

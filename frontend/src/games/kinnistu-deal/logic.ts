@@ -1,4 +1,4 @@
-import type { DealCard, KinnistuDealState, PlayerBoard, PropColor, ActionKind } from './types'
+import type { DealCard, KinnistuDealState, PlayerBoard, PropColor } from './types'
 import {
   SET_SIZE,
   completeSets,
@@ -6,6 +6,8 @@ import {
   looseProperties,
   fullSetColors,
   actionLabel,
+  rentForSet,
+  colorsWithAny,
 } from './types'
 import { buildDeck, drawFrom } from './deck'
 
@@ -37,7 +39,7 @@ export function checkWin(s: KinnistuDealState): KinnistuDealState {
 }
 
 export function emptyPlayer(name: string): PlayerBoard {
-  return { token: makeToken(), name, hand: [], bank: [], props: {} }
+  return { token: makeToken(), name, hand: [], bank: [], props: {}, buildings: {} }
 }
 
 export function startGame(s: KinnistuDealState): KinnistuDealState {
@@ -47,7 +49,7 @@ export function startGame(s: KinnistuDealState): KinnistuDealState {
   const players = s.players.map((p) => {
     const drawn = drawFrom(deck, startHand)
     deck = drawn.deck
-    return { ...p, hand: drawn.cards, bank: [], props: {} }
+    return { ...p, hand: drawn.cards, bank: [], props: {}, buildings: {} }
   })
   const first = drawFrom(deck, 2)
   deck = first.deck
@@ -92,7 +94,7 @@ export function endTurn(s: KinnistuDealState): KinnistuDealState {
   st.pending = null
   st.payFrom = undefined
   st.payAmount = undefined
-  const discardNote = discarded ? ` (viskas ${discarded} üleliigset)` : ''
+  const discardNote = discarded ? ` (viskas ${discarded})` : ''
   st.log = [`→ ${np.name} käik${discardNote}`, ...st.log].slice(0, 16)
   return st
 }
@@ -101,7 +103,6 @@ function hasJustSayNo(p: PlayerBoard): boolean {
   return p.hand.some((c) => c.kind === 'action' && c.action === 'just_say_no')
 }
 
-/** After targeting, offer defend if target holds Just Say No. */
 function afterTarget(st: KinnistuDealState, target: number): KinnistuDealState {
   const pending = st.pending!
   const targetPlayer = st.players[target]
@@ -128,13 +129,13 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
       i === playerIdx ? { ...p, hand: p.hand.filter((c) => c.id !== cardId) } : p
     ),
   }
-  const p = { ...st.players[playerIdx] }
+  const p = { ...st.players[playerIdx], buildings: { ...(st.players[playerIdx].buildings || {}) } }
 
   if (card.kind === 'money') {
     p.bank = [...p.bank, card]
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
-    st.log = [`💰 ${p.name} pani panka ${card.value}M`, ...st.log].slice(0, 16)
+    st.log = [`💰 ${p.name} → pank ${card.value}M`, ...st.log].slice(0, 16)
     return st
   }
 
@@ -143,8 +144,7 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     p.props = { ...p.props, [col]: [...(p.props[col] || []), card] }
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
-    const sets = completeSets(p)
-    st.log = [`🏠 ${p.name} · ${card.name}${sets ? ` (${sets} kompl.)` : ''}`, ...st.log].slice(0, 16)
+    st.log = [`🏠 ${p.name} · ${card.name}`, ...st.log].slice(0, 16)
     return checkWin(st)
   }
 
@@ -156,7 +156,7 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     st.discard = [...st.discard, card]
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
-    st.log = [`📜 ${p.name} · Mine edasi (+2 kaarti)`, ...st.log].slice(0, 16)
+    st.log = [`📜 ${p.name} · Mine edasi (+2)`, ...st.log].slice(0, 16)
     return st
   }
 
@@ -164,7 +164,45 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     p.bank = [...p.bank, card]
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
-    st.log = [`${p.name} pani „Ei, aitäh“ väärtusena panka`, ...st.log].slice(0, 16)
+    st.log = [`${p.name} pani „Ei, aitäh“ panka`, ...st.log].slice(0, 16)
+    return st
+  }
+
+  // House / hotel — attach to own complete set
+  if (card.action === 'house' || card.action === 'hotel') {
+    const full = fullSetColors(p)
+    const eligible =
+      card.action === 'house'
+        ? full.filter((c) => !p.buildings?.[c])
+        : full.filter((c) => p.buildings?.[c] === 'house' || !p.buildings?.[c])
+    if (!eligible.length) {
+      // can't play — return card to hand
+      return s
+    }
+    st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
+    st.discard = [...st.discard, card]
+    st.playsLeft -= 1
+    st.pending = { action: card.action, from: playerIdx, cardId: card.id }
+    st.phase = 'pick_rent_color' // reuse color picker for building
+    st.log = [
+      `🏗️ ${p.name} mängis: ${actionLabel(card.action)} — vali komplekt`,
+      ...st.log,
+    ].slice(0, 16)
+    return st
+  }
+
+  // Rent — first pick which of YOUR property colors
+  if (card.action === 'rent') {
+    const owned = colorsWithAny(p)
+    if (!owned.length) {
+      return s // return card — no properties
+    }
+    st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
+    st.discard = [...st.discard, card]
+    st.playsLeft -= 1
+    st.pending = { action: 'rent', from: playerIdx, cardId: card.id }
+    st.phase = 'pick_rent_color'
+    st.log = [`🔑 ${p.name} nõuab üüri — vali värv`, ...st.log].slice(0, 16)
     return st
   }
 
@@ -173,8 +211,52 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
   st.playsLeft -= 1
   st.pending = { action: card.action, from: playerIdx, cardId: card.id }
   st.phase = 'pick_target'
-  st.log = [`🎯 ${p.name} mängis: ${actionLabel(card.action)}`, ...st.log].slice(0, 16)
+  st.log = [`🎯 ${p.name}: ${actionLabel(card.action)}`, ...st.log].slice(0, 16)
   return st
+}
+
+/** Choose color for rent or for house/hotel placement. */
+export function pickRentColor(s: KinnistuDealState, color: PropColor): KinnistuDealState {
+  if (s.phase !== 'pick_rent_color' || !s.pending) return s
+  const act = s.pending.action
+  const from = s.players[s.pending.from]
+
+  if (act === 'house' || act === 'hotel') {
+    if ((from.props[color] || []).length < SET_SIZE[color]) return s
+    const buildings = { ...(from.buildings || {}) }
+    if (act === 'house') {
+      if (buildings[color]) return s
+      buildings[color] = 'house'
+    } else {
+      buildings[color] = 'hotel'
+    }
+    return {
+      ...s,
+      players: s.players.map((x, i) =>
+        i === s.pending!.from ? { ...from, buildings } : x
+      ),
+      phase: 'turn',
+      pending: null,
+      log: [
+        `🏗️ ${from.name} pani ${act === 'hotel' ? 'hotelli' : 'maja'} (${color})`,
+        ...s.log,
+      ].slice(0, 16),
+    }
+  }
+
+  // rent
+  if (act !== 'rent') return s
+  if (!(from.props[color] || []).length) return s
+  const amount = rentForSet(from, color)
+  return {
+    ...s,
+    pending: { ...s.pending, color },
+    phase: 'pick_target',
+    log: [
+      `🔑 Üür ${color}: ${amount}M (${(from.props[color] || []).length} tänavat${from.buildings?.[color] ? ' + ' + from.buildings[color] : ''}) — vali maksja`,
+      ...s.log,
+    ].slice(0, 16),
+  }
 }
 
 export function pickTarget(s: KinnistuDealState, target: number): KinnistuDealState {
@@ -183,7 +265,6 @@ export function pickTarget(s: KinnistuDealState, target: number): KinnistuDealSt
   return afterTarget(s, target)
 }
 
-/** Target declines with Just Say No from hand. */
 export function defendWithNo(s: KinnistuDealState, playerIdx: number): KinnistuDealState {
   if (s.phase !== 'defend' || !s.pending || s.pending.target !== playerIdx) return s
   const p = s.players[playerIdx]
@@ -197,11 +278,10 @@ export function defendWithNo(s: KinnistuDealState, playerIdx: number): KinnistuD
     discard: [...s.discard, noCard],
     phase: 'turn',
     pending: null,
-    log: [`🚫 ${p.name} ütles „Ei, aitäh“ — kaart tühistatud`, ...s.log].slice(0, 16),
+    log: [`🚫 ${p.name}: „Ei, aitäh“ — tühistatud`, ...s.log].slice(0, 16),
   }
 }
 
-/** Target accepts the effect (no defense). */
 export function skipDefend(s: KinnistuDealState, playerIdx: number): KinnistuDealState {
   if (s.phase !== 'defend' || !s.pending || s.pending.target !== playerIdx) return s
   return applyEffect(s)
@@ -209,10 +289,7 @@ export function skipDefend(s: KinnistuDealState, playerIdx: number): KinnistuDea
 
 export function pickProperty(s: KinnistuDealState, propertyId: string): KinnistuDealState {
   if (s.phase !== 'pick_property' || !s.pending || s.pending.target == null) return s
-  return applyEffect({
-    ...s,
-    pending: { ...s.pending, propertyId },
-  })
+  return applyEffect({ ...s, pending: { ...s.pending, propertyId } })
 }
 
 function applyEffect(s: KinnistuDealState): KinnistuDealState {
@@ -228,7 +305,7 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
       phase: 'pay',
       payFrom: act.target,
       payAmount: 2,
-      log: [`🎂 ${to.name} maksab sünnipäevaks 2M → ${from.name}`, ...st.log].slice(0, 16),
+      log: [`🎂 ${to.name} → 2M ${from.name}`, ...st.log].slice(0, 16),
     }
   }
   if (act.action === 'debt') {
@@ -237,18 +314,18 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
       phase: 'pay',
       payFrom: act.target,
       payAmount: 5,
-      log: [`💸 Võlanõue: ${to.name} → ${from.name} (5M)`, ...st.log].slice(0, 16),
+      log: [`💸 Võlanõue: ${to.name} → 5M`, ...st.log].slice(0, 16),
     }
   }
   if (act.action === 'rent') {
-    // rent scales lightly with attacker's sets
-    const amount = 2 + completeSets(from)
+    const color = act.color
+    const amount = color ? rentForSet(from, color) : 3
     return {
       ...st,
       phase: 'pay',
       payFrom: act.target,
-      payAmount: Math.min(amount, 6),
-      log: [`🔑 Üür: ${to.name} maksab ${Math.min(amount, 6)}M → ${from.name}`, ...st.log].slice(0, 16),
+      payAmount: amount,
+      log: [`🔑 ${to.name} maksab üüri ${amount}M → ${from.name}`, ...st.log].slice(0, 16),
     }
   }
 
@@ -259,7 +336,7 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
         ...st,
         phase: 'turn',
         pending: null,
-        log: [`Salakaup ebaõnnestus — ${to.name}l pole vaba kinnistut`, ...st.log].slice(0, 16),
+        log: [`Salakaup ebaõnnestus`, ...st.log].slice(0, 16),
       }
     }
     if (!act.propertyId && loose.length > 1) {
@@ -267,7 +344,7 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
         ...st,
         phase: 'pick_property',
         pending: act,
-        log: [`Vali, millist kinnistut võtta ${to.name}lt`, ...st.log].slice(0, 16),
+        log: [`Vali kinnistu ${to.name}lt`, ...st.log].slice(0, 16),
       }
     }
     const chosen = act.propertyId
@@ -276,11 +353,16 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
     if (chosen.kind !== 'property') return { ...st, phase: 'turn', pending: null }
     const toProps = { ...to.props }
     toProps[chosen.color] = (toProps[chosen.color] || []).filter((c) => c.id !== chosen.id)
+    // strip building if set broken
+    const toBuildings = { ...(to.buildings || {}) }
+    if ((toProps[chosen.color] || []).length < SET_SIZE[chosen.color]) {
+      delete toBuildings[chosen.color]
+    }
     const fromProps = { ...from.props }
     fromProps[chosen.color] = [...(fromProps[chosen.color] || []), chosen]
     st.players = st.players.map((x, i) => {
       if (i === act.from) return { ...from, props: fromProps }
-      if (i === act.target) return { ...to, props: toProps }
+      if (i === act.target) return { ...to, props: toProps, buildings: toBuildings }
       return x
     })
     st.phase = 'turn'
@@ -296,10 +378,9 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
         ...st,
         phase: 'turn',
         pending: null,
-        log: [`Tehingumurdja ebaõnnestus — ${to.name}l pole täiskomplekti`, ...st.log].slice(0, 16),
+        log: [`Tehingumurdja ebaõnnestus`, ...st.log].slice(0, 16),
       }
     }
-    // pick first full set (or by propertyId color)
     let taken = full[0]
     if (act.propertyId) {
       for (const col of full) {
@@ -313,21 +394,26 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
         ...st,
         phase: 'pick_property',
         pending: act,
-        log: [`Vali, millise komplekti ${to.name}lt võtad`, ...st.log].slice(0, 16),
+        log: [`Vali komplekt ${to.name}lt`, ...st.log].slice(0, 16),
       }
     }
     const setCards = [...(to.props[taken] || [])]
     const toProps = { ...to.props }
     delete toProps[taken]
+    const toBuildings = { ...(to.buildings || {}) }
+    const building = toBuildings[taken]
+    delete toBuildings[taken]
     const fromProps = { ...from.props, [taken]: setCards }
+    const fromBuildings = { ...(from.buildings || {}) }
+    if (building) fromBuildings[taken] = building
     st.players = st.players.map((x, i) => {
-      if (i === act.from) return { ...from, props: fromProps }
-      if (i === act.target) return { ...to, props: toProps }
+      if (i === act.from) return { ...from, props: fromProps, buildings: fromBuildings }
+      if (i === act.target) return { ...to, props: toProps, buildings: toBuildings }
       return x
     })
     st.phase = 'turn'
     st.pending = null
-    st.log = [`💥 Tehingumurdja: ${taken} komplekt → ${from.name}`, ...st.log].slice(0, 16)
+    st.log = [`💥 Tehingumurdja → ${from.name}`, ...st.log].slice(0, 16)
     return checkWin(st)
   }
 
@@ -342,31 +428,28 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
         log: [`Sunnitud tehing ebaõnnestus`, ...st.log].slice(0, 16),
       }
     }
-    // Take theirs; if we have loose, give one back
-    const take = act.propertyId
-      ? theirLoose.find((c) => c.id === act.propertyId) || theirLoose[0]
-      : theirLoose[0]
     if (!act.propertyId && theirLoose.length > 1) {
       return {
         ...st,
         phase: 'pick_property',
         pending: act,
-        log: [`Vali kinnistu, mille võtad ${to.name}lt`, ...st.log].slice(0, 16),
+        log: [`Vali kinnistu, mille võtad`, ...st.log].slice(0, 16),
       }
     }
+    const take = act.propertyId
+      ? theirLoose.find((c) => c.id === act.propertyId) || theirLoose[0]
+      : theirLoose[0]
     if (take.kind !== 'property') return { ...st, phase: 'turn', pending: null }
     const toProps = { ...to.props }
     toProps[take.color] = (toProps[take.color] || []).filter((c) => c.id !== take.id)
     const fromProps = { ...from.props }
     fromProps[take.color] = [...(fromProps[take.color] || []), take]
     let giveName = ''
-    if (myLoose.length) {
+    if (myLoose.length && myLoose[0].kind === 'property') {
       const give = myLoose[0]
-      if (give.kind === 'property') {
-        fromProps[give.color] = (fromProps[give.color] || []).filter((c) => c.id !== give.id)
-        toProps[give.color] = [...(toProps[give.color] || []), give]
-        giveName = ` · andis ${give.name}`
-      }
+      fromProps[give.color] = (fromProps[give.color] || []).filter((c) => c.id !== give.id)
+      toProps[give.color] = [...(toProps[give.color] || []), give]
+      giveName = ` · andis ${give.name}`
     }
     st.players = st.players.map((x, i) => {
       if (i === act.from) return { ...from, props: fromProps }
@@ -387,8 +470,8 @@ export function resolvePay(s: KinnistuDealState): KinnistuDealState {
   const payerI = s.payFrom
   const recvI = s.pending.from
   let left = s.payAmount
-  let payer = { ...s.players[payerI], bank: [...s.players[payerI].bank] }
-  let recv = { ...s.players[recvI], bank: [...s.players[recvI].bank] }
+  let payer = { ...s.players[payerI], bank: [...s.players[payerI].bank], buildings: { ...(s.players[payerI].buildings || {}) } }
+  let recv = { ...s.players[recvI], bank: [...s.players[recvI].bank], props: { ...s.players[recvI].props } }
   const sorted = [...payer.bank].sort((a, b) => a.value - b.value)
   const keep: DealCard[] = []
   let paid = 0
@@ -397,24 +480,27 @@ export function resolvePay(s: KinnistuDealState): KinnistuDealState {
       left -= c.value
       paid += c.value
       recv.bank.push(c)
-    } else {
-      keep.push(c)
-    }
+    } else keep.push(c)
   }
   payer.bank = keep
-  // if still owes and has properties, strip lowest value loose property as collateral (party rule)
   if (left > 0) {
     const loose = looseProperties(payer)
     if (loose[0]?.kind === 'property') {
       const prop = loose[0]
       const props = { ...payer.props }
       props[prop.color] = (props[prop.color] || []).filter((c) => c.id !== prop.id)
-      payer = { ...payer, props }
-      const rprops = { ...recv.props }
-      rprops[prop.color] = [...(rprops[prop.color] || []), prop]
-      recv = { ...recv, props: rprops }
+      if ((props[prop.color] || []).length < SET_SIZE[prop.color]) {
+        const b = { ...(payer.buildings || {}) }
+        delete b[prop.color]
+        payer = { ...payer, props, buildings: b }
+      } else {
+        payer = { ...payer, props }
+      }
+      recv.props = {
+        ...recv.props,
+        [prop.color]: [...(recv.props[prop.color] || []), prop],
+      }
       paid += prop.value
-      left = Math.max(0, left - prop.value)
     }
   }
   return checkWin({
@@ -428,6 +514,6 @@ export function resolvePay(s: KinnistuDealState): KinnistuDealState {
     pending: null,
     payFrom: undefined,
     payAmount: undefined,
-    log: [`✅ ${s.players[payerI].name} tasus (~${paid}M)`, ...s.log].slice(0, 16),
+    log: [`✅ ${s.players[payerI].name} tasus ~${paid}M`, ...s.log].slice(0, 16),
   })
 }

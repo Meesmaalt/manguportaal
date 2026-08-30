@@ -58,6 +58,8 @@ export function buildDeck(): DealCard[] {
     ...action('forced_deal', 'Sunnitud tehing', 3, 3),
     ...action('deal_breaker', 'Tehingumurdja', 5, 2),
     ...action('just_say_no', 'Ei, aitäh', 4, 3),
+    ...action('house', 'Maja', 3, 3),
+    ...action('hotel', 'Hotell', 4, 2),
   ]
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))

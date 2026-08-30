@@ -10,7 +10,8 @@ import {
   looseProperties,
   fullSetColors,
   actionLabel,
-  COLOR_STYLE,
+  colorsWithAny,
+  rentForSet,
 } from '@/games/kinnistu-deal/types'
 import {
   playCard,
@@ -20,8 +21,9 @@ import {
   defendWithNo,
   skipDefend,
   pickProperty,
+  pickRentColor,
 } from '@/games/kinnistu-deal/logic'
-import { CardFace, PropPile } from '@/games/kinnistu-deal/DealCards'
+import { CardFace, PlayerTableBoard, PropertySetRow } from '@/games/kinnistu-deal/DealCards'
 import { Landmark, Loader2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
@@ -45,6 +47,8 @@ export default function DealPlayer() {
   const needTarget = state?.phase === 'pick_target' && state.pending?.from === playerIdx
   const needPay = state?.phase === 'pay' && state.payFrom === playerIdx
   const needDefend = state?.phase === 'defend' && state.pending?.target === playerIdx
+  const needPickRent =
+    state?.phase === 'pick_rent_color' && state.pending?.from === playerIdx
   const needPickProp =
     state?.phase === 'pick_property' && state.pending?.from === playerIdx && state.pending.target != null
 
@@ -184,6 +188,11 @@ export default function DealPlayer() {
     await pushState(pickProperty(state, id))
   }
 
+  async function onPickRent(color: PropColor) {
+    if (!state || !needPickRent || busy) return
+    await pushState(pickRentColor(state, color))
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050c18] text-gold">
@@ -280,6 +289,7 @@ export default function DealPlayer() {
               ? `Sinu käik — võid mängida veel ${state.playsLeft} kaarti`
               : `Praegu mängib: ${state.players[state.current]?.name}`)}
           {needTarget && 'Vali, kelle vastu kaart kehtib'}
+          {needPickRent && (state.pending?.action === 'rent' ? 'Vali üüri värv' : 'Vali komplekt majale/hotellile')}
           {needPickProp && 'Vali kinnistu / komplekt'}
           {needDefend &&
             `${state.players[state.pending!.from]?.name} ründab sind (${actionLabel(state.pending!.action)})`}
@@ -290,35 +300,63 @@ export default function DealPlayer() {
         </div>
 
         {/* Table */}
-        <div className="grid grid-cols-2 gap-2 mb-5">
+        <div className="space-y-3 mb-5">
           {state.players.map((p, i) => (
             <div
               key={p.token}
-              className={`rounded-xl border p-2.5 transition ${
+              className={`rounded-2xl border p-3 transition ${
                 i === state.current && state.phase !== 'lobby' && state.phase !== 'over'
-                  ? 'border-gold/60 bg-gold/10 shadow-[0_0_16px_rgba(223,179,66,0.15)]'
+                  ? 'border-gold/60 bg-gold/10'
                   : i === playerIdx
-                    ? 'border-accent-cyan/40 bg-cyan-950/30'
+                    ? 'border-accent-cyan/40 bg-cyan-950/25'
                     : 'border-white/10 bg-black/30'
               }`}
             >
-              <div className="text-xs font-bold text-gold truncate flex items-center gap-1">
-                {i === playerIdx && <span className="text-accent-cyan">●</span>}
-                {p.name}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="text-sm font-bold text-gold truncate flex items-center gap-1">
+                  {i === playerIdx && <span className="text-accent-cyan">●</span>}
+                  {p.name}
+                </div>
+                <div className="text-xs text-white/45 shrink-0">
+                  {completeSets(p)}/{winSets} · <span className="text-emerald-300">{bankTotal(p)}M</span>
+                </div>
               </div>
-              <div className="text-[10px] text-white/45 mb-1">
-                {completeSets(p)}/{winSets} · {bankTotal(p)}M
-              </div>
-              <div className="flex flex-wrap gap-0.5">
-                {(Object.keys(SET_SIZE) as PropColor[]).map((c) => (
-                  <PropPile key={c} color={c} cards={p.props[c] || []} />
-                ))}
-              </div>
+              <PlayerTableBoard player={p} />
             </div>
           ))}
         </div>
 
         {/* Interactive prompts */}
+        
+        {needPickRent && state.pending && (
+          <div className="card-panel border-amber-400/40 p-3 mb-4">
+            <p className="text-amber-100 text-sm text-center mb-3 font-medium">
+              {state.pending.action === 'rent'
+                ? 'Vali komplekt, millelt üüri nõuad'
+                : state.pending.action === 'hotel'
+                  ? 'Vali komplekt hotellile'
+                  : 'Vali komplekt majale'}
+            </p>
+            <div className="space-y-2">
+              {(state.pending.action === 'rent'
+                ? colorsWithAny(me)
+                : fullSetColors(me)
+              ).map((c) => (
+                <PropertySetRow
+                  key={c}
+                  color={c}
+                  cards={me.props[c] || []}
+                  building={me.buildings?.[c]}
+                  showRent={state.pending?.action === 'rent'}
+                  owner={me}
+                  highlight
+                  onClick={() => onPickRent(c)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {needTarget && (
           <div className="flex flex-wrap gap-2 justify-center mb-4">
             {state.players.map((p, i) =>
@@ -378,11 +416,12 @@ export default function DealPlayer() {
             <span>Sinu käsi</span>
             <span className="text-[10px] text-white/35 font-sans font-normal">privaatne</span>
           </h3>
-          <div className="flex flex-wrap gap-2 justify-center min-h-[8.5rem]">
+          <div className="flex flex-wrap gap-2 justify-center min-h-[11rem]">
             {me.hand.map((c) => (
               <CardFace
                 key={c.id}
                 card={c}
+                large
                 onClick={() => onPlay(c.id)}
                 disabled={!isMyTurn || busy || state.playsLeft <= 0}
               />
