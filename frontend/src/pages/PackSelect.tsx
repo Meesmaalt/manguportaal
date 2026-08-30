@@ -100,6 +100,22 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
         code,
       }
+    case 'kinnistu_deal':
+      return {
+        players: [
+          { name: 'Mängija 1', hand: [], bank: [], props: {} },
+          { name: 'Mängija 2', hand: [], bank: [], props: {} },
+          { name: 'Mängija 3', hand: [], bank: [], props: {} },
+        ],
+        deck: [],
+        discard: [],
+        current: 0,
+        playsLeft: 0,
+        phase: 'lobby',
+        log: [],
+        code,
+        packData: { winSets: packData.winSets || 3, startHand: packData.startHand || 5 },
+      }
     default:
       return { packData, code }
   }
@@ -132,6 +148,7 @@ export default function PackSelect() {
     'ma_ei_ole_kunagi',
     'viimane_pusti',
     'tode_voi_tegu',
+    'kinnistu_deal',
   ].includes(gameType || '')
   const gameTitle = isValid ? t(('game_' + gameType) as TranslationKey) : ''
   const emoji =
@@ -143,6 +160,7 @@ export default function PackSelect() {
         ma_ei_ole_kunagi: '🙅',
         viimane_pusti: '🧍',
         tode_voi_tegu: '🎲',
+        kinnistu_deal: '🏠',
       } as Record<string, string>
     )[gameType || ''] || ''
 

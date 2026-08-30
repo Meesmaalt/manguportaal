@@ -68,6 +68,7 @@ export default function App() {
       <Route path="/ekraan" element={<Display />} />
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="/buzzer/:code" element={<Buzzer />} />
+      <Route path="/buzz/:code" element={<Buzzer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

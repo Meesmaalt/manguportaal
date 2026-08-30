@@ -17,7 +17,7 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
   if (!code) return null
 
   const url = appUrl(`/ekraan/${code}`)
-  const buzzUrl = appUrl(`/buzz/${code}`)
+  const buzzUrl = appUrl(`/buzzer/${code}`)
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&margin=8&data=${encodeURIComponent(url)}`
 
   async function copy(kind: 'link' | 'code' | 'buzz') {

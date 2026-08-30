@@ -6,6 +6,8 @@ import SonaseletusGame, { type SonaseletusState } from '@/games/sonaseletus/Sona
 import MaEiOleKunagiGame, { type MaEiOleKunagiState } from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
+import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
+import type { KinnistuDealState } from '@/games/kinnistu-deal/types'
 import { GAME_META, type GameType } from '@/lib/types'
 import GameShowFrame from '@/components/GameShowFrame'
 import { useI18n } from '@/i18n/I18nContext'
@@ -84,6 +86,9 @@ export default function PlayGeneric() {
         )}
         {gameType === 'viimane_pusti' && (
           <ViimanePustiGame state={state as ViimanePustiState} update={update} isHost sessionCode={code} />
+        )}
+        {gameType === 'kinnistu_deal' && (
+          <KinnistuDealGame state={state as KinnistuDealState} update={update} isHost sessionCode={code} />
         )}
         {gameType === 'tode_voi_tegu' && (
           <TodeVoiTeguGame state={state as TodeVoiTeguState} update={update} isHost sessionCode={code} />

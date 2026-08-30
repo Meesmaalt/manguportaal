@@ -55,7 +55,7 @@ export default function PlayRoosidesoda() {
   }
 
   return (
-    <div className="py-4 px-2">
+    <div className="pt-0 px-1 pb-2">
       <div className="max-w-5xl mx-auto mb-2 flex items-center justify-between px-2 gap-2 flex-wrap">
         <Link
           to="/play/roosidesoda"

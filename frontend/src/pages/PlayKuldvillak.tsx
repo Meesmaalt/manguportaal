@@ -58,7 +58,7 @@ export default function PlayKuldvillak() {
   }
 
   return (
-    <div className="pt-1 px-2 pb-4">
+    <div className="pt-0 px-1 pb-2">
       <div className="max-w-6xl mx-auto mb-1 flex items-center justify-between px-2 gap-2 flex-wrap">
         <Link
           to="/play/kuldvillak"

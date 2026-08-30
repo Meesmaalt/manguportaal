@@ -21,7 +21,7 @@ export default function Layout() {
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col layout-has-header">
       <header className="sticky top-0 z-50 border-b border-gold/20 bg-bg/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-2 group shrink-0">

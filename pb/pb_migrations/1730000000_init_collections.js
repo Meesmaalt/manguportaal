@@ -14,6 +14,7 @@ migrate((app) => {
     "ma_ei_ole_kunagi",
     "viimane_pusti",
     "tode_voi_tegu",
+    "kinnistu_deal",
   ]
 
   const packs = new Collection({

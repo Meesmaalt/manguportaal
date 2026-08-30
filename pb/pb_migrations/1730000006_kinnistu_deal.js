@@ -9,7 +9,6 @@ migrate((app) => {
     "tode_voi_tegu",
     "kinnistu_deal",
   ]
-
   for (const name of ["packs", "game_sessions"]) {
     try {
       const col = app.findCollectionByNameOrId(name)
@@ -20,7 +19,7 @@ migrate((app) => {
         for (const v of gameTypes) set[v] = true
         field.values = Object.keys(set)
         app.save(col)
-        console.log("[ohtu] updated game_type on", name)
+        console.log("[ohtu] kinnistu_deal on", name)
       }
     } catch (e) {
       console.log("[ohtu] skip", name, e)

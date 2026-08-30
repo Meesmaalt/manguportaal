@@ -1,3 +1,8 @@
+## v3.4
+
+- **Kinnistu Deal** — Monopoly Deal–style party card game (host + TV)
+- Property sets, money, action cards; Estonian property names
+
 ## v3.3
 
 - Session recovery (resume host after refresh)

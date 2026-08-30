@@ -17,6 +17,7 @@ const ORDER: GameType[] = [
   'ma_ei_ole_kunagi',
   'viimane_pusti',
   'tode_voi_tegu',
+  'kinnistu_deal',
 ]
 
 const EMOJI: Record<GameType, string> = {
@@ -26,6 +27,7 @@ const EMOJI: Record<GameType, string> = {
   ma_ei_ole_kunagi: '🙅',
   viimane_pusti: '🧍',
   tode_voi_tegu: '🎲',
+  kinnistu_deal: '🏠',
 }
 
 export default function Dashboard() {

@@ -309,7 +309,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
           {categories.map((cat, col) => (
             <div
               key={col}
-              className="bg-gradient-to-b from-[#1e3a8a]/95 to-[#0a192f] border-2 border-gold rounded-xl py-3 px-1 text-center font-display text-gold text-sm md:text-base font-black shadow-lg min-h-[52px] flex items-center justify-center leading-tight"
+              className="bg-gradient-to-b from-[#1e3a8a] to-[#0a192f] border-2 border-gold rounded-xl py-3 px-1 text-center font-display text-gold text-sm md:text-base font-black shadow-lg min-h-[52px] flex items-center justify-center leading-tight opacity-100"
             >
               {cat.name}
             </div>
@@ -331,8 +331,8 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                     transition-all duration-200 border-2 relative overflow-hidden
                     ${
                       disabled
-                        ? 'bg-black/40 border-white/5 cursor-default'
-                        : 'bg-gradient-to-br from-[#0d1f3c] to-[#061018] border-gold/70 text-gold hover:bg-gold hover:text-bg hover:scale-[1.04] hover:shadow-gold cursor-pointer'
+                        ? 'bg-[#050a12]/90 border-white/10 cursor-default'
+                        : 'bg-gradient-to-br from-[#123056] to-[#0a1628] border-gold/80 text-gold shadow-md hover:bg-gold hover:text-bg hover:scale-[1.04] hover:shadow-gold cursor-pointer'
                     }
                   `}
                 >

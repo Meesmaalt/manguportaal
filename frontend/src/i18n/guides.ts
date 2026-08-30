@@ -29,6 +29,13 @@ Kerge, sotsiaalne, hea jäämurdja. Reeglite rangekus on teie otsustada.`,
 Igaühel on elud. Kui väide kehtib sinu kohta, kaotad elu. Elud otsas — välja. Viimane püsti jäänu võidab.
 
 Pinge kasvab voor voorult. Sobib peole, kus tahad dramaatilist lõppu.`,
+    kinnistu_deal: `Kinnistu Deal — kinnisvarakaardid peoks.
+
+Eesmärk: kogu 3 täielikku kinnistukomplekti (värvid). Iga käik: võta 2 kaarti, mängi kuni 3, limiit 7 käes.
+
+Raha → panka, kinnistu → oma reale, tegevused (üür, vargus, tehingumurdja…) → vali vastane. Host juhib; TV näitab lauda.
+
+Ei ole Hasbro toode — peo versioon eesti kinnistunimedega.`,
     tode_voi_tegu: `Tõde või tegu — julged küsimused ja ülesanded.
 
 Mängija valib: vastata ausalt või teha tegu. Sett annab ideid; seltskond hoiab piire.
@@ -63,6 +70,13 @@ Light, social, a great icebreaker. Strictness is up to you.`,
 Everyone has lives. If a statement applies to you, you lose a life. No lives left — you're out. Last one standing wins.
 
 Tension builds every round — perfect for a dramatic party finish.`,
+    kinnistu_deal: `Property Deal — party property card game.
+
+Goal: collect 3 complete color sets. Each turn: draw 2, play up to 3, hand limit 7.
+
+Money to bank, properties to your rows, actions target opponents. Host runs turns; TV shows the table.
+
+Not affiliated with Hasbro — party rules with local property names.`,
     tode_voi_tegu: `Truth or dare — bold questions and challenges.
 
 Players choose honesty or action. The pack suggests prompts; the group sets the limits.
@@ -97,6 +111,11 @@ Classic party fun for friends who want laughs and a little courage.`,
 У всех есть жизни. Фраза про вас — минус жизнь. Без жизней — вылет. Последний побеждает.
 
 Напряжение растёт с каждым раундом.`,
+    kinnistu_deal: `Сделка за недвижимость — карточная вечеринка.
+
+Цель: 3 полных цветовых набора. Ход: взять 2, сыграть до 3, лимит руки 7.
+
+Ведущий ведёт, ТВ показывает стол. Не связано с Hasbro.`,
     tode_voi_tegu: `Правда или действие — смелые вопросы и задания.
 
 Игрок выбирает: ответить честно или сделать. Набор подсказывает; границы — у компании.
@@ -112,6 +131,7 @@ export type GuideGame =
   | 'ma_ei_ole_kunagi'
   | 'viimane_pusti'
   | 'tode_voi_tegu'
+  | 'kinnistu_deal'
 
 export function getGuide(lang: Lang, gameType: string): string {
   const table = guides[lang] || guides.et

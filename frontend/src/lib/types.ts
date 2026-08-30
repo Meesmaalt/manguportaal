@@ -5,6 +5,7 @@ export type GameType =
   | 'ma_ei_ole_kunagi'
   | 'viimane_pusti'
   | 'tode_voi_tegu'
+  | 'kinnistu_deal'
 
 export const GAME_META: Record<
   GameType,
@@ -45,5 +46,11 @@ export const GAME_META: Record<
     subtitle: 'Truth or Dare',
     description: 'Mängija + tõde või tegu settist. Julged küsimused ja teod.',
     emoji: '🎲',
+  },
+  kinnistu_deal: {
+    title: 'Kinnistu Deal',
+    subtitle: 'Kinnisvara kaardid',
+    description: 'Kogu 3 komplekti. Raha, kinnistud, tegevuskaardid. Host + TV.',
+    emoji: '🏠',
   },
 }

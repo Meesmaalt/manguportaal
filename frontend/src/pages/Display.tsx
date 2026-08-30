@@ -7,6 +7,7 @@ import SonaseletusGame from '@/games/sonaseletus/SonaseletusGame'
 import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
+import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
 import GameShowFrame from '@/components/GameShowFrame'
 import ConnectionChip from '@/components/ConnectionChip'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
@@ -224,6 +225,7 @@ export default function Display() {
           )}
           {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
           {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
+          {gt === 'kinnistu_deal' && <KinnistuDealGame state={state} update={noop} isHost={false} />}
         </GameShowFrame>
       )}
     </div>

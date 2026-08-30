@@ -28,6 +28,7 @@ const GAME_TYPES: GameType[] = [
   'ma_ei_ole_kunagi',
   'viimane_pusti',
   'tode_voi_tegu',
+  'kinnistu_deal',
 ]
 
 /**

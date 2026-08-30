@@ -524,6 +524,13 @@ export const KULDVILLAK_PULM_ALEKSANDER_RIINA: KuldvillakPackData = {
 }
 
 
+
+export const KINNISTU_DEAL_CLASSIC = {
+  winSets: 3,
+  startHand: 5,
+  note: 'Eesti teemalised kinnistud. Võit: 3 täiskomplekti.',
+}
+
 export const OFFICIAL_PACKS = [
   {
     slug: 'kuldvillak-pulm-aleksander-riina',
@@ -630,6 +637,15 @@ export const OFFICIAL_PACKS = [
     description: 'Rahulikum sett perele / alguseks.',
     game_type: 'tode_voi_tegu' as const,
     data: TODE_VOI_TEGU_SOFT,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'kinnistu-deal-klassika',
+    name: 'Kinnistu Deal – Klassika',
+    description: '3 komplekti võiduks. Eesti kinnistud, raha ja tegevuskaardid.',
+    game_type: 'kinnistu_deal' as const,
+    data: KINNISTU_DEAL_CLASSIC,
     is_official: true,
     is_public: true,
   },
