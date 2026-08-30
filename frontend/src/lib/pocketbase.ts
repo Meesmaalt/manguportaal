@@ -145,6 +145,17 @@ export function formatPbError(
   if (status === 0 || msg.includes('Failed to fetch')) {
     return `PocketBase ei vasta (${getConfig().pbUrl}). Kontrolli PB_PUBLIC_URL / proksit.`
   }
+  if (
+    fieldHints.includes('validation_invalid_value') ||
+    fieldHints.includes('Invalid value') ||
+    (typeof data === 'object' && data && JSON.stringify(data).includes('validation_invalid_value'))
+  ) {
+    return (
+      msg +
+      fieldHints +
+      ' — game_type selectis puudub see väärtus. PB Admin → packs → game_type → Values: lisa nt kinnistu_deal (sama game_sessions). Vt pb/FIX_KINNISTU_DEAL.md'
+    )
+  }
   if (status === 400 || msg.includes('Failed to create')) {
     if (opts?.adminContext) {
       return (
