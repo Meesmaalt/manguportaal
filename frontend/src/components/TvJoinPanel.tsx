@@ -8,9 +8,10 @@ type Props = {
   code?: string
   connection?: ConnectionStatus
   lastSync?: number
+  onRetry?: () => void
 }
 
-export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0 }: Props) {
+export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0, onRetry }: Props) {
   const { t } = useI18n()
   const [copied, setCopied] = useState<'link' | 'code' | null>(null)
   if (!code) return null
@@ -58,12 +59,23 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
           <Tv size={20} />
           {t('tvJoinTitle')}
         </div>
-        <span
-          className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${statusClass}`}
-        >
-          <StatusIcon size={12} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
-          {statusLabel}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${statusClass}`}
+          >
+            <StatusIcon size={12} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
+            {statusLabel}
+          </span>
+          {(connection === 'reconnecting' || connection === 'offline') && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-amber-500/50 text-amber-200 hover:bg-amber-500/15"
+            >
+              {t('connRetry')}
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="text-white/55 text-sm mb-4">{t('tvJoinHint')}</p>

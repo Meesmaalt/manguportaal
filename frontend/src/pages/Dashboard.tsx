@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
 import { pb, type Pack } from '@/lib/pocketbase'
-import { Plus, Layers, Upload } from 'lucide-react'
+import { Plus, Layers, Upload, RotateCcw } from 'lucide-react'
+import { getRememberedHostSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
@@ -29,7 +30,9 @@ const EMOJI: Record<GameType, string> = {
 export default function Dashboard() {
   const { user, isLoggedIn } = useAuth()
   const { t } = useI18n()
+  const navigate = useNavigate()
   const [myPacks, setMyPacks] = useState<Pack[]>([])
+  const remembered = getRememberedHostSession()
 
   useEffect(() => {
     if (!user?.id) {
@@ -51,6 +54,36 @@ export default function Dashboard() {
             : t('dashTitle')}
         </h1>
         <p className="text-white/60 mb-8">{isLoggedIn ? t('dashSubLogged') : t('dashSubGuest')}</p>
+
+        {remembered && (
+          <div className="card-panel p-4 mb-6 border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-gold font-medium text-sm">{t('resumeSessionTitle')}</p>
+              <p className="text-white/50 text-xs mt-0.5">
+                {t('sessionCode')}: <span className="font-mono text-gold">{remembered.code}</span>
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-gold text-sm flex items-center gap-1"
+                onClick={() => navigate(`/play/${remembered.gameType}/${remembered.sessionId}`)}
+              >
+                <RotateCcw size={14} /> {t('resumeSession')}
+              </button>
+              <button
+                type="button"
+                className="btn-outline text-sm"
+                onClick={() => {
+                  clearRememberedHostSession()
+                  window.location.reload()
+                }}
+              >
+                {t('resumeDismiss')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {!isLoggedIn && (
           <div className="card-panel p-4 mb-8 border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

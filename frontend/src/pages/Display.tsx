@@ -200,7 +200,7 @@ export default function Display() {
   return (
     <div className="relative">
       <div className="fixed top-3 right-3 z-[60] flex flex-col items-end gap-2">
-        <ConnectionChip connection={connection} />
+        <ConnectionChip connection={connection} onRetry={() => window.location.reload()} />
         {hostStale && (
           <div className="text-[10px] uppercase tracking-wider text-amber-200/90 bg-black/50 border border-amber-500/40 rounded-full px-3 py-1">
             {t('waitingHost')}

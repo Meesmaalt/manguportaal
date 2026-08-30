@@ -1,26 +1,36 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useGameSession } from '@/hooks/useGameSession'
+import { useGameSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import KuldvillakBoard from '@/games/kuldvillak/KuldvillakBoard'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
-import { ArrowLeft, LogOut, HelpCircle } from 'lucide-react'
+import { ArrowLeft, LogOut, HelpCircle, SkipForward } from 'lucide-react'
 import { useState } from 'react'
 import GameHelpModal from '@/components/GameHelpModal'
 import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 import { useI18n } from '@/i18n/I18nContext'
 import { endGameSession } from '@/lib/sessions'
+import { onGameEndedNavigate, playlistStatus } from '@/lib/playlist'
+import type { TranslationKey } from '@/i18n/translations'
 
 export default function PlayKuldvillak() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
-  const { session, state, update, loading, error, connection, lastSync } =
+  const { session, state, update, loading, error, connection, lastSync, retry } =
     useGameSession<KuldvillakState>(sessionId!)
   const { t } = useI18n()
   const [helpOpen, setHelpOpen] = useState(false)
+  const pl = playlistStatus()
 
   async function endSession() {
-    if (!confirm(t('endSessionConfirm'))) return
+    const nextPath = onGameEndedNavigate()
+    const msg =
+      nextPath && pl.next
+        ? `${t('endSessionConfirm')}\n\n${t('playlistNextWillBe')}: ${t(('game_' + pl.next) as TranslationKey)}`
+        : t('endSessionConfirm')
+    if (!confirm(msg)) return
     await endGameSession(sessionId!)
-    navigate('/play/kuldvillak')
+    clearRememberedHostSession()
+    if (nextPath) navigate(nextPath)
+    else navigate('/play/kuldvillak')
   }
 
   if (loading) {
@@ -33,11 +43,16 @@ export default function PlayKuldvillak() {
 
   if (error || !state) {
     return (
-      <div className="text-center py-20">
-        <p className="text-accent-red mb-4">{error || t('errorSession')}</p>
-        <Link to="/dashboard" className="text-gold">
-          ← {t('packBack')}
-        </Link>
+      <div className="text-center py-20 space-y-3">
+        <p className="text-accent-red mb-2">{error || t('errorSession')}</p>
+        <button type="button" className="btn-outline text-sm" onClick={() => retry()}>
+          {t('connRetry')}
+        </button>
+        <div>
+          <Link to="/dashboard" className="text-gold text-sm">
+            ← {t('packBack')}
+          </Link>
+        </div>
       </div>
     )
   }
@@ -55,6 +70,12 @@ export default function PlayKuldvillak() {
           {t('game_kuldvillak')} · {t('hostLabel')}
         </h1>
         <div className="flex items-center gap-2">
+          {pl.active && pl.next && (
+            <span className="hidden md:inline text-[10px] uppercase tracking-wide text-white/40">
+              <SkipForward size={12} className="inline mr-1" />
+              {t('playlistNext')}: {t(('game_' + pl.next) as TranslationKey)}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setHelpOpen(true)}
@@ -84,23 +105,22 @@ export default function PlayKuldvillak() {
       </div>
       <SessionBgLayer media={(state as any).bgMedia} />
       <div className="relative z-10">
-      <KuldvillakBoard
-        state={state}
-        update={update}
-        isHost
-        sessionCode={session?.code || state.code}
-        connection={connection}
-        lastSync={lastSync}
-      />
+        <KuldvillakBoard
+          state={state}
+          update={update}
+          isHost
+          sessionCode={session?.code || state.code}
+          connection={connection}
+          lastSync={lastSync}
+          onRetry={retry}
+        />
       </div>
       <GameHelpModal
         gameType="kuldvillak"
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
         publicShown={!!(state as any).publicGuide}
-        onTogglePublic={() =>
-          update({ publicGuide: !(state as any).publicGuide } as any)
-        }
+        onTogglePublic={() => update({ publicGuide: !(state as any).publicGuide } as any)}
       />
     </div>
   )

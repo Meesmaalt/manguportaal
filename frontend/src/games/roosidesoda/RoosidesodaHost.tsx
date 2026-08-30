@@ -16,6 +16,7 @@ type Props = {
   isHost?: boolean
   sessionCode?: string
   connection?: ConnectionStatus
+  onRetry?: () => void
   lastSync?: number
 }
 
@@ -26,6 +27,7 @@ export default function RoosidesodaHost({
   sessionCode,
   connection = 'offline',
   lastSync = 0,
+  onRetry,
 }: Props) {
   const {
     teams,
@@ -239,7 +241,7 @@ export default function RoosidesodaHost({
       )}
 
       {isHost && (
-        <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} />
+        <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} onRetry={onRetry} />
       )}
 
       <div id="game-scale-root" className="relative">

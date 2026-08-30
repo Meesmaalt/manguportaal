@@ -18,10 +18,11 @@ type Props = {
   isHost?: boolean
   sessionCode?: string
   connection?: ConnectionStatus
+  onRetry?: () => void
   lastSync?: number
 }
 
-export default function KuldvillakBoard({ state, update, isHost = true, sessionCode, connection = 'offline', lastSync = 0 }: Props) {
+export default function KuldvillakBoard({ state, update, isHost = true, sessionCode, connection = 'offline', lastSync = 0, onRetry }: Props) {
   const { teams, disabledCards, currentQuestion, showAnswer, packData, confettiAt, hostPeek, buzzEnabled, showBuzzQr, buzz, finalPhase = 'none', finalWagers = [] } = state
   const { t } = useI18n()
   const categories = packData?.categories || []
@@ -267,7 +268,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         />
       )}
 
-      {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} />}
+      {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} onRetry={onRetry} />}
       {isHost && sessionCode && (
         <p className="text-center text-white/45 text-xs mb-3">
           {t('buzzLink')}:{' '}

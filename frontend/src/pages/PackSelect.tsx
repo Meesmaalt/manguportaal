@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
 import { createGameSession, downloadJson, packExportPayload, CloudSessionError, createOwnedPack } from '@/lib/sessions'
+import { rememberHostSession } from '@/hooks/useGameSession'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Play, Plus, User, Trash2 } from 'lucide-react'
@@ -245,13 +246,14 @@ export default function PackSelect() {
     const code = generateCode()
     const initialState = buildInitialState(gameType!, pack.data, code)
     try {
-      const { sessionId } = await createGameSession({
+      const { sessionId, code: sessCode } = await createGameSession({
         gameType: gameType!,
         packId: pack.id.startsWith('local-') ? null : pack.id,
         hostId: user?.id || null,
         state: initialState as Record<string, unknown>,
         allowLocal: false,
       })
+      rememberHostSession({ sessionId, code: sessCode, gameType: gameType! })
       navigate(`/play/${gameType}/${sessionId}`)
     } catch (e: any) {
       setStartError(e?.message || 'Sessiooni loomine ebaõnnestus')

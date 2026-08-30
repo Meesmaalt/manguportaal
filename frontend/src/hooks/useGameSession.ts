@@ -3,9 +3,54 @@ import { pb, type GameSession } from '@/lib/pocketbase'
 
 export type ConnectionStatus = 'live' | 'local' | 'reconnecting' | 'offline'
 
+const LAST_SESSION_KEY = 'ohtu_last_session'
+
+/** Remember host session for refresh recovery. */
+export function rememberHostSession(opts: {
+  sessionId: string
+  code: string
+  gameType: string
+}) {
+  try {
+    localStorage.setItem(
+      LAST_SESSION_KEY,
+      JSON.stringify({ ...opts, at: Date.now() })
+    )
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getRememberedHostSession(): {
+  sessionId: string
+  code: string
+  gameType: string
+  at: number
+} | null {
+  try {
+    const raw = localStorage.getItem(LAST_SESSION_KEY)
+    if (!raw) return null
+    const p = JSON.parse(raw)
+    if (!p?.sessionId || !p?.code) return null
+    // expire after 12h
+    if (Date.now() - (p.at || 0) > 12 * 60 * 60 * 1000) return null
+    return p
+  } catch {
+    return null
+  }
+}
+
+export function clearRememberedHostSession() {
+  try {
+    localStorage.removeItem(LAST_SESSION_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Syncs game state with PocketBase (or localStorage fallback for local-* sessions).
- * Exposes connection status for Room mode UI.
+ * Heartbeat only patches hostBeat on the server copy (avoids stomping large fields with stale client state).
  */
 export function useGameSession<T extends Record<string, unknown>>(sessionId: string) {
   const [session, setSession] = useState<GameSession | null>(null)
@@ -18,6 +63,7 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
   const unsubRef = useRef<(() => void) | null>(null)
   const stateRef = useRef<T | null>(null)
   const beatRef = useRef<number>(0)
+  const pushingRef = useRef(false)
 
   stateRef.current = state
 
@@ -28,6 +74,7 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError('')
     try {
       if (isLocal) {
         const raw = localStorage.getItem(`session_${sessionId}`)
@@ -50,6 +97,13 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
         const rec = await pb.collection('game_sessions').getOne<GameSession>(sessionId)
         setSession(rec)
         setState(rec.state as T)
+        if ((rec.state as any)?.code) {
+          rememberHostSession({
+            sessionId,
+            code: String((rec.state as any).code),
+            gameType: rec.game_type,
+          })
+        }
         markSync('live')
       }
     } catch (e: any) {
@@ -68,6 +122,12 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
       pb.collection('game_sessions')
         .subscribe<GameSession>(sessionId, (e) => {
           if (e.action === 'update') {
+            // Don't overwrite host's optimistic state mid-push with echo
+            if (pushingRef.current) {
+              setSession(e.record)
+              markSync('live')
+              return
+            }
             setSession(e.record)
             setState(e.record.state as T)
             markSync('live')
@@ -86,8 +146,6 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
         }
       }
       window.addEventListener('storage', onStorage)
-      // Same-tab poll for display opened as second window on same origin rarely needed;
-      // cross-device needs cloud. Still poll lightly for hostBeat visibility.
       const poll = window.setInterval(() => {
         const raw = localStorage.getItem(`session_${sessionId}`)
         if (!raw) return
@@ -116,24 +174,31 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     }
   }, [sessionId, isLocal, load, markSync])
 
-  // Host heartbeat every 4s so display can show Live (does not need to be in React state deps)
+  // Light heartbeat: merge hostBeat into *server* state so large fields aren't resent from a stale client
   useEffect(() => {
     if (loading) return
-    const id = window.setInterval(() => {
+    const id = window.setInterval(async () => {
       const current = stateRef.current
       if (!current) return
-      const next = { ...current, hostBeat: Date.now() } as T
+      const beat = Date.now()
+      beatRef.current = beat
+
       if (isLocal) {
+        const next = { ...current, hostBeat: beat } as T
         localStorage.setItem(`session_${sessionId}`, JSON.stringify(next))
-        // don't setState every beat on host — avoids re-render spam; display polls storage
         markSync('local')
-      } else {
-        pb.collection('game_sessions')
-          .update(sessionId, { state: next })
-          .then(() => markSync('live'))
-          .catch(() => setConnection('reconnecting'))
+        return
       }
-    }, 4000)
+
+      try {
+        const rec = await pb.collection('game_sessions').getOne<GameSession>(sessionId)
+        const serverState = { ...(rec.state as Record<string, unknown>), hostBeat: beat }
+        await pb.collection('game_sessions').update(sessionId, { state: serverState })
+        markSync('live')
+      } catch {
+        setConnection('reconnecting')
+      }
+    }, 8000)
     return () => clearInterval(id)
   }, [loading, sessionId, isLocal, markSync])
 
@@ -146,11 +211,13 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
             ? (partial as (p: T) => T)(prev)
             : ({ ...prev, ...partial } as T)
         const withBeat = { ...next, hostBeat: Date.now() } as T
+        stateRef.current = withBeat
 
         if (isLocal) {
           localStorage.setItem(`session_${sessionId}`, JSON.stringify(withBeat))
           markSync('local')
         } else {
+          pushingRef.current = true
           pb.collection('game_sessions')
             .update(sessionId, { state: withBeat })
             .then((rec) => {
@@ -161,6 +228,12 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
               console.warn('[ohtu] session update failed', err)
               setConnection('reconnecting')
             })
+            .finally(() => {
+              // brief window to ignore echo
+              window.setTimeout(() => {
+                pushingRef.current = false
+              }, 400)
+            })
         }
         return withBeat
       })
@@ -168,5 +241,20 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     [sessionId, isLocal, markSync]
   )
 
-  return { session, state, update, loading, error, connection, lastSync, reload: load }
+  const retry = useCallback(() => {
+    setConnection('reconnecting')
+    load()
+  }, [load])
+
+  return {
+    session,
+    state,
+    update,
+    loading,
+    error,
+    connection,
+    lastSync,
+    reload: load,
+    retry,
+  }
 }

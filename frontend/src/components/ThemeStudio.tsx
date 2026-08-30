@@ -227,7 +227,7 @@ export default function ThemeStudio({
 /** Full-bleed custom background for host + TV (sits behind game UI). */
 export function SessionBgLayer({ media, display }: { media?: BgMedia; display?: boolean }) {
   if (!media?.dataUrl) return null
-  const opacity = display ? 0.55 : 0.4
+  const opacity = display ? 0.82 : 0.7
   return (
     <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden" aria-hidden>
       {media.kind === 'image' ? (
@@ -248,7 +248,7 @@ export function SessionBgLayer({ media, display }: { media?: BgMedia; display?: 
           playsInline
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-black/55" />
     </div>
   )
 }

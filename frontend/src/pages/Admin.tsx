@@ -46,6 +46,7 @@ export default function Admin() {
   const [gameFilter, setGameFilter] = useState<GameType | 'all'>('all')
   const [msg, setMsg] = useState('')
   const [showTemplates, setShowTemplates] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
 
   function isSuperuserAuth() {
     if (!pb.authStore.isValid || !pb.authStore.token) return false
@@ -284,9 +285,19 @@ export default function Admin() {
   }, [packs])
 
   const filtered = useMemo(() => {
-    if (gameFilter === 'all') return packs
-    return packs.filter((p) => p.game_type === gameFilter)
-  }, [packs, gameFilter])
+    let list = packs
+    if (gameFilter !== 'all') list = list.filter((p) => p.game_type === gameFilter)
+    const q = searchQ.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          p.game_type.toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [packs, gameFilter, searchQ])
 
   const missingTemplates = useMemo(() => {
     return OFFICIAL_PACKS.filter((tpl) => {
@@ -399,6 +410,15 @@ export default function Admin() {
             {GAME_META[g]?.emoji} {t(('game_' + g) as TranslationKey)} ({counts[g] || 0})
           </button>
         ))}
+      </div>
+
+      <div className="mb-4">
+        <input
+          className="input-field text-sm"
+          placeholder={t('adminSearch')}
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+        />
       </div>
 
       {error && (

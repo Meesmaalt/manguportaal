@@ -8,19 +8,31 @@ import GameHelpModal from '@/components/GameHelpModal'
 import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 import { useI18n } from '@/i18n/I18nContext'
 import { endGameSession } from '@/lib/sessions'
+import { onGameEndedNavigate, playlistStatus } from '@/lib/playlist'
+import { clearRememberedHostSession } from '@/hooks/useGameSession'
+import type { TranslationKey } from '@/i18n/translations'
+import { SkipForward } from 'lucide-react'
 
 export default function PlayRoosidesoda() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
-  const { session, state, update, loading, error, connection, lastSync } =
+  const { session, state, update, loading, error, connection, lastSync, retry } =
     useGameSession<RoosidesodaState>(sessionId!)
   const { t } = useI18n()
   const [helpOpen, setHelpOpen] = useState(false)
+  const pl = playlistStatus()
 
   async function endSession() {
-    if (!confirm(t('endSessionConfirm'))) return
+    const nextPath = onGameEndedNavigate()
+    const msg =
+      nextPath && pl.next
+        ? `${t('endSessionConfirm')}\n\n${t('playlistNextWillBe')}: ${t(('game_' + pl.next) as TranslationKey)}`
+        : t('endSessionConfirm')
+    if (!confirm(msg)) return
     await endGameSession(sessionId!)
-    navigate('/play/roosidesoda')
+    clearRememberedHostSession()
+    if (nextPath) navigate(nextPath)
+    else navigate('/play/roosidesoda')
   }
 
   if (loading) {
@@ -83,6 +95,7 @@ export default function PlayRoosidesoda() {
         sessionCode={session?.code || state.code}
         connection={connection}
         lastSync={lastSync}
+        onRetry={retry}
       />
       </div>
       <GameHelpModal

@@ -1,3 +1,13 @@
+## v3.3
+
+- Session recovery (resume host after refresh)
+- Lighter heartbeat (merge hostBeat on server)
+- Connection retry on host/TV
+- Playlist: current index, continue, next after end session
+- Admin pack search
+- Stronger session background on TV
+- DB-only public packs + seed from admin
+
 # Õhtu Mängud
 
 ## Party checklist (15 minutes)

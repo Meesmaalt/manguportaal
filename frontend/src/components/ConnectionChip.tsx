@@ -4,8 +4,10 @@ import { Wifi, WifiOff, RefreshCw } from 'lucide-react'
 
 export default function ConnectionChip({
   connection,
+  onRetry,
 }: {
   connection: ConnectionStatus
+  onRetry?: () => void
 }) {
   const { t } = useI18n()
   const label =
@@ -33,12 +35,25 @@ export default function ConnectionChip({
         ? RefreshCw
         : WifiOff
 
+  const needsHelp = connection === 'reconnecting' || connection === 'offline'
+
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border bg-black/30 ${cls}`}
-    >
-      <Icon size={11} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
-      {label}
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border bg-black/30 ${cls}`}
+      >
+        <Icon size={11} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
+        {label}
+      </span>
+      {needsHelp && onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-amber-500/50 text-amber-200 bg-black/40 hover:bg-amber-500/20"
+        >
+          {t('connRetry')}
+        </button>
+      )}
     </span>
   )
 }
