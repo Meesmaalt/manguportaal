@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
 import { emptyPlayer, startGame, endTurn } from './logic'
@@ -8,6 +8,9 @@ import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
 import { Landmark, Copy, Check, UserPlus, Play, SkipForward, Trophy, Tv, ExternalLink } from 'lucide-react'
+import confetti from 'canvas-confetti'
+
+import { actionLabel } from './types'
 
 type Props = {
   state: KinnistuDealState
@@ -22,6 +25,12 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
   const winSets = state.packData?.winSets ?? 3
   const code = sessionCode || state.code || ''
   const [copied, setCopied] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (phase === 'over' && state.confettiAt) {
+      confetti({ particleCount: 140, spread: 80, origin: { y: 0.65 }, spread: 75 })
+    }
+  }, [phase, state.confettiAt])
 
   function copyLink(token: string) {
     const url = appUrl(`/deal/${code}/${token}`)
@@ -105,13 +114,28 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
         <div className="inline-flex items-center gap-2 text-gold font-display text-2xl md:text-3xl font-black">
           <Landmark /> Kinnistu Deal
         </div>
-        <p className="text-white/45 text-sm mt-1">Kogu {winSets} täiskomplekti · igaüks oma telefonis</p>
+        <p className="text-white/50 text-sm mt-1">Kogu {winSets} kinnistukomplekti · igaüks mängib oma telefonis</p>
         {phase === 'turn' && (
           <p className="text-accent-cyan text-sm mt-1">
             Käik: <strong>{players[current]?.name}</strong>
             {isHost && (
               <span className="text-white/40"> · jäänud {playsLeft} · pakk {deck.length}</span>
             )}
+          </p>
+        )}
+        {phase === 'pick_target' && state.pending && (
+          <p className="text-amber-200 text-sm mt-1">
+            {players[state.pending.from]?.name} valib sihtmärki · {actionLabel(state.pending.action)}
+          </p>
+        )}
+        {phase === 'defend' && state.pending?.target != null && (
+          <p className="text-rose-200 text-sm mt-1">
+            {players[state.pending.target]?.name} võib öelda „Ei, aitäh“
+          </p>
+        )}
+        {phase === 'pay' && state.payFrom != null && (
+          <p className="text-emerald-200 text-sm mt-1">
+            {players[state.payFrom]?.name} maksab {state.payAmount}M
           </p>
         )}
       </div>
@@ -160,23 +184,41 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                     className="input-field text-sm"
                     value={p.name}
                     onChange={(e) => rename(i, e.target.value)}
+                    placeholder="Mängija nimi"
                   />
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      className="btn-outline text-[10px] !py-1 !px-2 flex items-center gap-1"
-                      onClick={() => copyLink(p.token)}
-                    >
-                      {copied === p.token ? <Check size={11} /> : <Copy size={11} />}
-                      {copied === p.token ? 'Kopeeritud' : 'Privaatne link'}
-                    </button>
-                    {players.length > 2 && (
-                      <button type="button" className="text-accent-red/70 text-[10px] px-2" onClick={() => removePlayer(i)}>
-                        Eemalda
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 bg-white p-1.5 rounded-lg shadow">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&ecc=M&margin=4&data=${encodeURIComponent(appUrl(`/deal/${code}/${p.token}`))}`}
+                        alt="QR"
+                        width={88}
+                        height={88}
+                        className="block rounded"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <p className="text-[11px] text-white/55 leading-snug">
+                        Skanni või kopeeri — ainult see mängija näeb oma kaarte.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-outline text-[10px] !py-1 !px-2 flex items-center gap-1"
+                        onClick={() => copyLink(p.token)}
+                      >
+                        {copied === p.token ? <Check size={11} /> : <Copy size={11} />}
+                        {copied === p.token ? 'Link kopeeritud' : 'Kopeeri link'}
                       </button>
-                    )}
+                      {players.length > 2 && (
+                        <button
+                          type="button"
+                          className="text-accent-red/70 text-[10px] block"
+                          onClick={() => removePlayer(i)}
+                        >
+                          Eemalda mängija
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-[10px] text-white/30 break-all">{appUrl(`/deal/${code}/${p.token}`)}</p>
                 </div>
               )}
 
@@ -198,9 +240,9 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
       {phase === 'lobby' && isHost && (
         <div className="text-center space-y-3 mb-6">
-          <p className="text-white/55 text-sm max-w-lg mx-auto">
-            Lisa 2–5 mängijat, kopeeri igaühele <strong className="text-gold">privaatne link</strong>.
-            Nemad näevad ainult oma kaarte. TV näitab lauda. Siis alusta.
+          <p className="text-white/55 text-sm max-w-lg mx-auto leading-relaxed">
+            Lisa 2–5 mängijat. Igaüks skannib <strong className="text-gold">oma QR-koodi</strong> (või avab lingi).
+            Käsi on privaatne; teler näitab ainult lauda. Kui kõik on sees — alusta.
           </p>
           <button
             type="button"

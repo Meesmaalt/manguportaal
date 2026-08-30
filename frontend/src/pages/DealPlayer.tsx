@@ -1,16 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
-import type { KinnistuDealState } from '@/games/kinnistu-deal/types'
-import { completeSets, bankTotal, type PropColor, SET_SIZE } from '@/games/kinnistu-deal/types'
-import { playCard, pickTarget, resolvePay, endTurn } from '@/games/kinnistu-deal/logic'
+import type { KinnistuDealState, DealCard } from '@/games/kinnistu-deal/types'
+import {
+  completeSets,
+  bankTotal,
+  type PropColor,
+  SET_SIZE,
+  looseProperties,
+  fullSetColors,
+  actionLabel,
+  COLOR_STYLE,
+} from '@/games/kinnistu-deal/types'
+import {
+  playCard,
+  pickTarget,
+  resolvePay,
+  endTurn,
+  defendWithNo,
+  skipDefend,
+  pickProperty,
+} from '@/games/kinnistu-deal/logic'
 import { CardFace, PropPile } from '@/games/kinnistu-deal/DealCards'
 import { Landmark, Loader2 } from 'lucide-react'
+import confetti from 'canvas-confetti'
 
-/**
- * Private player seat: /deal/:code/:token
- * Sees only own hand; plays on own turn; table is shared via PB session state.
- */
 export default function DealPlayer() {
   const { code: codeParam, token } = useParams<{ code: string; token: string }>()
   const code = (codeParam || '').toUpperCase()
@@ -30,6 +44,9 @@ export default function DealPlayer() {
   const isMyTurn = state?.phase === 'turn' && state.current === playerIdx
   const needTarget = state?.phase === 'pick_target' && state.pending?.from === playerIdx
   const needPay = state?.phase === 'pay' && state.payFrom === playerIdx
+  const needDefend = state?.phase === 'defend' && state.pending?.target === playerIdx
+  const needPickProp =
+    state?.phase === 'pick_property' && state.pending?.from === playerIdx && state.pending.target != null
 
   const pushState = useCallback(
     async (next: KinnistuDealState) => {
@@ -40,10 +57,8 @@ export default function DealPlayer() {
           localStorage.setItem(`session_${sessionId}`, JSON.stringify(next))
           setState(next)
         } else {
-          // merge from server to reduce stomp
           const rec = await pb.collection('game_sessions').getOne<GameSession>(sessionId)
           const server = rec.state as KinnistuDealState
-          // Prefer next for gameplay fields; keep hostBeat from server if newer
           const merged = { ...server, ...next, hostBeat: Date.now() }
           await pb.collection('game_sessions').update(sessionId, { state: merged })
           setState(merged)
@@ -73,7 +88,7 @@ export default function DealPlayer() {
         const list = await pb.collection('game_sessions').getList<GameSession>(1, 1, {
           filter: `code = "${code}"`,
         })
-        if (list.items.length === 0) throw new Error('Sessiooni ei leitud')
+        if (!list.items.length) throw new Error('Sessiooni ei leitud — kas host on alustanud?')
         const rec = list.items[0]
         if (cancelled) return
         setSessionId(rec.id)
@@ -86,7 +101,6 @@ export default function DealPlayer() {
           if (e.action === 'update') setState(e.record.state as KinnistuDealState)
         })
       } catch (e: any) {
-        // local fallback
         let found = false
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i)
@@ -103,7 +117,7 @@ export default function DealPlayer() {
               const poll = window.setInterval(() => {
                 const raw = localStorage.getItem(key)
                 if (raw) setState(JSON.parse(raw))
-              }, 800)
+              }, 700)
               unsub = () => clearInterval(poll)
               break
             }
@@ -121,19 +135,23 @@ export default function DealPlayer() {
     }
   }, [code, token])
 
+  useEffect(() => {
+    if (state?.phase === 'over' && state.confettiAt) {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 }, spread: 65 })
+    }
+  }, [state?.phase, state?.confettiAt])
+
   async function saveName() {
     if (!state || playerIdx < 0 || !nameEdit.trim()) return
-    const next = {
+    await pushState({
       ...state,
       players: state.players.map((p, i) => (i === playerIdx ? { ...p, name: nameEdit.trim() } : p)),
-    }
-    await pushState(next)
+    })
   }
 
   async function onPlay(cardId: string) {
     if (!state || playerIdx < 0 || !isMyTurn || busy) return
-    const next = playCard(state, playerIdx, cardId)
-    await pushState(next)
+    await pushState(playCard(state, playerIdx, cardId))
   }
 
   async function onTarget(ti: number) {
@@ -149,6 +167,21 @@ export default function DealPlayer() {
   async function onEndTurn() {
     if (!state || !isMyTurn || busy) return
     await pushState(endTurn(state))
+  }
+
+  async function onDefend() {
+    if (!state || !needDefend || busy) return
+    await pushState(defendWithNo(state, playerIdx))
+  }
+
+  async function onAcceptHit() {
+    if (!state || !needDefend || busy) return
+    await pushState(skipDefend(state, playerIdx))
+  }
+
+  async function onPickProp(id: string) {
+    if (!state || !needPickProp || busy) return
+    await pushState(pickProperty(state, id))
   }
 
   if (loading) {
@@ -171,21 +204,34 @@ export default function DealPlayer() {
   }
 
   const winSets = state.packData?.winSets ?? 3
+  const targetPlayer =
+    state.pending?.target != null ? state.players[state.pending.target] : null
+
+  let pickOptions: DealCard[] = []
+  if (needPickProp && targetPlayer && state.pending) {
+    if (state.pending.action === 'deal_breaker') {
+      for (const col of fullSetColors(targetPlayer)) {
+        pickOptions.push(...(targetPlayer.props[col] || []).slice(0, 1))
+      }
+    } else {
+      pickOptions = looseProperties(targetPlayer)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#050c18] text-white pb-16">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#050c18] to-[#02060e] text-white pb-20">
       <div className="max-w-lg mx-auto px-3 pt-4">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 text-gold font-display font-bold">
-            <Landmark size={18} /> Kinnistu Deal
+          <div className="flex items-center gap-2 text-gold font-display font-bold text-lg">
+            <Landmark size={20} /> Kinnistu Deal
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-white/40 border border-white/15 rounded-full px-2 py-0.5">
+          <span className="text-[10px] uppercase tracking-wider text-white/40 border border-white/15 rounded-full px-2.5 py-1">
             {code}
           </span>
         </div>
 
-        <div className="card-panel border-gold/40 p-3 mb-4">
-          <label className="text-[10px] uppercase text-white/40">Sinu nimi</label>
+        <div className="rounded-2xl border border-gold/35 bg-black/40 p-3 mb-4 backdrop-blur">
+          <label className="text-[10px] uppercase text-white/40 tracking-wide">Sinu nimi</label>
           <div className="flex gap-2 mt-1">
             <input
               className="input-field text-sm flex-1"
@@ -194,59 +240,76 @@ export default function DealPlayer() {
               onBlur={saveName}
             />
             <button type="button" className="btn-outline text-xs" onClick={saveName}>
-              Salvesta
+              OK
             </button>
           </div>
-          <p className="text-xs text-white/50 mt-2">
-            Komplektid: <span className="text-gold font-bold">{completeSets(me)}/{winSets}</span>
-            <span className="mx-2">·</span>
-            Pank: <span className="text-emerald-300 font-bold">{bankTotal(me)}M</span>
-          </p>
+          <div className="flex gap-4 mt-2 text-sm">
+            <span>
+              Komplektid{' '}
+              <strong className="text-gold">
+                {completeSets(me)}/{winSets}
+              </strong>
+            </span>
+            <span>
+              Pank <strong className="text-emerald-300">{bankTotal(me)}M</strong>
+            </span>
+            <span className="text-white/35 text-xs self-center">{me.hand.length} käes</span>
+          </div>
         </div>
 
-        {/* Status */}
-        <div className="text-center mb-4">
-          {state.phase === 'lobby' && (
-            <p className="text-white/60 text-sm">Oota, kuni host alustab mängu…</p>
-          )}
+        {/* Status banner */}
+        <div
+          className={`rounded-xl px-4 py-3 mb-4 text-center text-sm font-medium border ${
+            isMyTurn
+              ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-100'
+              : needDefend
+                ? 'bg-rose-500/15 border-rose-400/40 text-rose-100'
+                : needPay
+                  ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
+                  : 'bg-white/5 border-white/10 text-white/60'
+          }`}
+        >
+          {state.phase === 'lobby' && 'Oota, kuni host alustab…'}
           {state.phase === 'over' && state.winner != null && (
-            <p className="text-gold font-display text-xl">
-              {state.players[state.winner]?.name} võitis!
-            </p>
+            <span className="text-gold text-lg font-display">
+              {state.players[state.winner]?.name} võitis! 🏆
+            </span>
           )}
-          {state.phase === 'turn' && (
-            <p className={isMyTurn ? 'text-accent-cyan font-bold' : 'text-white/50 text-sm'}>
-              {isMyTurn
-                ? `Sinu käik · veel ${state.playsLeft} kaarti`
-                : `Käik: ${state.players[state.current]?.name}`}
-            </p>
-          )}
-          {needTarget && (
-            <p className="text-amber-200 text-sm font-medium mt-1">Vali sihtmängija</p>
-          )}
-          {needPay && (
-            <p className="text-emerald-200 text-sm font-medium mt-1">
-              Sa pead maksma {state.payAmount}M
-            </p>
+          {state.phase === 'turn' &&
+            (isMyTurn
+              ? `Sinu käik — võid mängida veel ${state.playsLeft} kaarti`
+              : `Praegu mängib: ${state.players[state.current]?.name}`)}
+          {needTarget && 'Vali, kelle vastu kaart kehtib'}
+          {needPickProp && 'Vali kinnistu / komplekt'}
+          {needDefend &&
+            `${state.players[state.pending!.from]?.name} ründab sind (${actionLabel(state.pending!.action)})`}
+          {needPay && `Maksad ${state.payAmount}M → ${state.players[state.pending!.from]?.name}`}
+          {state.phase === 'pick_target' && state.pending?.from !== playerIdx && (
+            <span> {state.players[state.pending!.from]?.name} valib sihtmärki…</span>
           )}
         </div>
 
-        {/* Table overview */}
+        {/* Table */}
         <div className="grid grid-cols-2 gap-2 mb-5">
           {state.players.map((p, i) => (
             <div
               key={p.token}
-              className={`rounded-xl border p-2 ${
-                i === state.current && state.phase === 'turn'
-                  ? 'border-gold/50 bg-gold/5'
-                  : 'border-white/10 bg-black/30'
+              className={`rounded-xl border p-2.5 transition ${
+                i === state.current && state.phase !== 'lobby' && state.phase !== 'over'
+                  ? 'border-gold/60 bg-gold/10 shadow-[0_0_16px_rgba(223,179,66,0.15)]'
+                  : i === playerIdx
+                    ? 'border-accent-cyan/40 bg-cyan-950/30'
+                    : 'border-white/10 bg-black/30'
               }`}
             >
-              <div className="text-xs font-bold text-gold truncate">{p.name}</div>
-              <div className="text-[10px] text-white/40">
+              <div className="text-xs font-bold text-gold truncate flex items-center gap-1">
+                {i === playerIdx && <span className="text-accent-cyan">●</span>}
+                {p.name}
+              </div>
+              <div className="text-[10px] text-white/45 mb-1">
                 {completeSets(p)}/{winSets} · {bankTotal(p)}M
               </div>
-              <div className="flex flex-wrap gap-0.5 mt-1">
+              <div className="flex flex-wrap gap-0.5">
                 {(Object.keys(SET_SIZE) as PropColor[]).map((c) => (
                   <PropPile key={c} color={c} cards={p.props[c] || []} />
                 ))}
@@ -255,7 +318,7 @@ export default function DealPlayer() {
           ))}
         </div>
 
-        {/* Actions */}
+        {/* Interactive prompts */}
         {needTarget && (
           <div className="flex flex-wrap gap-2 justify-center mb-4">
             {state.players.map((p, i) =>
@@ -274,18 +337,48 @@ export default function DealPlayer() {
           </div>
         )}
 
-        {needPay && (
-          <div className="text-center mb-4">
-            <button type="button" className="btn-gold" disabled={busy} onClick={onPay}>
-              Maksa pangast
+        {needPickProp && (
+          <div className="card-panel border-amber-400/30 p-3 mb-4">
+            <p className="text-amber-100 text-xs text-center mb-2">Puuduta kinnistut, mida soovid</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {pickOptions.map((c) => (
+                <CardFace key={c.id} card={c} onClick={() => onPickProp(c.id)} disabled={busy} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {needDefend && (
+          <div className="flex flex-wrap gap-2 justify-center mb-4">
+            {me.hand.some((c) => c.kind === 'action' && c.action === 'just_say_no') ? (
+              <button type="button" className="btn-gold" disabled={busy} onClick={onDefend}>
+                🚫 Ei, aitäh! (tühista)
+              </button>
+            ) : (
+              <p className="text-white/40 text-xs w-full text-center">Sul pole „Ei, aitäh“ kaarti</p>
+            )}
+            <button type="button" className="btn-outline text-sm" disabled={busy} onClick={onAcceptHit}>
+              Lase efektil toimuda
             </button>
           </div>
         )}
 
-        {/* Private hand */}
-        <div className="card-panel border-gold/30 p-3">
-          <h3 className="text-gold font-display text-sm mb-2">Sinu käsi (ainult sina näed)</h3>
-          <div className="flex flex-wrap gap-2 justify-center min-h-[7rem]">
+        {needPay && (
+          <div className="text-center mb-4">
+            <button type="button" className="btn-gold px-8" disabled={busy} onClick={onPay}>
+              Maksa ({state.payAmount}M)
+            </button>
+            <p className="text-[10px] text-white/35 mt-2">Kõigepealt raha pangast; vajadusel kinnistu</p>
+          </div>
+        )}
+
+        {/* Hand */}
+        <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0f1c30] to-[#080e18] p-3 shadow-xl">
+          <h3 className="text-gold font-display text-sm mb-3 flex items-center justify-between">
+            <span>Sinu käsi</span>
+            <span className="text-[10px] text-white/35 font-sans font-normal">privaatne</span>
+          </h3>
+          <div className="flex flex-wrap gap-2 justify-center min-h-[8.5rem]">
             {me.hand.map((c) => (
               <CardFace
                 key={c.id}
@@ -294,25 +387,24 @@ export default function DealPlayer() {
                 disabled={!isMyTurn || busy || state.playsLeft <= 0}
               />
             ))}
-            {!me.hand.length && <p className="text-white/35 text-sm">Käsi on tühi</p>}
+            {!me.hand.length && <p className="text-white/35 text-sm self-center">Käsi on tühi</p>}
           </div>
           {isMyTurn && (
-            <div className="mt-3 text-center">
-              <button type="button" className="btn-outline text-sm" disabled={busy} onClick={onEndTurn}>
+            <div className="mt-4 text-center">
+              <button type="button" className="btn-outline text-sm px-6" disabled={busy} onClick={onEndTurn}>
                 Lõpeta käik
               </button>
-              <p className="text-[10px] text-white/35 mt-2">
-                Kuni 3 kaarti · raha panka, kinnistu reale, tegevus vastasele. Käe limiit 7.
+              <p className="text-[10px] text-white/40 mt-2 leading-relaxed max-w-xs mx-auto">
+                Kuni 3 kaarti: raha → panka · kinnistu → reale · tegevus → vastane. Lõpus max 7 käes.
               </p>
             </div>
           )}
         </div>
 
-        {/* Log */}
         {state.log?.length > 0 && (
-          <div className="mt-4 space-y-0.5 text-center">
-            {state.log.slice(0, 5).map((line, i) => (
-              <p key={i} className={`text-[11px] ${i === 0 ? 'text-gold/80' : 'text-white/25'}`}>
+          <div className="mt-5 space-y-1 text-center">
+            {state.log.slice(0, 6).map((line, i) => (
+              <p key={i} className={`text-[11px] ${i === 0 ? 'text-gold/85' : 'text-white/25'}`}>
                 {line}
               </p>
             ))}

@@ -26,24 +26,30 @@ export type DealCard =
   | { id: string; kind: 'action'; action: ActionKind; name: string; value: number }
 
 export type PlayerBoard = {
-  /** secret token for private player link */
   token: string
   name: string
   hand: DealCard[]
   bank: DealCard[]
   props: Partial<Record<PropColor, DealCard[]>>
-  connected?: boolean
 }
 
-export type DealPhase = 'lobby' | 'turn' | 'pick_target' | 'pay' | 'over'
+export type DealPhase =
+  | 'lobby'
+  | 'turn'
+  | 'pick_target'
+  | 'pick_property'
+  | 'pay'
+  | 'defend' // target may play Just Say No
+  | 'over'
 
 export type PendingAction = {
   action: ActionKind
   from: number
-  color?: PropColor
   cardId: string
-  /** for multi-pay (birthday) remaining targets */
-  remaining?: number[]
+  target?: number
+  /** property card id chosen for steal/swap */
+  propertyId?: string
+  color?: PropColor
 }
 
 export type KinnistuDealState = {
@@ -61,6 +67,7 @@ export type KinnistuDealState = {
   code?: string
   packData?: { winSets: number; startHand: number }
   hostBeat?: number
+  confettiAt?: number
 }
 
 export const SET_SIZE: Record<PropColor, number> = {
@@ -106,4 +113,33 @@ export function makeToken(): string {
   let t = ''
   for (let i = 0; i < 8; i++) t += chars[Math.floor(Math.random() * chars.length)]
   return t
+}
+
+export function looseProperties(p: PlayerBoard): DealCard[] {
+  const out: DealCard[] = []
+  for (const col of Object.keys(SET_SIZE) as PropColor[]) {
+    const arr = p.props[col] || []
+    if (arr.length > 0 && arr.length < SET_SIZE[col]) out.push(...arr)
+  }
+  return out
+}
+
+export function fullSetColors(p: PlayerBoard): PropColor[] {
+  return (Object.keys(SET_SIZE) as PropColor[]).filter(
+    (c) => (p.props[c] || []).length >= SET_SIZE[c]
+  )
+}
+
+export function actionLabel(a: ActionKind): string {
+  const map: Record<ActionKind, string> = {
+    pass_go: 'Mine edasi',
+    rent: 'Nõua üüri',
+    debt: 'Võlanõue',
+    birthday: 'Sünnipäev!',
+    sly_deal: 'Salakaup',
+    forced_deal: 'Sunnitud tehing',
+    deal_breaker: 'Tehingumurdja',
+    just_say_no: 'Ei, aitäh',
+  }
+  return map[a]
 }
