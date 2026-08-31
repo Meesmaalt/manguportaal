@@ -22,10 +22,12 @@ import {
   skipDefend,
   pickProperty,
   pickRentColor,
+  startRentAll,
 } from '@/games/kinnistu-deal/logic'
-import { CardFace, PlayerTableBoard, PropertySetRow } from '@/games/kinnistu-deal/DealCards'
+import { CardFace, PlayerTableBoard, PropertySetRow, BankStrip } from '@/games/kinnistu-deal/DealCards'
 import { Landmark, Loader2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { playFx } from '@/lib/audio'
 
 export default function DealPlayer() {
   const { code: codeParam, token } = useParams<{ code: string; token: string }>()
@@ -142,6 +144,7 @@ export default function DealPlayer() {
   useEffect(() => {
     if (state?.phase === 'over' && state.confettiAt) {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 }, spread: 65 })
+      playFx('victory')
     }
   }, [state?.phase, state?.confettiAt])
 
@@ -155,21 +158,32 @@ export default function DealPlayer() {
 
   async function onPlay(cardId: string) {
     if (!state || playerIdx < 0 || !isMyTurn || busy) return
-    await pushState(playCard(state, playerIdx, cardId))
+    const next = playCard(state, playerIdx, cardId)
+    playFx(next !== state ? 'click' : 'wrong')
+    await pushState(next)
   }
 
   async function onTarget(ti: number) {
     if (!state || !needTarget || busy) return
+    playFx('tick')
     await pushState(pickTarget(state, ti))
+  }
+
+  async function onRentAll() {
+    if (!state || !needTarget || busy || state.pending?.action !== 'rent') return
+    playFx('tick')
+    await pushState(startRentAll(state))
   }
 
   async function onPay() {
     if (!state || !needPay || busy) return
+    playFx('correct')
     await pushState(resolvePay(state))
   }
 
   async function onEndTurn() {
     if (!state || !isMyTurn || busy) return
+    playFx('reveal')
     await pushState(endTurn(state))
   }
 
@@ -263,6 +277,10 @@ export default function DealPlayer() {
               Pank <strong className="text-emerald-300">{bankTotal(me)}M</strong>
             </span>
             <span className="text-white/35 text-xs self-center">{me.hand.length} käes</span>
+          </div>
+          <div className="mt-2">
+            <p className="text-[10px] uppercase tracking-wide text-white/35 mb-1">Sinu pank (kaardid)</p>
+            <BankStrip bank={me.bank} />
           </div>
         </div>
 
@@ -358,19 +376,34 @@ export default function DealPlayer() {
         )}
 
         {needTarget && (
-          <div className="flex flex-wrap gap-2 justify-center mb-4">
-            {state.players.map((p, i) =>
-              i === playerIdx ? null : (
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-wrap gap-2 justify-center">
+              {state.players.map((p, i) =>
+                i === playerIdx ? null : (
+                  <button
+                    key={p.token}
+                    type="button"
+                    className="btn-gold text-sm"
+                    disabled={busy}
+                    onClick={() => onTarget(i)}
+                  >
+                    {p.name}
+                  </button>
+                )
+              )}
+            </div>
+            {state.pending?.action === 'rent' && (
+              <div className="text-center">
                 <button
-                  key={p.token}
                   type="button"
-                  className="btn-gold text-sm"
+                  className="btn-outline text-sm border-amber-400/40 text-amber-100"
                   disabled={busy}
-                  onClick={() => onTarget(i)}
+                  onClick={onRentAll}
                 >
-                  {p.name}
+                  Nõua üüri kõigilt
                 </button>
-              )
+                <p className="text-[10px] text-white/35 mt-1">Iga vastane maksab eraldi sama summa</p>
+              </div>
             )}
           </div>
         )}

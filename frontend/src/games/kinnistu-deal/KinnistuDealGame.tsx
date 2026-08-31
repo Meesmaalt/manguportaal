@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
-import { emptyPlayer, startGame, endTurn } from './logic'
-import { CardFace, PlayerTableBoard } from './DealCards'
+import { emptyPlayer, startGame, endTurn, resolvePay, skipDefend } from './logic'
+import { CardFace, PlayerTableBoard, BankStrip } from './DealCards'
+import { playFx } from '@/lib/audio'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
@@ -66,7 +67,32 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
   function doEndTurn() {
     if (!isHost || phase !== 'turn') return
+    playFx('reveal')
     update((s) => endTurn(s))
+  }
+
+  function hostForcePay() {
+    if (!isHost || phase !== 'pay') return
+    playFx('correct')
+    update((s) => resolvePay(s))
+  }
+
+  function hostSkipDefend() {
+    if (!isHost || phase !== 'defend' || state.pending?.target == null) return
+    playFx('tick')
+    update((s) => skipDefend(s, s.pending!.target!))
+  }
+
+  function hostCancelPending() {
+    if (!isHost || phase === 'lobby' || phase === 'turn' || phase === 'over') return
+    playFx('wrong')
+    update({
+      phase: 'turn',
+      pending: null,
+      payFrom: undefined,
+      payAmount: undefined,
+      log: [`Host tühistas poolelioleva tegevuse`, ...log].slice(0, 16),
+    })
   }
 
   function resetLobby() {
@@ -101,10 +127,29 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
               <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={addPlayer}>
                 <UserPlus size={14} /> Lisa mängija
               </button>
-            ) : phase === 'turn' ? (
-              <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={doEndTurn}>
-                <SkipForward size={14} /> Lõpeta käik (host)
-              </button>
+            ) : phase !== 'over' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {phase === 'turn' && (
+                  <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={doEndTurn}>
+                    <SkipForward size={14} /> Lõpeta käik
+                  </button>
+                )}
+                {phase === 'pay' && (
+                  <button type="button" className="btn-outline text-xs" onClick={hostForcePay}>
+                    Maksa (host)
+                  </button>
+                )}
+                {phase === 'defend' && (
+                  <button type="button" className="btn-outline text-xs" onClick={hostSkipDefend}>
+                    Jäta kaitse vahele
+                  </button>
+                )}
+                {phase !== 'turn' && phase !== 'lobby' && (
+                  <button type="button" className="btn-outline text-xs text-accent-red/80" onClick={hostCancelPending}>
+                    Tühista tegevus
+                  </button>
+                )}
+              </div>
             ) : null
           }
         />
@@ -143,6 +188,57 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
             {players[state.payFrom]?.name} maksab {state.payAmount}M
           </p>
         )}
+
+      {/* Live action for TV / room */}
+      {phase !== 'lobby' && phase !== 'over' && (
+        <div className="mb-5 rounded-2xl border-2 border-gold/40 bg-gradient-to-r from-gold/15 via-black/40 to-cyan-500/10 px-4 py-4 text-center">
+          {phase === 'turn' && (
+            <p className="text-xl md:text-2xl font-display font-black text-gold">
+              Käik: {players[current]?.name}
+              <span className="text-white/50 text-base font-sans font-normal ml-2">
+                · {playsLeft} kaarti jäänud
+              </span>
+            </p>
+          )}
+          {phase === 'pick_rent_color' && state.pending && (
+            <p className="text-xl font-display font-black text-amber-200">
+              {players[state.pending.from]?.name} valib üüri värvi / maja
+            </p>
+          )}
+          {phase === 'pick_target' && state.pending && (
+            <p className="text-xl font-display font-black text-amber-100">
+              {players[state.pending.from]?.name} · {actionLabel(state.pending.action)}
+              {state.pending.color && state.payAmount == null && (
+                <span className="text-white/60 text-base font-sans font-normal">
+                  {' '}· valib vastast
+                </span>
+              )}
+            </p>
+          )}
+          {phase === 'defend' && state.pending?.target != null && (
+            <p className="text-xl font-display font-black text-rose-200">
+              {players[state.pending.target]?.name} — kaitse või luba efekt
+            </p>
+          )}
+          {phase === 'pay' && state.payFrom != null && (
+            <p className="text-xl md:text-2xl font-display font-black text-emerald-200">
+              {players[state.payFrom]?.name} maksab{' '}
+              <span className="text-gold">{state.payAmount}M</span>
+              {state.pending?.from != null && (
+                <span className="text-white/50 text-base font-sans font-normal">
+                  {' '}→ {players[state.pending.from]?.name}
+                </span>
+              )}
+            </p>
+          )}
+          {phase === 'pick_property' && state.pending && (
+            <p className="text-xl font-display font-black text-violet-200">
+              {players[state.pending.from]?.name} valib kinnistut
+            </p>
+          )}
+          {log[0] && <p className="text-sm text-white/45 mt-2">{log[0]}</p>}
+        </div>
+      )}
       </div>
 
       {/* TV join */}
@@ -233,10 +329,13 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                 </div>
               )}
 
-              {phase !== 'lobby' && (
-                <p className="text-white/30 text-[10px] mt-2">
-                  {isHost ? `${p.hand.length} kaarti käes · ${p.bank.length} pangas` : `${p.hand.length} kaarti käes`}
-                </p>
+              {phase !== 'lobby' && isHost && (
+                <div className="mt-2">
+                  <p className="text-[10px] text-white/35 mb-1">
+                    {p.hand.length} käes · pank {bankTotal(p)}M
+                  </p>
+                  <BankStrip bank={p.bank} />
+                </div>
               )}
             </div>
           )

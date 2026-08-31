@@ -251,21 +251,21 @@ export function PropertySetRow({
       } ${onClick ? 'cursor-pointer hover:border-gold/60' : ''}`}
       style={{ background: `linear-gradient(90deg, ${st.bg}dd 0%, ${st.bg}44 35%, #0a1018 100%)` }}
     >
-      <div className="flex items-stretch min-h-[3.25rem]">
+      <div className="flex items-stretch min-h-[3.75rem]">
         <div
           className="w-2.5 shrink-0"
           style={{ background: st.bg }}
         />
         <div className="flex-1 px-2.5 py-1.5 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wide text-white/90">
+            <span className="text-xs font-black uppercase tracking-wide text-white/95">
               {st.label}
               {building === 'house' && ' · 🏠'}
               {building === 'hotel' && ' · 🏨'}
             </span>
-            <span className={`text-[10px] font-bold ${done ? 'text-gold' : 'text-white/50'}`}>
+            <span className={`text-sm font-black ${done ? 'text-gold' : 'text-white/70'}`}>
               {cards.length}/{need}
-              {showRent && rent > 0 && <span className="text-emerald-300 ml-1.5">üür {rent}M</span>}
+              {showRent && rent > 0 && <span className="text-emerald-300 ml-2 text-xs font-bold">üür {rent}M</span>}
             </span>
           </div>
           <div className="text-xs sm:text-sm font-semibold text-white leading-snug mt-0.5">
@@ -294,36 +294,92 @@ export function PlayerTableBoard({
     return <p className="text-white/30 text-xs">Pole veel kinnistuid</p>
   }
   return (
-    <div className={`space-y-1.5 ${compact ? '' : 'max-h-64 overflow-y-auto pr-1'}`}>
-      {colors.map((c) => (
-        <PropertySetRow
+    <div className="space-y-2">
+      <ColorProgressGrid player={player} />
+      {!compact && (
+        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+          {colors.map((c) => (
+            <PropertySetRow
+              key={c}
+              color={c}
+              cards={player.props[c] || []}
+              building={player.buildings?.[c]}
+              showRent
+              owner={player}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Color progress chip — big enough to read at party distance */
+export function PropPile({
+  color,
+  cards,
+  building,
+}: {
+  color: PropColor
+  cards: DealCard[]
+  building?: 'house' | 'hotel'
+}) {
+  const need = SET_SIZE[color]
+  const n = cards.length
+  const done = n >= need
+  const st = COLOR_STYLE[color]
+  return (
+    <div
+      className={`rounded-xl border-2 px-2.5 py-2 min-w-[3.75rem] text-center shadow-md ${
+        done ? 'border-gold shadow-[0_0_12px_rgba(223,179,66,0.35)]' : 'border-white/20'
+      }`}
+      style={{ background: `linear-gradient(160deg, ${st.bg} 0%, ${st.bg}88 40%, #0a0f18 100%)` }}
+      title={`${st.label} ${n}/${need}`}
+    >
+      <div className="text-[0.6rem] font-bold uppercase tracking-wide text-white/90 leading-none mb-1">
+        {st.label.slice(0, 4)}
+      </div>
+      <div className={`font-display font-black text-base leading-none ${done ? 'text-gold' : 'text-white'}`}>
+        {n}/{need}
+      </div>
+      {building && (
+        <div className="text-[0.65rem] mt-0.5">{building === 'hotel' ? '🏨' : '🏠'}</div>
+      )}
+    </div>
+  )
+}
+
+/** All colors at a glance (incl. empty 0/x) */
+export function ColorProgressGrid({ player }: { player: PlayerBoard }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {(Object.keys(SET_SIZE) as PropColor[]).map((c) => (
+        <PropPile
           key={c}
           color={c}
           cards={player.props[c] || []}
           building={player.buildings?.[c]}
-          showRent
-          owner={player}
         />
       ))}
     </div>
   )
 }
 
-/** @deprecated small chips — prefer PropertySetRow */
-export function PropPile({ color, cards }: { color: PropColor; cards: DealCard[] }) {
-  const need = SET_SIZE[color]
-  const done = cards.length >= need
-  const st = COLOR_STYLE[color]
+export function BankStrip({ bank }: { bank: DealCard[] }) {
+  if (!bank.length) {
+    return <p className="text-white/30 text-xs">Pank tühi</p>
+  }
+  const sorted = [...bank].sort((a, b) => a.value - b.value)
   return (
-    <div
-      className={`rounded-lg border px-1.5 py-1 min-w-[2.8rem] text-center ${
-        done ? 'border-gold' : 'border-white/15'
-      }`}
-      style={{ background: `${st.bg}55` }}
-    >
-      <div className="text-[0.55rem] text-white font-black">
-        {cards.length}/{need}
-      </div>
+    <div className="flex flex-wrap gap-1.5 items-center">
+      {sorted.map((c) => (
+        <span
+          key={c.id}
+          className="inline-flex items-center justify-center min-w-[2.25rem] h-8 px-2 rounded-lg bg-emerald-700/80 border border-emerald-400/40 text-emerald-50 font-display font-black text-sm"
+        >
+          {c.value}M
+        </span>
+      ))}
     </div>
   )
 }

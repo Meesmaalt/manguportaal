@@ -259,6 +259,28 @@ export function pickRentColor(s: KinnistuDealState, color: PropColor): KinnistuD
   }
 }
 
+
+/** Üür kõigile: järjekorras maksed. */
+export function startRentAll(s: KinnistuDealState): KinnistuDealState {
+  if (s.phase !== 'pick_target' || !s.pending || s.pending.action !== 'rent') return s
+  const from = s.pending.from
+  const targets = s.players.map((_, i) => i).filter((i) => i !== from)
+  if (!targets.length) return { ...s, phase: 'turn', pending: null }
+  const color = s.pending.color
+  const amount = color ? rentForSet(s.players[from], color) : 3
+  return {
+    ...s,
+    phase: 'pay',
+    pending: { ...s.pending, rentMode: 'all', rentTargets: targets.slice(1), target: targets[0] },
+    payFrom: targets[0],
+    payAmount: amount,
+    log: [
+      `🔑 Üür kõigile (${amount}M): esimesena ${s.players[targets[0]].name}`,
+      ...s.log,
+    ].slice(0, 16),
+  }
+}
+
 export function pickTarget(s: KinnistuDealState, target: number): KinnistuDealState {
   if (s.phase !== 'pick_target' || !s.pending) return s
   if (target === s.pending.from) return s
@@ -503,13 +525,32 @@ export function resolvePay(s: KinnistuDealState): KinnistuDealState {
       paid += prop.value
     }
   }
+  const basePlayers = s.players.map((x, i) => {
+    if (i === payerI) return payer
+    if (i === recvI) return recv
+    return x
+  })
+  const queue = s.pending.rentTargets || []
+  if (s.pending.rentMode === 'all' && queue.length > 0) {
+    const next = queue[0]
+    const rest = queue.slice(1)
+    const amount = s.payAmount
+    return {
+      ...s,
+      players: basePlayers,
+      phase: 'pay',
+      pending: { ...s.pending, target: next, rentTargets: rest },
+      payFrom: next,
+      payAmount: amount,
+      log: [
+        `✅ ${s.players[payerI].name} tasus ~${paid}M · järgmine: ${s.players[next]?.name}`,
+        ...s.log,
+      ].slice(0, 16),
+    }
+  }
   return checkWin({
     ...s,
-    players: s.players.map((x, i) => {
-      if (i === payerI) return payer
-      if (i === recvI) return recv
-      return x
-    }),
+    players: basePlayers,
     phase: 'turn',
     pending: null,
     payFrom: undefined,
