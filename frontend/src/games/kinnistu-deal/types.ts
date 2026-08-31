@@ -54,6 +54,8 @@ export type PendingAction = {
   target?: number
   propertyId?: string
   color?: PropColor
+  rentTargets?: number[]
+  rentMode?: 'one' | 'all'
 }
 
 export type KinnistuDealState = {

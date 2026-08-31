@@ -7,7 +7,7 @@ import SonaseletusGame from '@/games/sonaseletus/SonaseletusGame'
 import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
-import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
+import KinnistuDealTv from '@/games/kinnistu-deal/KinnistuDealTv'
 import GameShowFrame from '@/components/GameShowFrame'
 import ConnectionChip from '@/components/ConnectionChip'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
@@ -217,7 +217,10 @@ export default function Display() {
       {gt === 'roosidesoda' && (
         <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
       )}
-      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && (
+      {gt === 'kinnistu_deal' && (
+        <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
+      )}
+      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && (
         <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
           {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
           {gt === 'ma_ei_ole_kunagi' && (
@@ -225,7 +228,6 @@ export default function Display() {
           )}
           {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
           {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
-          {gt === 'kinnistu_deal' && <KinnistuDealGame state={state} update={noop} isHost={false} />}
         </GameShowFrame>
       )}
     </div>
