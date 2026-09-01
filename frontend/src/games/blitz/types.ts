@@ -21,7 +21,7 @@ export type BlitzPlayer = {
   team?: BlitzTeamId
 }
 
-export type BlitzPhase = 'lobby' | 'countdown' | 'question' | 'reveal' | 'podium'
+export type BlitzPhase = 'lobby' | 'countdown' | 'question' | 'reveal' | 'midboard' | 'podium' | 'sudden_death'
 
 export type BlitzAnswer = {
   choice: BlitzChoice
@@ -44,11 +44,19 @@ export type BlitzState = {
   lastRoundPoints: Record<string, number>
   /** choice index -> count for current reveal */
   lastAnswerDist?: Record<number, number>
+  /** fastest correct answers this round (photo finish) */
+  lastPhotoFinish?: { playerId: string; name: string; atMs: number; points: number }[]
   /** seconds to show reveal before host can auto-advance (0 = manual) */
   revealSeconds: number
   revealStartedAt?: number
   shuffleOnStart?: boolean
   teamsEnabled?: boolean
+  /** practice round — no points */
+  isWarmup?: boolean
+  warmupDone?: boolean
+  /** shown between blocks of questions */
+  midboardUntil?: number
+  suddenDeathActive?: boolean
   packData?: {
     secondsPerQuestion?: number
     pointsMax?: number

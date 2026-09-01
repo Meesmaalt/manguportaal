@@ -27,6 +27,8 @@ export default function BlitzPlayer() {
   const [conn, setConn] = useState<'ok' | 'weak' | 'off'>('ok')
   const [answerErr, setAnswerErr] = useState('')
   const answering = useRef(false)
+  const [scorePop, setScorePop] = useState<number | null>(null)
+  const prevScore = useRef<number | null>(null)
 
   const me = useMemo(
     () => (state && playerId ? state.players.find((p) => p.id === playerId) : undefined),
@@ -117,6 +119,18 @@ export default function BlitzPlayer() {
       unsub?.()
     }
   }, [code])
+
+  useEffect(() => {
+    if (!me) return
+    if (prevScore.current != null && me.score > prevScore.current) {
+      const delta = me.score - prevScore.current
+      setScorePop(delta)
+      prevScore.current = me.score
+      const tm = window.setTimeout(() => setScorePop(null), 1200)
+      return () => clearTimeout(tm)
+    }
+    prevScore.current = me.score ?? 0
+  }, [me?.score])
 
   // Feedback sound on reveal for this player
   const lastRevealQ = useRef<number | null>(null)
@@ -224,9 +238,13 @@ export default function BlitzPlayer() {
     <BlitzStage final={isFinal}>
       <div className="min-h-screen pb-12">
         <div className="max-w-md mx-auto px-3 pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-amber-300 font-display font-black text-lg">
-              <Zap size={20} /> Blitz
+          <div className="blitz-header-bar mb-4">
+            <div className="flex items-center gap-2 font-display text-lg blitz-logo">
+              <Zap size={18} className="text-amber-300" />
+              BLITZ
+              {(phase === 'question' || phase === 'countdown') && (
+                <span className="blitz-live-dot ml-1" title="Live" />
+              )}
             </div>
             <div className="flex items-center gap-2">
               {conn === 'ok' ? (
@@ -236,14 +254,12 @@ export default function BlitzPlayer() {
               ) : (
                 <WifiOff size={14} className="text-rose-400" />
               )}
-              <span className="text-[10px] tracking-widest text-white/50 border border-white/20 rounded-full px-2 py-0.5">
-                {code}
-              </span>
+              <span className="blitz-code-pill !text-[10px] !px-2 !py-0.5 !tracking-[0.2em]">{code}</span>
             </div>
           </div>
 
           {!joined && (
-            <div className="rounded-2xl border border-amber-300/40 bg-black/30 backdrop-blur-md p-4 space-y-3">
+            <div className="blitz-glass rounded-2xl p-5 space-y-3">
               <p className="text-sm text-white/70">Sisesta nimi — sisselogimist pole vaja.</p>
               {error && <p className="text-rose-400 text-xs">{error}</p>}
               <input
@@ -283,10 +299,13 @@ export default function BlitzPlayer() {
 
           {joined && me && (
             <>
-              <div className="flex justify-between items-center mb-4 text-sm">
+              <div className="blitz-glass flex justify-between items-center mb-4 text-sm rounded-xl px-3 py-2">
                 <span className="text-amber-200 font-bold text-base">{me.name}</span>
                 <span className="text-white/60">
                   <span className="font-display font-black text-white text-lg">{me.score}</span> p
+                  {scorePop != null && scorePop > 0 && (
+                    <span className="ml-1 text-emerald-300 font-black text-sm">+{scorePop}</span>
+                  )}
                   {myRank > 0 ? ` · #${myRank}` : ''}
                   {(me.streak || 0) > 1 && (
                     <span className="text-amber-300 ml-1">🔥{me.streak}</span>
@@ -323,7 +342,17 @@ export default function BlitzPlayer() {
 
               {phase === 'countdown' && (
                 <div className="text-center py-16">
-                  {isFinal && (
+                  {state.isWarmup && (
+                    <p className="text-cyan-300 text-sm font-black uppercase mb-4">
+                      Proovivoor — punktid ei loe
+                    </p>
+                  )}
+                  {state.suddenDeathActive && (
+                    <p className="blitz-final-banner text-rose-300 text-sm font-black uppercase mb-4">
+                      ★ Äkk-surm ★
+                    </p>
+                  )}
+                  {isFinal && !state.isWarmup && !state.suddenDeathActive && (
                     <p className="blitz-final-banner text-rose-300 text-sm font-black uppercase mb-4">
                       ★ Viimane küsimus · 2× punktid ★
                     </p>
@@ -343,10 +372,11 @@ export default function BlitzPlayer() {
                       ★ Viimane · 2× punktid ★
                     </p>
                   )}
-                  <p className="text-center text-white/50 text-xs mb-2">
+                  <p className="text-center text-white/50 text-xs mb-1">
                     {(state.qIndex || 0) + 1}/{state.questions?.length || 0}
                     <PlayerTimer state={state} />
                   </p>
+                  <QuestionProgress state={state} />
                   {!q ? (
                     <p className="text-center text-white/50 py-10">Küsimus laadib…</p>
                   ) : (
@@ -358,9 +388,9 @@ export default function BlitzPlayer() {
                           className="max-h-36 mx-auto mb-3 rounded-xl object-contain border border-white/20"
                         />
                       )}
-                      <p className="text-center font-bold text-lg mb-5 leading-snug text-white">
-                        {q.q}
-                      </p>
+                      <div className="blitz-q-card mb-4">
+                        <p className="text-center font-bold text-lg leading-snug text-white">{q.q}</p>
+                      </div>
                       {answerErr && (
                         <p className="text-center text-rose-400 text-xs mb-2">{answerErr}</p>
                       )}
@@ -385,10 +415,12 @@ export default function BlitzPlayer() {
                               type="button"
                               disabled={busy}
                               onClick={() => onAnswer(i as BlitzChoice)}
-                              className={`blitz-answer ${BLITZ_ANSWER_STYLE[i]?.bg || 'bg-white/20'} min-h-[3.75rem] px-4 py-3 text-left font-bold text-base text-white flex items-center gap-3 disabled:opacity-60`}
+                              className={`blitz-answer ${BLITZ_ANSWER_STYLE[i]?.bg || 'bg-white/20'} blitz-answer-tile text-base disabled:opacity-60 w-full`}
                             >
-                              <AnswerShape index={i} />
-                              <span className="flex-1">{c}</span>
+                              <span className="blitz-shape-badge">
+                                <AnswerShape index={i} />
+                              </span>
+                              <span className="flex-1 text-left">{c}</span>
                             </button>
                           ))}
                         </div>
@@ -399,7 +431,15 @@ export default function BlitzPlayer() {
               )}
 
               {phase === 'reveal' && (
-                <div className="text-center space-y-3 py-8">
+                <div
+                  className={`text-center space-y-3 py-8 rounded-2xl ${
+                    myAnswer && q && myAnswer.choice === q.correct
+                      ? 'blitz-flash-correct'
+                      : myAnswer && q && myAnswer.choice !== q.correct
+                        ? 'blitz-shake'
+                        : ''
+                  }`}
+                >
                   {q ? (
                     <>
                       <p className="text-white/50 text-sm">Õige vastus</p>
@@ -409,12 +449,23 @@ export default function BlitzPlayer() {
                       </p>
                       {myAnswer && (
                         <p
-                          className={`text-sm font-bold ${
+                          className={`text-base font-black ${
                             myAnswer.choice === q.correct ? 'text-emerald-300' : 'text-rose-300'
                           }`}
                         >
-                          {myAnswer.choice === q.correct ? 'Sul oli õige!' : 'Seekord valesti'}
+                          {myAnswer.choice === q.correct ? '✓ Sul oli õige!' : '✗ Seekord valesti'}
                         </p>
+                      )}
+                      {(state.lastPhotoFinish?.length || 0) > 0 && (
+                        <div className="mt-4 text-left max-w-xs mx-auto rounded-xl bg-black/30 border border-cyan-400/25 px-3 py-2">
+                          <p className="text-[10px] text-cyan-200 font-black uppercase mb-1">Photo finish</p>
+                          {state.lastPhotoFinish!.slice(0, 3).map((row, i) => (
+                            <div key={row.playerId} className="flex justify-between text-xs text-white/80">
+                              <span>{i + 1}. {row.name}</span>
+                              <span className="text-cyan-200">{(row.atMs / 1000).toFixed(2)}s</span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </>
                   ) : (
@@ -429,6 +480,31 @@ export default function BlitzPlayer() {
                     </p>
                   )}
                   <p className="text-white/60">Kokku {me.score} p</p>
+                </div>
+              )}
+
+              {phase === 'midboard' && (
+                <div className="py-6">
+                  <p className="text-center text-amber-300 font-display text-2xl font-black mb-4">
+                    Vaheseis
+                  </p>
+                  <div className="space-y-1.5">
+                    {ranked.slice(0, 8).map((pl, i) => (
+                      <div
+                        key={pl.id}
+                        className={`flex justify-between px-3 py-2 rounded-xl text-sm ${
+                          pl.id === playerId
+                            ? 'bg-amber-400/20 border border-amber-300/40'
+                            : 'bg-white/10'
+                        }`}
+                      >
+                        <span>
+                          {i + 1}. {pl.name}
+                        </span>
+                        <span className="font-display font-bold">{pl.score}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -459,7 +535,7 @@ export default function BlitzPlayer() {
               )}
 
               {/* Unknown phase fallback */}
-              {!['lobby', 'countdown', 'question', 'reveal', 'podium'].includes(phase) && (
+              {!['lobby', 'countdown', 'question', 'reveal', 'midboard', 'podium'].includes(phase) && (
                 <p className="text-center text-white/50 py-10">Ootan hosti… ({phase})</p>
               )}
             </>
@@ -467,6 +543,23 @@ export default function BlitzPlayer() {
         </div>
       </div>
     </BlitzStage>
+  )
+}
+
+function QuestionProgress({ state }: { state: BlitzState }) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    if (state.phase !== 'question' || !state.questionStartedAt) return
+    const id = window.setInterval(() => setNow(Date.now()), 200)
+    return () => clearInterval(id)
+  }, [state.phase, state.questionStartedAt])
+  if (state.phase !== 'question' || !state.questionStartedAt || !state.secondsPerQuestion) return null
+  const left = Math.max(0, state.secondsPerQuestion - (now - state.questionStartedAt) / 1000)
+  const pct = Math.max(0, Math.min(100, (left / state.secondsPerQuestion) * 100))
+  return (
+    <div className="blitz-progress mb-3 max-w-xs mx-auto">
+      <i style={{ width: `${pct}%` }} />
+    </div>
   )
 }
 

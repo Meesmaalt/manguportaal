@@ -121,9 +121,26 @@ export function submitAnswer(s: BlitzState, playerId: string, choice: BlitzChoic
 }
 
 export function reveal(s: BlitzState): BlitzState {
-  if (s.phase !== 'question') return s
+  if (s.phase !== 'question' && s.phase !== 'sudden_death') return s
   const q = s.questions[s.qIndex]
   if (!q) return { ...s, phase: 'podium' }
+
+  // Warmup: show answer, no points, back to lobby
+  if (s.isWarmup) {
+    const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
+    for (const ans of Object.values(s.answers)) {
+      lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
+    }
+    return {
+      ...s,
+      phase: 'reveal',
+      lastRoundPoints: {},
+      lastAnswerDist,
+      lastPhotoFinish: [],
+      revealStartedAt: Date.now(),
+    }
+  }
+
   const lastRoundPoints: Record<string, number> = {}
   const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
   const players = s.players.map((p) => {
@@ -148,33 +165,156 @@ export function reveal(s: BlitzState): BlitzState {
     lastRoundPoints[p.id] = pts
     return { ...p, score: p.score + pts, streak }
   })
+  const lastPhotoFinish = s.players
+    .map((p) => {
+      const ans = s.answers[p.id]
+      if (!ans || ans.choice !== q.correct) return null
+      return {
+        playerId: p.id,
+        name: p.name,
+        atMs: ans.at,
+        points: lastRoundPoints[p.id] || 0,
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a!.atMs - b!.atMs))
+    .slice(0, 5) as { playerId: string; name: string; atMs: number; points: number }[]
+
   return {
     ...s,
     phase: 'reveal',
     players,
     lastRoundPoints,
     lastAnswerDist,
+    lastPhotoFinish,
     revealStartedAt: Date.now(),
   }
 }
 
 export function nextQuestion(s: BlitzState): BlitzState {
-  if (s.phase !== 'reveal' && s.phase !== 'lobby') return s
+  if (s.phase !== 'reveal' && s.phase !== 'lobby' && s.phase !== 'midboard') return s
+
+  if (s.isWarmup) {
+    const restored = (s.packData?.questions && s.packData.questions.length)
+      ? s.packData.questions
+      : s.questions.filter((q) => q.id !== 'warmup')
+    return {
+      ...s,
+      phase: 'lobby',
+      isWarmup: false,
+      warmupDone: true,
+      questions: restored,
+      qIndex: 0,
+      answers: {},
+      lastRoundPoints: {},
+      lastPhotoFinish: [],
+      revealStartedAt: undefined,
+      questionStartedAt: undefined,
+      countdownStartedAt: undefined,
+    }
+  }
+
+  if (s.suddenDeathActive) {
+    // After sudden death reveal → podium
+    return finalizePodium({ ...s, suddenDeathActive: false })
+  }
+
   const next = s.phase === 'lobby' ? 0 : s.qIndex + 1
   if (next >= s.questions.length) {
-    return { ...s, phase: 'podium', answers: {}, lastRoundPoints: {}, revealStartedAt: undefined }
+    return maybeSuddenDeathOrPodium(s)
   }
-  return startQuestion(s, next)
+
+  // Mid-board every 5 questions (after Q5, Q10, ...)
+  if (next > 0 && next % 5 === 0 && next < s.questions.length && s.phase === 'reveal') {
+    return {
+      ...s,
+      phase: 'midboard',
+      qIndex: next - 1, // stay conceptually after answered Q
+      answers: {},
+      midboardUntil: Date.now() + 5000,
+      revealStartedAt: undefined,
+    }
+  }
+
+  return startQuestion({ ...s, midboardUntil: undefined }, next)
+}
+
+export function continueAfterMidboard(s: BlitzState): BlitzState {
+  if (s.phase !== 'midboard') return s
+  const next = s.qIndex + 1
+  if (next >= s.questions.length) return maybeSuddenDeathOrPodium(s)
+  return startQuestion({ ...s, midboardUntil: undefined }, next)
+}
+
+function maybeSuddenDeathOrPodium(s: BlitzState): BlitzState {
+  const ranked = [...s.players].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
+  if (
+    ranked.length >= 2 &&
+    ranked[0].score === ranked[1].score &&
+    ranked[0].score > 0 &&
+    !s.suddenDeathActive
+  ) {
+    // Sudden death: reuse last question or first
+    const idx = Math.max(0, s.questions.length - 1)
+    return {
+      ...s,
+      phase: 'countdown',
+      qIndex: idx,
+      suddenDeathActive: true,
+      isWarmup: false,
+      answers: {},
+      lastRoundPoints: {},
+      lastPhotoFinish: [],
+      countdownStartedAt: Date.now(),
+      questionStartedAt: undefined,
+      revealStartedAt: undefined,
+      midboardUntil: undefined,
+    }
+  }
+  return finalizePodium(s)
+}
+
+function finalizePodium(s: BlitzState): BlitzState {
+  return {
+    ...s,
+    phase: 'podium',
+    answers: {},
+    lastRoundPoints: {},
+    lastPhotoFinish: [],
+    revealStartedAt: undefined,
+    suddenDeathActive: false,
+    midboardUntil: undefined,
+  }
 }
 
 export function skipQuestion(s: BlitzState): BlitzState {
   if (s.phase !== 'question') return s
-  // reveal with no extra points change beyond who already answered — same as reveal
   return reveal(s)
 }
 
+/** Skip without scoring (bad question). */
+export function skipQuestionVoid(s: BlitzState): BlitzState {
+  if (s.phase !== 'question' && s.phase !== 'countdown' && s.phase !== 'reveal') return s
+  const next = s.qIndex + 1
+  if (next >= s.questions.length) {
+    return { ...s, phase: 'podium', answers: {}, lastRoundPoints: {}, lastPhotoFinish: [], revealStartedAt: undefined }
+  }
+  return startQuestion(
+    {
+      ...s,
+      answers: {},
+      lastRoundPoints: {},
+      lastPhotoFinish: [],
+      revealStartedAt: undefined,
+      questionStartedAt: undefined,
+      countdownStartedAt: undefined,
+    },
+    next
+  )
+}
+
 export function goPodium(s: BlitzState): BlitzState {
-  return { ...s, phase: 'podium', answers: {}, lastRoundPoints: {}, revealStartedAt: undefined }
+  return finalizePodium(s)
 }
 
 export function restartQuiz(s: BlitzState): BlitzState {
@@ -223,4 +363,35 @@ export function teamTotals(s: BlitzState): { a: number; b: number } {
     else if (p.team === 'b') b += p.score
   }
   return { a, b }
+}
+
+
+const WARMUP_Q = {
+  id: 'warmup',
+  q: 'Prooviküsimus (punktid ei loe): Mis värv on taevas päeval?',
+  choices: ['Roheline', 'Sinine', 'Punane', 'Lilla'] as [string, string, string, string],
+  correct: 1 as const,
+}
+
+export function startWarmup(s: BlitzState): BlitzState {
+  if (s.players.length < 1) return s
+  const baseQs = s.questions.filter((q) => q.id !== 'warmup')
+  return {
+    ...s,
+    isWarmup: true,
+    suddenDeathActive: false,
+    packData: {
+      ...(s.packData || {}),
+      questions: s.packData?.questions?.length ? s.packData.questions : baseQs,
+    },
+    questions: [WARMUP_Q],
+    qIndex: 0,
+    phase: 'countdown',
+    countdownStartedAt: Date.now(),
+    questionStartedAt: undefined,
+    answers: {},
+    lastRoundPoints: {},
+    lastPhotoFinish: [],
+    revealStartedAt: undefined,
+  }
 }

@@ -9,9 +9,12 @@ import {
   removePlayer,
   restartQuiz,
   skipQuestion,
+  skipQuestionVoid,
   toggleTeams,
   setPlayerTeam,
   teamTotals,
+  startWarmup,
+  continueAfterMidboard,
 } from './logic'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -92,6 +95,17 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
     }
   }, [revealLeft, state.phase, isHost, state.revealSeconds]) // eslint-disable-line
 
+  // Mid-board auto continue
+  useEffect(() => {
+    if (!isHost || state.phase !== 'midboard' || !state.midboardUntil) return
+    const ms = state.midboardUntil - Date.now()
+    const t = window.setTimeout(() => {
+      playFx('click')
+      update((s) => continueAfterMidboard(s))
+    }, Math.max(500, ms))
+    return () => clearTimeout(t)
+  }, [state.phase, state.midboardUntil, isHost]) // eslint-disable-line
+
   function copyJoin() {
     navigator.clipboard.writeText(appUrl(`/blitz/${code}`)).then(() => {
       setCopied(true)
@@ -108,17 +122,30 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
           extra={
             <div className="flex flex-wrap gap-1.5">
               {state.phase === 'lobby' && (
-                <button
-                  type="button"
-                  className="btn-gold text-xs flex items-center gap-1"
-                  disabled={state.players.length < 1 || !state.questions.length}
-                  onClick={() => {
-                    playFx('correct')
-                    update((s) => startQuestion(s, 0))
-                  }}
-                >
-                  <Play size={14} /> Alusta
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn-outline text-xs flex items-center gap-1"
+                    disabled={state.players.length < 1}
+                    onClick={() => {
+                      playFx('click')
+                      update((s) => startWarmup(s))
+                    }}
+                  >
+                    Proovivoor
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-gold text-xs flex items-center gap-1"
+                    disabled={state.players.length < 1 || !state.questions.length}
+                    onClick={() => {
+                      playFx('correct')
+                      update((s) => startQuestion(s, 0))
+                    }}
+                  >
+                    <Play size={14} /> Alusta
+                  </button>
+                </>
               )}
               {state.phase === 'question' && (
                 <>
@@ -142,7 +169,30 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                   >
                     Skip → reveal
                   </button>
+                  <button
+                    type="button"
+                    className="btn-outline text-xs border-accent-red/50 text-accent-red"
+                    onClick={() => {
+                      if (!confirm('Jäta küsimus vahele ilma punktideta?')) return
+                      playFx('wrong')
+                      update((s) => skipQuestionVoid(s))
+                    }}
+                  >
+                    Jäta vahele
+                  </button>
                 </>
+              )}
+              {state.phase === 'midboard' && (
+                <button
+                  type="button"
+                  className="btn-gold text-xs"
+                  onClick={() => {
+                    playFx('click')
+                    update((s) => continueAfterMidboard(s))
+                  }}
+                >
+                  Jätka mängu
+                </button>
               )}
               {state.phase === 'reveal' && (
                 <button
@@ -154,7 +204,13 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                   }}
                 >
                   <SkipForward size={14} />{' '}
-                  {state.qIndex + 1 >= state.questions.length ? 'Podium' : 'Järgmine'}
+                  {state.isWarmup
+                    ? 'Tagasi lobby'
+                    : state.suddenDeathActive
+                      ? 'Podium'
+                      : state.qIndex + 1 >= state.questions.length
+                        ? 'Podium'
+                        : 'Järgmine'}
                   {state.revealSeconds > 0 && revealLeft != null && revealLeft > 0 && (
                     <span className="opacity-70">({revealLeft}s)</span>
                   )}
@@ -175,8 +231,8 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
       )}
 
       <div className="text-center mb-4">
-        <h2 className="font-display text-3xl text-gold font-black">⚡ Blitz</h2>
-        <p className="text-white/45 text-sm">Kiire trivia · õige + kiirus = punktid</p>
+        <h2 className="font-display text-3xl blitz-logo">⚡ BLITZ</h2>
+        <p className="text-white/50 text-sm">Kiire trivia · õige + kiirus = punktid</p>
         {state.questions.length > 0 &&
           state.qIndex === state.questions.length - 1 &&
           state.phase !== 'lobby' &&
@@ -284,13 +340,20 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
           </p>
         )}
         {state.phase === 'question' && q && (
-          <p className="text-cyan-200 font-display text-xl font-black">
-            {state.qIndex + 1}/{state.questions.length}
-            {remaining != null && <span className="text-gold ml-3 tabular-nums">{remaining}s</span>}
-            <span className="text-white/50 text-sm font-sans font-normal ml-3">
-              vastanud {answered}/{state.players.length}
-            </span>
-          </p>
+          <div>
+            <p className="text-cyan-200 font-display text-xl font-black">
+              {state.qIndex + 1}/{state.questions.length}
+              {remaining != null && <span className="text-gold ml-3 tabular-nums">{remaining}s</span>}
+              <span className="text-white/50 text-sm font-sans font-normal ml-3">
+                vastanud {answered}/{state.players.length}
+              </span>
+            </p>
+            {remaining != null && state.secondsPerQuestion > 0 && (
+              <div className="blitz-progress mt-2 max-w-xs mx-auto">
+                <i style={{ width: `${Math.max(0, Math.min(100, (remaining / state.secondsPerQuestion) * 100))}%` }} />
+              </div>
+            )}
+          </div>
         )}
         {state.phase === 'reveal' && (
           <p className="text-emerald-200 font-display text-xl font-black">
@@ -300,12 +363,41 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
             )}
           </p>
         )}
+        {state.phase === 'midboard' && (
+          <p className="text-amber-200 font-display text-2xl font-black">Vaheseis</p>
+        )}
+        {state.suddenDeathActive && state.phase !== 'podium' && (
+          <p className="text-rose-300 font-display text-xl font-black uppercase tracking-wide">
+            Äkk-surm · viik
+          </p>
+        )}
+        {state.isWarmup && state.phase !== 'lobby' && (
+          <p className="text-cyan-200 text-sm font-bold">Proovivoor — punktid ei loe</p>
+        )}
         {state.phase === 'podium' && (
           <p className="text-gold font-display text-2xl font-black flex items-center justify-center gap-2">
             <Trophy /> Lõpp
           </p>
         )}
       </div>
+
+      {state.phase === 'reveal' && (state.lastPhotoFinish?.length || 0) > 0 && (
+        <div className="card-panel border-cyan-400/30 p-3 mb-4 max-w-xl mx-auto">
+          <p className="text-cyan-200 text-xs font-black uppercase tracking-wide mb-2">⚡ Photo finish</p>
+          <div className="space-y-1">
+            {state.lastPhotoFinish!.map((row, i) => (
+              <div key={row.playerId} className="flex justify-between text-sm">
+                <span className="text-white/80">
+                  {i + 1}. {row.name}
+                </span>
+                <span className="text-cyan-200 tabular-nums">
+                  {(row.atMs / 1000).toFixed(2)}s · +{row.points}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isHost && state.phase === 'reveal' && state.questions[state.qIndex + 1] && (
         <div className="card-panel border-amber-500/30 p-3 mb-4 text-sm">
