@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { useGameSession } from '@/hooks/useGameSession'
-import { ArrowLeft, HelpCircle } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useGameSession, clearRememberedHostSession } from '@/hooks/useGameSession'
+import { ArrowLeft, HelpCircle, LogOut, SkipForward } from 'lucide-react'
 import SonaseletusGame, { type SonaseletusState } from '@/games/sonaseletus/SonaseletusGame'
 import MaEiOleKunagiGame, { type MaEiOleKunagiState } from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/ViimanePustiGame'
@@ -16,6 +16,9 @@ import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/translations'
 import GameHelpModal from '@/components/GameHelpModal'
 import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
+import { endGameSession } from '@/lib/sessions'
+import { onGameEndedNavigate, playlistStatus } from '@/lib/playlist'
+import { recordGameEnd } from '@/lib/stats'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
