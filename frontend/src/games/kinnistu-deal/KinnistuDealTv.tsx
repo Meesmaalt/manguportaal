@@ -9,7 +9,7 @@ import {
   rentForSet,
 } from './types'
 import { ColorProgressGrid, PropertySetRow } from './DealCards'
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
 import { Landmark, Trophy, Coins, Swords } from 'lucide-react'
 
@@ -43,7 +43,7 @@ export default function KinnistuDealTv({
 
   useEffect(() => {
     if (phase === 'over' && state.confettiAt) {
-      confetti({ particleCount: 160, spread: 90, origin: { y: 0.55 }, spread: 90 })
+      confettiBurst({ particleCount: 160, spread: 90, y: 0.55 })
       playFx('victory')
     }
   }, [phase, state.confettiAt])

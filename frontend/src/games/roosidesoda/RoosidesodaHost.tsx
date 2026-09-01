@@ -1,4 +1,4 @@
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 import { useEffect, useRef, useState } from 'react'
 import type { RoosidesodaState } from './types'
 import { Plus, Minus, SkipForward, Banknote, Volume2, VolumeX } from 'lucide-react'
@@ -56,7 +56,7 @@ export default function RoosidesodaHost({
     if (isHost) return
     if (confettiAt && confettiAt !== lastConfetti.current) {
       lastConfetti.current = confettiAt
-      confetti({ particleCount: 140, spread: 85, origin: { y: 0.55 }, spread: 75 })
+      confettiBurst({ particleCount: 140, spread: 75, y: 0.55 })
       try {
         playFx('victory')
       } catch {}

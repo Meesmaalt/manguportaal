@@ -10,7 +10,7 @@ import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
 import { Landmark, Copy, Check, UserPlus, Play, SkipForward, Trophy, Tv, ExternalLink } from 'lucide-react'
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 
 import { actionLabel } from './types'
 
@@ -34,7 +34,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
   useEffect(() => {
     if (phase === 'over' && state.confettiAt) {
-      confetti({ particleCount: 140, spread: 80, origin: { y: 0.65 }, spread: 75 })
+      confettiBurst({ particleCount: 140, spread: 75, y: 0.65 })
     }
   }, [phase, state.confettiAt])
 

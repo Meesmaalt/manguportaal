@@ -1,4 +1,4 @@
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 import { useEffect, useRef, useState } from 'react'
 import type { KuldvillakState } from './types'
 import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon } from 'lucide-react'
@@ -45,7 +45,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     if (isHost) return
     if (confettiAt && confettiAt !== lastConfetti.current) {
       lastConfetti.current = confettiAt
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.65 }, spread: 70 })
+      confettiBurst({ particleCount: 120, spread: 70, y: 0.65 })
     }
   }, [confettiAt, isHost])
 
@@ -629,4 +629,3 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     </GameShowFrame>
   )
 }
-

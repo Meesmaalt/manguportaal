@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BlitzState } from './types'
 import { CHOICE_COLORS, sortedPlayers } from './types'
 import { teamTotals } from './logic'
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
 import { Trophy, Zap } from 'lucide-react'
 
@@ -27,7 +27,7 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
 
   useEffect(() => {
     if (state.phase === 'podium') {
-      confetti({ particleCount: 140, spread: 85, origin: { y: 0.55 }, spread: 85 })
+      confettiBurst({ particleCount: 140, spread: 85, y: 0.55 })
       playFx('drumroll')
       setTimeout(() => playFx('victory'), 400)
     }

@@ -28,7 +28,7 @@ import {
 } from '@/games/kinnistu-deal/logic'
 import { CardFace, PlayerTableBoard, PropertySetRow, BankStrip } from '@/games/kinnistu-deal/DealCards'
 import { Landmark, Loader2 } from 'lucide-react'
-import confetti from 'canvas-confetti'
+import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
 import { recordGameEnd } from '@/lib/stats'
 
@@ -153,7 +153,7 @@ export default function DealPlayer() {
 
   useEffect(() => {
     if (state?.phase === 'over' && state.confettiAt) {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 }, spread: 65 })
+      confettiBurst({ particleCount: 100, spread: 65, y: 0.7 })
       playFx('victory')
       try {
         const w = state.winner != null ? state.players[state.winner]?.name : undefined
