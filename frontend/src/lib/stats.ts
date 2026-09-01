@@ -4,6 +4,7 @@ export type GameStats = {
   plays: Record<string, number>
   lastWinners: { game: string; name?: string; at: number }[]
   sessionStarts: Record<string, number>
+  questionsResolved: number
 }
 
 function load(): GameStats {
@@ -13,9 +14,10 @@ function load(): GameStats {
       plays: raw.plays || {},
       lastWinners: raw.lastWinners || [],
       sessionStarts: raw.sessionStarts || {},
+      questionsResolved: Number(raw.questionsResolved) || 0,
     }
   } catch {
-    return { plays: {}, lastWinners: [], sessionStarts: {} }
+    return { plays: {}, lastWinners: [], sessionStarts: {}, questionsResolved: 0 }
   }
 }
 
@@ -28,6 +30,13 @@ function save(s: GameStats) {
 export function trackSessionStart(game: string) {
   const s = load()
   s.sessionStarts[game] = (s.sessionStarts[game] || 0) + 1
+  save(s)
+}
+
+/** Kuldvillak (and similar): one card finished. */
+export function trackQuestionResolved(_game?: string) {
+  const s = load()
+  s.questionsResolved += 1
   save(s)
 }
 
