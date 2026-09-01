@@ -1,3 +1,4 @@
+import { BLITZ_CLASSIC_QUESTIONS, BLITZ_PARTY_QUESTIONS, BLITZ_WEDDING_QUESTIONS, BLITZ_OFFICE_QUESTIONS, BLITZ_KIDS_QUESTIONS } from '@/games/blitz/classicQuestions'
 import type { KuldvillakPackData, RoosidesodaPackData } from '@/lib/pocketbase'
 
 export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
@@ -525,6 +526,22 @@ export const KULDVILLAK_PULM_ALEKSANDER_RIINA: KuldvillakPackData = {
 
 
 
+export const BLITZ_CLASSIC = {
+  secondsPerQuestion: 20,
+  pointsMax: 1000,
+  revealSeconds: 5,
+  shuffleOnStart: true,
+  questions: BLITZ_CLASSIC_QUESTIONS,
+}
+
+export const BLITZ_PARTY = {
+  secondsPerQuestion: 15,
+  pointsMax: 1000,
+  revealSeconds: 4,
+  shuffleOnStart: true,
+  questions: BLITZ_PARTY_QUESTIONS,
+}
+
 export const KINNISTU_DEAL_CLASSIC = {
   winSets: 3,
   startHand: 5,
@@ -641,11 +658,56 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'blitz-klassika',
+    name: 'Blitz – Klassika',
+    description: '15 küsimust. 20 s, auto-reveal 5 s, sega järjekord.',
+    game_type: 'blitz' as const,
+    data: BLITZ_CLASSIC,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'blitz-peo',
+    name: 'Blitz – Peo',
+    description: '10 peoteemalist küsimust. 15 s, kiirem tempo.',
+    game_type: 'blitz' as const,
+    data: BLITZ_PARTY,
+    is_official: true,
+    is_public: true,
+  },
+  {
     slug: 'kinnistu-deal-klassika',
     name: 'Kinnistu Deal – Klassika',
     description: '3 komplekti võiduks. Eesti kinnistud, raha ja tegevuskaardid.',
     game_type: 'kinnistu_deal' as const,
     data: KINNISTU_DEAL_CLASSIC,
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'kinnistu-deal-pulm',
+    name: 'Kinnistu Deal – Pulm',
+    description: 'Pulmateemalised kinnistud. Võit: 3 komplekti.',
+    game_type: 'kinnistu_deal' as const,
+    data: { ...KINNISTU_DEAL_CLASSIC, theme: 'pulm', label: 'Pulm' },
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'kinnistu-deal-tartu',
+    name: 'Kinnistu Deal – Tartu',
+    description: 'Tartu kohad. Võit: 3 komplekti.',
+    game_type: 'kinnistu_deal' as const,
+    data: { ...KINNISTU_DEAL_CLASSIC, theme: 'tartu', label: 'Tartu' },
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'kinnistu-deal-kontor',
+    name: 'Kinnistu Deal – Kontor',
+    description: 'Kontorihuumor. Võit: 3 komplekti.',
+    game_type: 'kinnistu_deal' as const,
+    data: { ...KINNISTU_DEAL_CLASSIC, theme: 'kontor', label: 'Kontor' },
     is_official: true,
     is_public: true,
   },

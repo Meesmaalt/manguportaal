@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
-import { emptyPlayer, startGame, endTurn, resolvePay, skipDefend } from './logic'
+import { emptyPlayer, startGame, endTurn, resolvePay, skipDefend, hostMoveProperty } from './logic'
 import { CardFace, PlayerTableBoard, BankStrip } from './DealCards'
 import { playFx } from '@/lib/audio'
+import { shareSessionLinks } from '@/lib/stats'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
@@ -26,6 +27,10 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
   const winSets = state.packData?.winSets ?? 3
   const code = sessionCode || state.code || ''
   const [copied, setCopied] = useState<string | null>(null)
+  const [repairFrom, setRepairFrom] = useState(0)
+  const [repairTo, setRepairTo] = useState(1)
+  const [repairCard, setRepairCard] = useState('')
+  const [showRepair, setShowRepair] = useState(false)
 
   useEffect(() => {
     if (phase === 'over' && state.confettiAt) {
@@ -243,14 +248,61 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
       {/* TV join */}
       {isHost && code && (
-        <div className="card-panel border-gold/30 p-3 mb-4 flex flex-wrap items-center justify-between gap-2 max-w-xl mx-auto">
-          <div className="flex items-center gap-2 text-sm text-white/70">
-            <Tv size={16} className="text-gold" />
-            TV: {appUrl(`/ekraan/${code}`)}
+        <div className="card-panel border-gold/30 p-4 mb-4 max-w-xl mx-auto">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="bg-white p-1.5 rounded-lg shrink-0">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&ecc=M&margin=4&data=${encodeURIComponent(appUrl(`/ekraan/${code}`))}`}
+                alt="TV QR"
+                width={100}
+                height={100}
+                className="block rounded"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 text-sm text-gold font-bold mb-1">
+                <Tv size={16} /> Teleri ekraan
+              </div>
+              <p className="text-[11px] text-white/50 mb-2 break-all">{appUrl(`/ekraan/${code}`)}</p>
+              <div className="flex flex-wrap gap-2">
+                <a href={appUrl(`/ekraan/${code}`)} target="_blank" rel="noreferrer" className="btn-outline text-xs flex items-center gap-1">
+                  <ExternalLink size={12} /> Ava TV
+                </a>
+                <button
+                  type="button"
+                  className="btn-outline text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(appUrl(`/ekraan/${code}`)).catch(() => {})
+                    setCopied('tv')
+                    setTimeout(() => setCopied(null), 1500)
+                  }}
+                >
+                  {copied === 'tv' ? 'Kopeeritud' : 'Kopeeri TV link'}
+                </button>
+              </div>
+              <p className="text-[10px] text-white/35 mt-2">Mängijate QR-id on all iga nime juures.</p>
+              <button
+                type="button"
+                className="btn-outline text-xs mt-2"
+                onClick={() => {
+                  const text = shareSessionLinks(
+                    code,
+                    appUrl('').replace(/\/$/, '') || window.location.origin,
+                    players.map((p) => ({
+                      name: p.name,
+                      url: appUrl(`/deal/${code}/${p.token}`),
+                    }))
+                  )
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopied('share')
+                    setTimeout(() => setCopied(null), 2000)
+                  }).catch(() => {})
+                }}
+              >
+                {copied === 'share' ? 'Kõik lingid kopeeritud' : 'Jaga kõik lingid'}
+              </button>
+            </div>
           </div>
-          <a href={appUrl(`/ekraan/${code}`)} target="_blank" rel="noreferrer" className="btn-outline text-xs flex items-center gap-1">
-            <ExternalLink size={12} /> Ava
-          </a>
         </div>
       )}
 
@@ -400,6 +452,84 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
             ))}
             {!players[current].hand.length && <span className="text-white/30 text-sm">tühi</span>}
           </div>
+        </div>
+      )}
+
+      
+      {isHost && phase !== 'lobby' && phase !== 'over' && (
+        <div className="max-w-xl mx-auto mb-4">
+          <button
+            type="button"
+            className="btn-outline text-xs w-full"
+            onClick={() => setShowRepair((v) => !v)}
+          >
+            {showRepair ? 'Sulge parandus' : '🛠️ Paranda laud (host)'}
+          </button>
+          {showRepair && (
+            <div className="card-panel border-white/15 p-3 mt-2 space-y-2">
+              <p className="text-[11px] text-white/45">Liiguta kinnistu ühelt mängijalt teisele (kui midagi valesti läks).</p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs text-white/50">
+                  Kellelt
+                  <select
+                    className="input-field text-sm mt-1"
+                    value={repairFrom}
+                    onChange={(e) => setRepairFrom(Number(e.target.value))}
+                  >
+                    {players.map((p, i) => (
+                      <option key={p.token} value={i}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-xs text-white/50">
+                  Kellele
+                  <select
+                    className="input-field text-sm mt-1"
+                    value={repairTo}
+                    onChange={(e) => setRepairTo(Number(e.target.value))}
+                  >
+                    {players.map((p, i) => (
+                      <option key={p.token} value={i}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="text-xs text-white/50 block">
+                Kinnistu
+                <select
+                  className="input-field text-sm mt-1"
+                  value={repairCard}
+                  onChange={(e) => setRepairCard(e.target.value)}
+                >
+                  <option value="">— vali —</option>
+                  {players[repairFrom] &&
+                    Object.values(players[repairFrom].props || {})
+                      .flat()
+                      .map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="btn-gold text-sm w-full"
+                disabled={!repairCard}
+                onClick={() => {
+                  if (!repairCard) return
+                  update((s) => hostMoveProperty(s, repairFrom, repairTo, repairCard))
+                  setRepairCard('')
+                }}
+              >
+                Liiguta
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -3,7 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2 } from 'lucide-react'
+import { appUrl } from '@/lib/config'
+import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
+import type { BlitzQuestion } from '@/games/blitz/types'
 
 type Mode = 'visual' | 'json'
 
@@ -25,6 +28,10 @@ export default function EditPack() {
   const [finalA, setFinalA] = useState('')
   const [finalNote, setFinalNote] = useState('')
   const [linesText, setLinesText] = useState('')
+  const [blitzQs, setBlitzQs] = useState<BlitzQuestion[]>([])
+  const [blitzSec, setBlitzSec] = useState(20)
+  const [blitzMax, setBlitzMax] = useState(1000)
+  const [blitzReveal, setBlitzReveal] = useState(5)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -64,6 +71,14 @@ export default function EditPack() {
     if (gameType === 'roosidesoda') {
       setJsonText(JSON.stringify(data, null, 2))
       setMode('json')
+      return
+    }
+    if (gameType === 'blitz') {
+      const d = data as Record<string, unknown>
+      setBlitzQs((d.questions as BlitzQuestion[]) || [])
+      setBlitzSec(Number(d.secondsPerQuestion) || 20)
+      setBlitzMax(Number(d.pointsMax) || 1000)
+      setBlitzReveal(Number(d.revealSeconds) ?? 5)
       return
     }
     // line-based packs
@@ -140,6 +155,15 @@ export default function EditPack() {
           .split('\n')
           .map((s) => s.trim())
           .filter(Boolean),
+      }
+    }
+    if (pack.game_type === 'blitz') {
+      return {
+        questions: blitzQs,
+        secondsPerQuestion: blitzSec,
+        pointsMax: blitzMax,
+        revealSeconds: blitzReveal,
+        shuffleOnStart: true,
       }
     }
     return JSON.parse(jsonText)
@@ -366,13 +390,42 @@ export default function EditPack() {
           </div>
         )}
 
+        {mode === 'visual' && pack.game_type === 'blitz' && (
+          <BlitzPackEditor
+            questions={blitzQs}
+            secondsPerQuestion={blitzSec}
+            pointsMax={blitzMax}
+            revealSeconds={blitzReveal}
+            onChange={(n) => {
+              setBlitzQs(n.questions)
+              setBlitzSec(n.secondsPerQuestion)
+              setBlitzMax(n.pointsMax)
+              setBlitzReveal(n.revealSeconds)
+            }}
+          />
+        )}
         {mode === 'visual' && pack.game_type === 'roosidesoda' && (
           <p className="text-white/50 text-sm">
             Rooside Sõda settide jaoks kasuta JSON-vaadet (struktuur on keerulisem).
           </p>
         )}
 
-        {error && <p className="text-accent-red text-sm">{error}</p>}
+        {pack && (
+        <div className="mb-3">
+          <button
+            type="button"
+            className="btn-outline text-xs inline-flex items-center gap-1"
+            onClick={() => {
+              const url = appUrl(`/pack/${pack.id}`)
+              navigator.clipboard.writeText(url).catch(() => {})
+              alert('Jagamislink kopeeritud:\n' + url)
+            }}
+          >
+            <Share2 size={12} /> Kopeeri jagamislink
+          </button>
+        </div>
+      )}
+      {error && <p className="text-accent-red text-sm">{error}</p>}
         <button type="button" className="btn-gold flex items-center gap-2" disabled={saving} onClick={save}>
           <Save size={16} /> {saving ? '…' : t('savePack')}
         </button>

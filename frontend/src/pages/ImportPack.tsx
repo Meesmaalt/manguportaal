@@ -32,7 +32,27 @@ export default function ImportPack() {
     setBusy(true)
     try {
       const text = await file.text()
-      const parsed = parseImportedPack(JSON.parse(text))
+      let parsed: { name: string; description?: string; game_type: string; data: unknown }
+      const nameGuess = file.name.replace(/\.[^.]+$/, '') || 'Imporditud pack'
+      if (file.name.endsWith('.csv') || file.name.endsWith('.tsv') || file.name.endsWith('.txt')) {
+        const { parseBlitzQuestions } = await import('@/games/blitz/parseQuestions')
+        const { questions, meta } = parseBlitzQuestions(text)
+        if (!questions.length) throw new Error('CSV-st küsimusi ei leitud')
+        parsed = {
+          name: nameGuess,
+          description: 'Imporditud CSV/TSV',
+          game_type: 'blitz',
+          data: {
+            questions,
+            secondsPerQuestion: meta?.secondsPerQuestion ?? 20,
+            pointsMax: meta?.pointsMax ?? 1000,
+            revealSeconds: meta?.revealSeconds ?? 5,
+            shuffleOnStart: true,
+          },
+        }
+      } else {
+        parsed = parseImportedPack(JSON.parse(text))
+      }
       await createOwnedPack({
         name: parsed.name,
         description: parsed.description,
@@ -57,7 +77,7 @@ export default function ImportPack() {
 
       <label className="card-panel p-8 border-dashed border-2 border-gold/40 flex flex-col items-center gap-3 cursor-pointer hover:border-gold transition">
         <span className="text-gold font-bold">{busy ? t('importing') : t('importChoose')}</span>
-        <span className="text-white/40 text-xs">.json</span>
+        <span className="text-white/40 text-xs">.json · .csv (Blitz)</span>
         <input
           type="file"
           accept="application/json,.json"

@@ -56,6 +56,8 @@ export type PendingAction = {
   color?: PropColor
   rentTargets?: number[]
   rentMode?: 'one' | 'all'
+  /** forced_deal: choosing own property to give */
+  giveStep?: boolean
 }
 
 export type KinnistuDealState = {
@@ -71,7 +73,9 @@ export type KinnistuDealState = {
   winner?: number
   log: string[]
   code?: string
-  packData?: { winSets: number; startHand: number }
+  packData?: { winSets: number; startHand: number; theme?: 'classic' | 'pulm' | 'tartu' | 'kontor' }
+  /** selected card ids while paying */
+  paySelected?: string[]
   hostBeat?: number
   confettiAt?: number
 }

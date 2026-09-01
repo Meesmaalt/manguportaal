@@ -130,6 +130,9 @@ export const translations = {
     game_kinnistu_deal: 'Kinnistu Deal',
     game_kinnistu_deal_sub: 'Kinnisvara kaardid',
     game_kinnistu_deal_desc: 'Kogu 3 komplekti. Raha, kinnistud, tegevused. Host + TV.',
+    game_blitz: 'Blitz',
+    game_blitz_sub: 'Kiire trivia',
+    game_blitz_desc: 'Küsimused telefonis, teleril show. Õige + kiirus = punktid.',
 
 
     tvJoinTitle: 'Ava teleris',
@@ -476,6 +479,9 @@ export const translations = {
     game_kinnistu_deal: 'Property Deal',
     game_kinnistu_deal_sub: 'Property cards',
     game_kinnistu_deal_desc: 'Collect 3 full sets. Money, properties, actions. Host + TV.',
+    game_blitz: 'Blitz',
+    game_blitz_sub: 'Speed trivia',
+    game_blitz_desc: 'Answer on your phone, watch the TV. Correct + speed = points.',
 
 
     tvJoinTitle: 'Open on TV',
@@ -822,6 +828,9 @@ export const translations = {
     game_kinnistu_deal: 'Сделка за недвижимость',
     game_kinnistu_deal_sub: 'Карты недвижимости',
     game_kinnistu_deal_desc: 'Собери 3 полных набора. Хост + ТВ.',
+    game_blitz: 'Blitz',
+    game_blitz_sub: 'Быстрая викторина',
+    game_blitz_desc: 'Отвечай в телефоне, смотри на ТВ. Верно + скорость = очки.',
 
 
     tvJoinTitle: 'Открыть на ТВ',

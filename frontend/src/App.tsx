@@ -14,6 +14,8 @@ import CreatePack from '@/pages/CreatePack'
 import Playlist from '@/pages/Playlist'
 import Buzzer from '@/pages/Buzzer'
 import DealPlayer from '@/pages/DealPlayer'
+import BlitzPlayer from '@/pages/BlitzPlayer'
+import SharePack from '@/pages/SharePack'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
 import EditPack from '@/pages/EditPack'
@@ -43,6 +45,7 @@ export default function App() {
         <Route path="/playlist" element={<Playlist />} />
         <Route path="/print" element={<PrintPack />} />
         <Route path="/packs/import" element={<ImportPack />} />
+        <Route path="/pack/:id" element={<SharePack />} />
         <Route path="/admin" element={<Admin />} />
         <Route
           path="/packs/:id/edit"
@@ -70,6 +73,7 @@ export default function App() {
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="/buzzer/:code" element={<Buzzer />} />
       <Route path="/deal/:code/:token" element={<DealPlayer />} />
+      <Route path="/blitz/:code" element={<BlitzPlayer />} />
       <Route path="/buzz/:code" element={<Buzzer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

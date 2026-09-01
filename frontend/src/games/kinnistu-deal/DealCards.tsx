@@ -60,7 +60,7 @@ const ACTION_META: Record<
   },
   birthday: {
     label: 'Sünnipäev!',
-    hint: '2M kingitus',
+    hint: 'Kõik annavad 2M',
     Icon: Gift,
     gradient: 'from-fuchsia-600 via-pink-800 to-purple-950',
     border: 'border-pink-300/50',
@@ -95,14 +95,14 @@ const ACTION_META: Record<
   },
   house: {
     label: 'Maja',
-    hint: 'Täiskomplektile +üür',
+    hint: 'Täiskomplektile · +üür',
     Icon: Home,
     gradient: 'from-lime-600 via-green-800 to-emerald-950',
     border: 'border-lime-300/50',
   },
   hotel: {
     label: 'Hotell',
-    hint: 'Veel suurem üür',
+    hint: 'Ainult majaga komplektile',
     Icon: Hotel,
     gradient: 'from-teal-500 via-cyan-800 to-slate-950',
     border: 'border-teal-300/50',

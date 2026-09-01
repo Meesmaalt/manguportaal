@@ -23,11 +23,14 @@ import {
   pickProperty,
   pickRentColor,
   startRentAll,
+  togglePayCard,
+  confirmSelectedPay,
 } from '@/games/kinnistu-deal/logic'
 import { CardFace, PlayerTableBoard, PropertySetRow, BankStrip } from '@/games/kinnistu-deal/DealCards'
 import { Landmark, Loader2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { playFx } from '@/lib/audio'
+import { recordGameEnd } from '@/lib/stats'
 
 export default function DealPlayer() {
   const { code: codeParam, token } = useParams<{ code: string; token: string }>()
@@ -38,6 +41,13 @@ export default function DealPlayer() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [nameEdit, setNameEdit] = useState('')
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try {
+      return localStorage.getItem('deal-tutorial-v1') !== '1'
+    } catch {
+      return true
+    }
+  })
 
   const playerIdx = useMemo(() => {
     if (!state || !token) return -1
@@ -145,6 +155,10 @@ export default function DealPlayer() {
     if (state?.phase === 'over' && state.confettiAt) {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 }, spread: 65 })
       playFx('victory')
+      try {
+        const w = state.winner != null ? state.players[state.winner]?.name : undefined
+        recordGameEnd('kinnistu_deal', w)
+      } catch {}
     }
   }, [state?.phase, state?.confettiAt])
 
@@ -178,7 +192,12 @@ export default function DealPlayer() {
   async function onPay() {
     if (!state || !needPay || busy) return
     playFx('correct')
-    await pushState(resolvePay(state))
+    await pushState(confirmSelectedPay(state))
+  }
+
+  async function onTogglePay(cardId: string) {
+    if (!state || !needPay || busy || playerIdx < 0) return
+    await pushState(togglePayCard(state, playerIdx, cardId))
   }
 
   async function onEndTurn() {
@@ -231,13 +250,18 @@ export default function DealPlayer() {
     state.pending?.target != null ? state.players[state.pending.target] : null
 
   let pickOptions: DealCard[] = []
-  if (needPickProp && targetPlayer && state.pending) {
-    if (state.pending.action === 'deal_breaker') {
-      for (const col of fullSetColors(targetPlayer)) {
-        pickOptions.push(...(targetPlayer.props[col] || []).slice(0, 1))
+  if (needPickProp && state.pending) {
+    if (state.pending.giveStep) {
+      // own loose properties to give
+      pickOptions = looseProperties(me!)
+    } else if (targetPlayer) {
+      if (state.pending.action === 'deal_breaker') {
+        for (const col of fullSetColors(targetPlayer)) {
+          pickOptions.push(...(targetPlayer.props[col] || []).slice(0, 1))
+        }
+      } else {
+        pickOptions = looseProperties(targetPlayer)
       }
-    } else {
-      pickOptions = looseProperties(targetPlayer)
     }
   }
 
@@ -306,7 +330,7 @@ export default function DealPlayer() {
             (isMyTurn
               ? `Sinu käik — võid mängida veel ${state.playsLeft} kaarti`
               : `Praegu mängib: ${state.players[state.current]?.name}`)}
-          {needTarget && 'Vali, kelle vastu kaart kehtib'}
+          {needTarget && (state.pending?.action === 'rent' ? 'Vali maksja või nõua kõigilt' : 'Vali vastane')}
           {needPickRent && (state.pending?.action === 'rent' ? 'Vali üüri värv' : 'Vali komplekt majale/hotellile')}
           {needPickProp && 'Vali kinnistu / komplekt'}
           {needDefend &&
@@ -358,7 +382,9 @@ export default function DealPlayer() {
             <div className="space-y-2">
               {(state.pending.action === 'rent'
                 ? colorsWithAny(me)
-                : fullSetColors(me)
+                : state.pending.action === 'hotel'
+                  ? fullSetColors(me).filter((c) => me.buildings?.[c] === 'house')
+                  : fullSetColors(me).filter((c) => !me.buildings?.[c])
               ).map((c) => (
                 <PropertySetRow
                   key={c}
@@ -435,11 +461,44 @@ export default function DealPlayer() {
         )}
 
         {needPay && (
-          <div className="text-center mb-4">
-            <button type="button" className="btn-gold px-8" disabled={busy} onClick={onPay}>
-              Maksa ({state.payAmount}M)
-            </button>
-            <p className="text-[10px] text-white/35 mt-2">Kõigepealt raha pangast; vajadusel kinnistu</p>
+          <div className="card-panel border-emerald-400/40 p-3 mb-4">
+            <p className="text-emerald-100 text-sm text-center font-medium mb-2">
+              Vali kaardid, millega maksad ≥ {state.payAmount}M
+            </p>
+            <p className="text-[10px] text-white/40 text-center mb-2">Pank</p>
+            <div className="flex flex-wrap gap-2 justify-center mb-3">
+              {me.bank.map((c) => (
+                <CardFace
+                  key={c.id}
+                  card={c}
+                  small
+                  selected={(state.paySelected || []).includes(c.id)}
+                  onClick={() => onTogglePay(c.id)}
+                  disabled={busy}
+                />
+              ))}
+              {!me.bank.length && <span className="text-white/30 text-xs">tühi</span>}
+            </div>
+            <p className="text-[10px] text-white/40 text-center mb-2">Kinnistud (valikuline)</p>
+            <div className="flex flex-wrap gap-2 justify-center mb-3">
+              {(Object.keys(SET_SIZE) as PropColor[]).flatMap((col) =>
+                (me.props[col] || []).map((c) => (
+                  <CardFace
+                    key={c.id}
+                    card={c}
+                    small
+                    selected={(state.paySelected || []).includes(c.id)}
+                    onClick={() => onTogglePay(c.id)}
+                    disabled={busy}
+                  />
+                ))
+              )}
+            </div>
+            <div className="text-center">
+              <button type="button" className="btn-gold px-8" disabled={busy} onClick={onPay}>
+                Kinnita makse
+              </button>
+            </div>
           </div>
         )}
 
@@ -483,6 +542,31 @@ export default function DealPlayer() {
           </div>
         )}
       </div>
+
+      {showTutorial && (
+        <div className="fixed inset-0 z-[80] bg-black/80 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-[#0c1524] border border-gold/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl">
+            <h2 className="font-display text-gold text-xl font-black mb-3">3 sammu</h2>
+            <ol className="text-sm text-white/80 space-y-2 list-decimal list-inside mb-4">
+              <li>Oma käigul mängi kuni 3 kaarti (raha, kinnistu või tegevus).</li>
+              <li>Tegevuskaardil vali vastane; tema võib öelda „Ei, aitäh“.</li>
+              <li>Võidab see, kes kogub {state.packData?.winSets ?? 3} täiskomplekti.</li>
+            </ol>
+            <button
+              type="button"
+              className="btn-gold w-full"
+              onClick={() => {
+                try {
+                  localStorage.setItem('deal-tutorial-v1', '1')
+                } catch {}
+                setShowTutorial(false)
+              }}
+            >
+              Selge, mängime!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

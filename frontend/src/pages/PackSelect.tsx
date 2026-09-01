@@ -100,6 +100,24 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
         code,
       }
+    case 'blitz': {
+      return {
+        phase: 'lobby',
+        players: [],
+        questions: packData.questions || [],
+        qIndex: 0,
+        secondsPerQuestion: packData.secondsPerQuestion || 20,
+        pointsMax: packData.pointsMax || 1000,
+        answers: {},
+        lastRoundPoints: {},
+        revealSeconds: packData.revealSeconds ?? 5,
+        shuffleOnStart: packData.shuffleOnStart !== false,
+        preCountdownSeconds: packData.preCountdownSeconds ?? 3,
+        teamsEnabled: !!packData.teamsEnabled,
+        code,
+        packData,
+      }
+    }
     case 'kinnistu_deal': {
       const tok = () => Math.random().toString(36).slice(2, 10)
       return {
@@ -115,7 +133,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         phase: 'lobby',
         log: [],
         code,
-        packData: { winSets: packData.winSets || 3, startHand: packData.startHand || 5 },
+        packData: { winSets: packData.winSets || 3, startHand: packData.startHand || 5, theme: packData.theme || 'classic' },
       }
     }
     default:
@@ -151,6 +169,7 @@ export default function PackSelect() {
     'viimane_pusti',
     'tode_voi_tegu',
     'kinnistu_deal',
+    'blitz',
   ].includes(gameType || '')
   const gameTitle = isValid ? t(('game_' + gameType) as TranslationKey) : ''
   const emoji =
@@ -163,6 +182,7 @@ export default function PackSelect() {
         viimane_pusti: '🧍',
         tode_voi_tegu: '🎲',
         kinnistu_deal: '🏠',
+        blitz: '⚡',
       } as Record<string, string>
     )[gameType || ''] || ''
 

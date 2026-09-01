@@ -1,40 +1,46 @@
-const KEY = 'ohtu_stats_v1'
 
-export type AppStats = {
-  sessionsStarted: number
-  questionsResolved: number
-  lastPlayedAt?: string
-  byGame: Record<string, number>
+const KEY = 'ohtu-game-stats-v1'
+
+export type GameStats = {
+  plays: Record<string, number>
+  lastWinners: { game: string; name?: string; at: number }[]
 }
 
-function read(): AppStats {
+function load(): GameStats {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return { sessionsStarted: 0, questionsResolved: 0, byGame: {} }
+    return JSON.parse(localStorage.getItem(KEY) || '{"plays":{},"lastWinners":[]}')
+  } catch {
+    return { plays: {}, lastWinners: [] }
+  }
 }
 
-function write(s: AppStats) {
+function save(s: GameStats) {
   try {
     localStorage.setItem(KEY, JSON.stringify(s))
   } catch {}
 }
 
-export function getStats(): AppStats {
-  return read()
+export function recordGameEnd(game: string, winnerName?: string) {
+  const s = load()
+  s.plays[game] = (s.plays[game] || 0) + 1
+  if (winnerName) {
+    s.lastWinners = [{ game, name: winnerName, at: Date.now() }, ...s.lastWinners].slice(0, 12)
+  }
+  save(s)
 }
 
-export function trackSessionStart(gameType: string) {
-  const s = read()
-  s.sessionsStarted += 1
-  s.byGame[gameType] = (s.byGame[gameType] || 0) + 1
-  s.lastPlayedAt = new Date().toISOString()
-  write(s)
+export function getStats(): GameStats {
+  return load()
 }
 
-export function trackQuestionResolved() {
-  const s = read()
-  s.questionsResolved += 1
-  write(s)
+export function shareSessionLinks(code: string, baseUrl: string, playerLinks?: { name: string; url: string }[]) {
+  const lines = [
+    `Õhtu mängud · kood ${code}`,
+    `TV: ${baseUrl}/ekraan/${code}`,
+  ]
+  if (playerLinks?.length) {
+    lines.push('Mängijad:')
+    playerLinks.forEach((p) => lines.push(`- ${p.name}: ${p.url}`))
+  }
+  return lines.join('\n')
 }

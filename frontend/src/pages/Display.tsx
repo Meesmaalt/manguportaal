@@ -8,6 +8,7 @@ import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
 import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import KinnistuDealTv from '@/games/kinnistu-deal/KinnistuDealTv'
+import BlitzTv from '@/games/blitz/BlitzTv'
 import GameShowFrame from '@/components/GameShowFrame'
 import ConnectionChip from '@/components/ConnectionChip'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
@@ -217,10 +218,13 @@ export default function Display() {
       {gt === 'roosidesoda' && (
         <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
       )}
+      {gt === 'blitz' && (
+        <BlitzTv state={state as any} sessionCode={session.code || state.code} />
+      )}
       {gt === 'kinnistu_deal' && (
         <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
       )}
-      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && (
+      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && (
         <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
           {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
           {gt === 'ma_ei_ole_kunagi' && (

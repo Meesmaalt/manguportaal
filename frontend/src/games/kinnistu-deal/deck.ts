@@ -30,9 +30,67 @@ function action(kind: ActionKind, name: string, value: number, n: number): DealC
   }))
 }
 
-/** Party deck inspired by property-deal card games (~80 cards). */
-export function buildDeck(): DealCard[] {
+export type DealTheme = 'classic' | 'pulm' | 'tartu' | 'kontor'
+
+const THEME_PROPS: Record<DealTheme, Partial<Record<PropColor, { names: string[]; value: number }>>> = {
+  classic: {
+    brown: { names: ['Kalamaja', 'Pelgulinn'], value: 1 },
+    mint: { names: ['Kadriorg', 'Pirita', 'Nõmme'], value: 1 },
+    pink: { names: ['Telliskivi', 'Kopli', 'Kristiine'], value: 2 },
+    orange: { names: ['Ülemiste', 'Mustamäe', 'Lasnamäe'], value: 2 },
+    red: { names: ['Vanalinn', 'Rotermann', 'Sibulaküla'], value: 3 },
+    yellow: { names: ['Haabersti', 'Õismäe', 'Kakumäe'], value: 3 },
+    green: { names: ['Tartu kesklinn', 'Supilinn', 'Annelinn'], value: 4 },
+    blue: { names: ['Toompea', 'Rocca al Mare'], value: 4 },
+    rail: { names: ['Balti jaam', 'Ülemiste jaam', 'Lennujaam', 'Sadama D'], value: 2 },
+    util: { names: ['Elektrivõrk', 'Veevärk'], value: 2 },
+  },
+  pulm: {
+    brown: { names: ['Kirikupink', 'Pulmamaja esik'], value: 1 },
+    mint: { names: ['Lilletuba', 'Fotosein', 'Külalisteraamat'], value: 1 },
+    pink: { names: ['Pruutneitsi laud', 'Šampanjabaar', 'Tort'], value: 2 },
+    orange: { names: ['Tantsupõrand', 'DJ pult', 'Photobooth'], value: 2 },
+    red: { names: ['Pealaud', 'Sõbramehe kõne', 'Esimene tants'], value: 3 },
+    yellow: { names: ['Mesinädalad', 'Hommikuhommik', 'Kingikott'], value: 3 },
+    green: { names: ['Aiapeo', 'Väliterrass', 'Õhtune tuli'], value: 4 },
+    blue: { names: ['Suur saal', 'Privaatsviit'], value: 4 },
+    rail: { names: ['Limusiin', 'Takso', 'Buss', 'Jalutuskäik'], value: 2 },
+    util: { names: ['Lillepood', 'Fotograaf'], value: 2 },
+  },
+  tartu: {
+    brown: { names: ['Supilinn', 'Karlova'], value: 1 },
+    mint: { names: ['Toomemägi', 'Botaanikaaed', 'Emajõgi'], value: 1 },
+    pink: { names: ['Rüütli', 'Küütri', 'Ülikooli peahoone'], value: 2 },
+    orange: { names: ['Tasku', 'Lõunakeskus', 'Annelinn'], value: 2 },
+    red: { names: ['Raekoja plats', 'Aparaaditehas', 'Genialistide klubi'], value: 3 },
+    yellow: { names: ['Tähtvere', 'Veeriku', 'Jaamamõisa'], value: 3 },
+    green: { names: ['Ihaste', 'Ropka', 'Kvissentali'], value: 4 },
+    blue: { names: ['Tigutorn', 'AHHAA'], value: 4 },
+    rail: { names: ['Tartu jaam', 'Bussijaam', 'Lennujaam', 'Parvlaev'], value: 2 },
+    util: { names: ['Tartu Vesi', 'Elektrivõrk'], value: 2 },
+  },
+  kontor: {
+    brown: { names: ['Kohvinurk', 'Printeriruum'], value: 1 },
+    mint: { names: ['Open space', 'Meeting room', 'Vaikne tsoon'], value: 1 },
+    pink: { names: ['HR laud', 'Reception', 'Puhkeruum'], value: 2 },
+    orange: { names: ['Müügitiim', 'Turundus', 'Support'], value: 2 },
+    red: { names: ['Juhi kabinet', 'Boardroom', 'Serveriruum'], value: 3 },
+    yellow: { names: ['Parkla', 'Terrass', 'Söökla'], value: 3 },
+    green: { names: ['Filiaal Tartu', 'Filiaal Pärnu', 'Remote hub'], value: 4 },
+    blue: { names: ['Peakontor', 'Rooftop'], value: 4 },
+    rail: { names: ['Lift A', 'Lift B', 'Trepikoda', 'Parklahoone'], value: 2 },
+    util: { names: ['WiFi', 'Kohvimasin'], value: 2 },
+  },
+}
+
+export function buildDeck(theme: DealTheme = 'classic'): DealCard[] {
   seq = 0
+  const tp = THEME_PROPS[theme] || THEME_PROPS.classic
+  const propCards: DealCard[] = []
+  for (const color of Object.keys(tp) as PropColor[]) {
+    const block = tp[color]!
+    propCards.push(...props(color, block.names, block.value))
+  }
   const cards: DealCard[] = [
     ...money(1, 6),
     ...money(2, 5),
@@ -40,16 +98,7 @@ export function buildDeck(): DealCard[] {
     ...money(4, 3),
     ...money(5, 2),
     ...money(10, 1),
-    ...props('brown', ['Kalamaja', 'Pelgulinn'], 1),
-    ...props('mint', ['Kadriorg', 'Pirita', 'Nõmme'], 1),
-    ...props('pink', ['Telliskivi', 'Kopli', 'Kristiine'], 2),
-    ...props('orange', ['Ülemiste', 'Mustamäe', 'Lasnamäe'], 2),
-    ...props('red', ['Vanalinn', 'Rotermann', 'Sibulaküla'], 3),
-    ...props('yellow', ['Haabersti', 'Õismäe', 'Kakumäe'], 3),
-    ...props('green', ['Tartu kesklinn', 'Supilinn', 'Annelinn'], 4),
-    ...props('blue', ['Toompea', 'Rocca al Mare'], 4),
-    ...props('rail', ['Balti jaam', 'Ülemiste jaam', 'Lennujaam', 'Sadama D'], 2),
-    ...props('util', ['Elektrivõrk', 'Veevärk'], 2),
+    ...propCards,
     ...action('pass_go', 'Mine edasi', 1, 10),
     ...action('rent', 'Nõua üüri', 1, 6),
     ...action('debt', 'Võlanõue', 3, 3),

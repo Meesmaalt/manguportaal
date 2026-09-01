@@ -6,6 +6,7 @@ export type GameType =
   | 'viimane_pusti'
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
+  | 'blitz'
 
 export const GAME_META: Record<
   GameType,
@@ -52,5 +53,11 @@ export const GAME_META: Record<
     subtitle: 'Kinnisvara kaardid',
     description: 'Kogu 3 komplekti. Raha, kinnistud, tegevuskaardid. Host + TV.',
     emoji: '🏠',
+  },
+  blitz: {
+    title: 'Blitz',
+    subtitle: 'Kiire trivia',
+    description: 'Küsimused telefonis, teleril show. Õige + kiirus = punktid.',
+    emoji: '⚡',
   },
 }
