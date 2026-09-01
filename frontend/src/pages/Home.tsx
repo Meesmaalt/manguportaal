@@ -9,6 +9,8 @@ import type { TranslationKey } from '@/i18n/translations'
 const ORDER: GameType[] = [
   'kuldvillak',
   'roosidesoda',
+  'blitz',
+  'kinnistu_deal',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
@@ -22,6 +24,8 @@ const EMOJI: Record<GameType, string> = {
   ma_ei_ole_kunagi: '🙅',
   viimane_pusti: '🧍',
   tode_voi_tegu: '🎲',
+  kinnistu_deal: '🏠',
+  blitz: '⚡',
 }
 
 export default function Home() {
