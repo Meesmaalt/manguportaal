@@ -8,6 +8,7 @@ import type { BlitzTeamId } from '@/games/blitz/types'
 import { submitAnswerWithRetry, joinWithRetry } from '@/games/blitz/submitAnswer'
 import { playFx } from '@/lib/audio'
 import { Zap, Loader2, Wifi, WifiOff } from 'lucide-react'
+import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from '@/games/blitz/BlitzStage'
 
 const PID_KEY = 'ohtu_blitz_pid'
 const NAME_KEY = 'ohtu_blitz_name'
@@ -179,9 +180,14 @@ export default function BlitzPlayer() {
 
   if (!state) return null
 
+  const isFinal =
+    state.questions.length > 0 &&
+    state.qIndex === state.questions.length - 1 &&
+    (state.phase === 'question' || state.phase === 'countdown' || state.phase === 'reveal')
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] to-[#02060e] text-white pb-10">
-      <div className="max-w-md mx-auto px-3 pt-4">
+    <BlitzStage final={isFinal} className="min-h-screen pb-10">
+      <div className="max-w-md mx-auto px-3 pt-4 relative z-10">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 text-gold font-display font-black text-lg">
             <Zap size={20} /> Blitz
@@ -289,7 +295,12 @@ export default function BlitzPlayer() {
 
             {state.phase === 'question' && q && (
               <div>
-                <p className="text-center text-white/40 text-xs mb-2">
+                {isFinal && (
+                  <p className="blitz-final-banner text-center text-rose-300 text-xs font-black uppercase mb-2">
+                    ★ Viimane küsimus ★
+                  </p>
+                )}
+                <p className="text-center text-white/50 text-xs mb-2">
                   {state.qIndex + 1}/{state.questions.length}
                   <PlayerTimer state={state} />
                 </p>
@@ -317,10 +328,10 @@ export default function BlitzPlayer() {
                         type="button"
                         disabled={busy}
                         onClick={() => onAnswer(i as BlitzChoice)}
-                        className={`min-h-[3.5rem] rounded-2xl border-2 px-4 py-3 text-left font-bold text-base ${CHOICE_COLORS[i].bg} ${CHOICE_COLORS[i].border} active:scale-[0.98] transition disabled:opacity-60`}
+                        className={`blitz-answer ${BLITZ_ANSWER_STYLE[i].bg} min-h-[3.75rem] px-4 py-3 text-left font-bold text-base text-white flex items-center gap-3 disabled:opacity-60`}
                       >
-                        <span className="opacity-80 mr-2">{CHOICE_COLORS[i].label}</span>
-                        {c}
+                        <AnswerShape index={i} />
+                        <span className="flex-1">{c}</span>
                       </button>
                     ))}
                   </div>
@@ -366,40 +377,6 @@ export default function BlitzPlayer() {
           </>
         )}
       </div>
-    </div>
-  )
-}
-
-function PlayerTimer({ state }: { state: BlitzState }) {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    if (state.phase !== 'question' || !state.questionStartedAt) return
-    const id = window.setInterval(() => setNow(Date.now()), 200)
-    return () => clearInterval(id)
-  }, [state.phase, state.questionStartedAt])
-  if (state.phase !== 'question' || !state.questionStartedAt) return null
-  const left = Math.max(0, Math.ceil(state.secondsPerQuestion - (now - state.questionStartedAt) / 1000))
-  return (
-    <span className={`ml-2 font-display font-black tabular-nums ${left <= 5 ? 'text-accent-red' : 'text-gold'}`}>
-      {left}s
-    </span>
-  )
-}
-
-function PlayerCountdown({ state }: { state: BlitzState }) {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    if (!state.countdownStartedAt) return
-    const id = window.setInterval(() => setNow(Date.now()), 150)
-    return () => clearInterval(id)
-  }, [state.countdownStartedAt])
-  const sec = state.preCountdownSeconds ?? 3
-  const left = state.countdownStartedAt
-    ? Math.max(0, Math.ceil(sec - (now - state.countdownStartedAt) / 1000))
-    : sec
-  return (
-    <p className="font-display font-black text-7xl text-gold tabular-nums">
-      {left > 0 ? left : 'GO'}
-    </p>
+    </BlitzStage>
   )
 }

@@ -5,10 +5,14 @@ import { createOwnedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 import { GAME_META, type GameType } from '@/lib/types'
+import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
+import type { BlitzQuestion } from '@/games/blitz/types'
 
 const TYPES: GameType[] = [
   'kuldvillak',
   'roosidesoda',
+  'blitz',
+  'kinnistu_deal',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
@@ -59,6 +63,19 @@ export default function CreatePack() {
   const [truthsText, setTruthsText] = useState('Mis on sinu kõige piinlikum mälestus?')
   const [daresText, setDaresText] = useState('Tee 10 kükki\nLaula 15 sekundit')
 
+  // Blitz
+  const [blitzQs, setBlitzQs] = useState<BlitzQuestion[]>([
+    {
+      id: 'q1',
+      q: 'Mis on Eesti pealinn?',
+      choices: ['Tartu', 'Tallinn', 'Pärnu', 'Narva'],
+      correct: 1,
+    },
+  ])
+  const [blitzSec, setBlitzSec] = useState(20)
+  const [blitzMax, setBlitzMax] = useState(1000)
+  const [blitzReveal, setBlitzReveal] = useState(5)
+
   function buildData() {
     switch (gameType) {
       case 'kuldvillak':
@@ -104,6 +121,22 @@ export default function CreatePack() {
             .split('\n')
             .map((s) => s.trim())
             .filter(Boolean),
+        }
+      case 'blitz':
+        return {
+          questions: blitzQs,
+          secondsPerQuestion: blitzSec,
+          pointsMax: blitzMax,
+          revealSeconds: blitzReveal,
+          shuffleOnStart: true,
+          preCountdownSeconds: 3,
+        }
+      case 'kinnistu_deal':
+        return {
+          winSets: 3,
+          startHand: 5,
+          theme: 'classic',
+          label: 'Klassika',
         }
       default:
         return {}
@@ -431,7 +464,35 @@ export default function CreatePack() {
           </div>
         )}
 
-        {error && (
+        
+        {gameType === 'blitz' && (
+          <BlitzPackEditor
+            questions={blitzQs}
+            secondsPerQuestion={blitzSec}
+            pointsMax={blitzMax}
+            revealSeconds={blitzReveal}
+            onChange={(n) => {
+              setBlitzQs(n.questions)
+              setBlitzSec(n.secondsPerQuestion)
+              setBlitzMax(n.pointsMax)
+              setBlitzReveal(n.revealSeconds)
+            }}
+          />
+        )}
+
+        {gameType === 'kinnistu_deal' && (
+          <div className="card-panel border-white/10 p-4 text-sm text-white/60 space-y-2">
+            <p>
+              Kinnistu Deal kasutab sisseehitatud kaardipakki (raha, kinnistud, tegevused).
+              Võid muuta ainult võidutingimust.
+            </p>
+            <p className="text-xs text-white/40">
+              Teemapakid (Pulm, Tartu, Kontor) tulevad ametlike settide hulgast — laadi administ või vali mängimisel.
+            </p>
+          </div>
+        )}
+
+{error && (
           <div className="text-accent-red text-sm bg-accent-red/10 border border-accent-red/30 rounded-lg px-3 py-2">
             {error}
           </div>

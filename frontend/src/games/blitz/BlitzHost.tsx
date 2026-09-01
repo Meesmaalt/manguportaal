@@ -68,6 +68,20 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
     }
   }, [remaining, state.phase, isHost]) // eslint-disable-line
 
+  // All players answered → close early (don't wait for timer)
+  useEffect(() => {
+    if (!isHost || state.phase !== 'question') return
+    if (state.players.length < 1) return
+    if (answered >= state.players.length && answered > 0) {
+      playFx('reveal')
+      update((s) => {
+        if (s.phase !== 'question') return s
+        if (Object.keys(s.answers).length < s.players.length) return s
+        return reveal(s)
+      })
+    }
+  }, [answered, state.players.length, state.phase, isHost]) // eslint-disable-line
+
   // Auto-advance after reveal
   useEffect(() => {
     if (!isHost || state.phase !== 'reveal') return
@@ -163,6 +177,14 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
       <div className="text-center mb-4">
         <h2 className="font-display text-3xl text-gold font-black">⚡ Blitz</h2>
         <p className="text-white/45 text-sm">Kiire trivia · õige + kiirus = punktid</p>
+        {state.questions.length > 0 &&
+          state.qIndex === state.questions.length - 1 &&
+          state.phase !== 'lobby' &&
+          state.phase !== 'podium' && (
+            <p className="blitz-final-banner text-rose-300 text-xs font-black uppercase mt-2">
+              ★ Viimane küsimus ★
+            </p>
+          )}
       </div>
 
       {isHost && code && (
@@ -200,14 +222,44 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
               {state.shuffleOnStart ? ' · sega' : ''}
             </p>
             {state.phase === 'lobby' && (
-              <label className="flex items-center gap-2 text-xs text-white/60 mt-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!state.teamsEnabled}
-                  onChange={(e) => update((s) => toggleTeams(s, e.target.checked))}
-                />
-                Meeskonnad (A / B)
-              </label>
+              <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                <label className="flex items-center justify-between gap-3 text-xs text-white/60">
+                  <span>Vooru pikkus (sek)</span>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    className="input-field !py-1 !px-2 w-20 text-sm"
+                    value={state.secondsPerQuestion}
+                    onChange={(e) => {
+                      const n = Math.min(120, Math.max(5, Number(e.target.value) || 20))
+                      update({ secondsPerQuestion: n })
+                    }}
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-3 text-xs text-white/60">
+                  <span>Tulemuste näit (sek, 0 = käsitsi)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    className="input-field !py-1 !px-2 w-20 text-sm"
+                    value={state.revealSeconds ?? 5}
+                    onChange={(e) => {
+                      const n = Math.min(30, Math.max(0, Number(e.target.value) || 0))
+                      update({ revealSeconds: n })
+                    }}
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!state.teamsEnabled}
+                    onChange={(e) => update((s) => toggleTeams(s, e.target.checked))}
+                  />
+                  Meeskonnad (A / B)
+                </label>
+              </div>
             )}
           </div>
         </div>

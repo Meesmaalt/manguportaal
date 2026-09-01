@@ -206,3 +206,120 @@ html[data-theme="emerald"] .card-panel {
 /* Host play: LIVE bar sits just under site header */
 .layout-has-header .game-show:not(.game-show-display) .game-show-topbar{top:3.25rem}
 .game-show-display .game-show-topbar{top:0}
+
+/* ===== Blitz / Kahoot-like show ===== */
+.blitz-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #1a0533 0%, #0b1a4a 40%, #061428 70%, #12082a 100%);
+  color: #fff;
+}
+.blitz-stage-final {
+  background: linear-gradient(145deg, #3b0764 0%, #7c1d1d 35%, #1e1b4b 70%, #0f172a 100%);
+  animation: blitzFinalPulse 2.2s ease-in-out infinite;
+}
+@keyframes blitzFinalPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.12); }
+}
+.blitz-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.45;
+  pointer-events: none;
+  animation: blitzFloat 12s ease-in-out infinite;
+}
+.blitz-blob-a { width: 28rem; height: 28rem; background: #e11d48; top: -8rem; left: -6rem; }
+.blitz-blob-b { width: 32rem; height: 32rem; background: #2563eb; bottom: -10rem; right: -8rem; animation-delay: -3s; }
+.blitz-blob-c { width: 22rem; height: 22rem; background: #eab308; top: 40%; left: 35%; opacity: 0.25; animation-delay: -6s; }
+.blitz-blob-d { width: 18rem; height: 18rem; background: #16a34a; top: 10%; right: 15%; opacity: 0.3; animation-delay: -9s; }
+@keyframes blitzFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, -5%) scale(1.08); }
+  66% { transform: translate(-5%, 3%) scale(0.95); }
+}
+.blitz-shape {
+  position: absolute;
+  opacity: 0.12;
+  pointer-events: none;
+  animation: blitzSpin 28s linear infinite;
+}
+@keyframes blitzSpin {
+  from { transform: rotate(0deg) translateX(0); }
+  to { transform: rotate(360deg) translateX(0); }
+}
+.blitz-answer {
+  position: relative;
+  border-radius: 1rem;
+  border: 3px solid rgba(255,255,255,0.35);
+  font-weight: 800;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.25), 0 12px 24px rgba(0,0,0,0.2);
+}
+.blitz-answer:active:not(:disabled) {
+  transform: translateY(4px) scale(0.98);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+.blitz-answer-correct {
+  animation: blitzCorrectPop 0.55s cubic-bezier(.2,.9,.2,1);
+  filter: brightness(1.15);
+  box-shadow: 0 0 0 4px #fff, 0 0 40px rgba(255,255,255,0.45);
+}
+.blitz-answer-wrong {
+  opacity: 0.35;
+  filter: grayscale(0.4);
+}
+@keyframes blitzCorrectPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  100% { transform: scale(1.02); }
+}
+.blitz-q-enter {
+  animation: blitzQIn 0.45s cubic-bezier(.2,.85,.2,1);
+}
+@keyframes blitzQIn {
+  from { opacity: 0; transform: scale(0.88) translateY(24px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.blitz-timer-ring {
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px rgba(251, 191, 36, 0.6);
+}
+.blitz-timer-urgent {
+  color: #fb7185 !important;
+  animation: blitzTick 0.5s ease-in-out infinite;
+}
+@keyframes blitzTick {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.blitz-final-banner {
+  animation: blitzFinalBanner 1.2s ease-in-out infinite;
+  letter-spacing: 0.2em;
+}
+@keyframes blitzFinalBanner {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 12px rgba(251,191,36,0.5); }
+  50% { transform: scale(1.04); text-shadow: 0 0 28px rgba(244,63,94,0.8); }
+}
+.blitz-podium-1 { animation: blitzRise 0.7s cubic-bezier(.2,.9,.2,1) both; animation-delay: 0.15s; }
+.blitz-podium-2 { animation: blitzRise 0.7s cubic-bezier(.2,.9,.2,1) both; animation-delay: 0.05s; }
+.blitz-podium-3 { animation: blitzRise 0.7s cubic-bezier(.2,.9,.2,1) both; animation-delay: 0.25s; }
+@keyframes blitzRise {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.blitz-lobby-chip {
+  animation: blitzChipIn 0.4s ease both;
+}
+@keyframes blitzChipIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+.blitz-shape-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
