@@ -140,6 +140,11 @@ export function reveal(s: BlitzState): BlitzState {
     if (correct && streak > 1) {
       pts += Math.min(200, (streak - 1) * 50)
     }
+    // last question: double points
+    const isFinalQ = s.qIndex === s.questions.length - 1 && s.questions.length > 0
+    if (correct && isFinalQ) {
+      pts = Math.round(pts * 2)
+    }
     lastRoundPoints[p.id] = pts
     return { ...p, score: p.score + pts, streak }
   })
