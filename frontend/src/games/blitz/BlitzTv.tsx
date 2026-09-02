@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BlitzState } from './types'
 import { sortedPlayers } from './types'
-import { teamTotals } from './logic'
+import { teamTotals, normalizeBlitzState } from './logic'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from './BlitzStage'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
+import { appUrl } from '@/lib/config'
 import { Trophy, Zap } from 'lucide-react'
 
-export default function BlitzTv({ state, sessionCode }: { state: BlitzState; sessionCode?: string }) {
+export default function BlitzTv({ state: raw, sessionCode }: { state: BlitzState; sessionCode?: string }) {
+  const state = normalizeBlitzState(raw) || raw
   const code = sessionCode || state.code || ''
   const q = state.questions[state.qIndex]
   const ranked = useMemo(() => sortedPlayers(state.players), [state.players])
@@ -28,6 +30,13 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
     if (state.phase === 'lobby' && n > prevPlayerCount.current) playFx('click')
     prevPlayerCount.current = n
   }, [state.players?.length, state.phase])
+
+  useEffect(() => {
+    if (state.streakEvent && state.phase === 'reveal' && state.streakEvent.streak >= 3) {
+      confettiBurst({ particleCount: 60, spread: 55, y: 0.35 })
+      playFx('correct')
+    }
+  }, [state.streakEvent?.at])
 
   useEffect(() => {
     if (state.phase === 'podium') {
@@ -77,6 +86,13 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
           </div>
         </div>
 
+        {state.streakEvent && state.phase === 'reveal' && state.streakEvent.streak >= 3 && (
+          <div className="text-center mb-3">
+            <span className="blitz-final-banner inline-block font-display font-black text-amber-300 text-lg md:text-2xl">
+              🔥 {state.streakEvent.name} · streak {state.streakEvent.streak}!
+            </span>
+          </div>
+        )}
         {state.isWarmup && state.phase !== 'lobby' && state.phase !== 'podium' && (
           <div className="text-center mb-2">
             <span className="inline-block font-display font-black text-cyan-300 text-sm uppercase tracking-widest">
@@ -127,7 +143,8 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   }`}
                   style={{ animationDelay: `${i * 0.05}s` }}
                 >
-                  {p.name}
+                  {p.avatar ? p.avatar + ' ' : ''}{p.name}
+                  {state.requireReady && (p.ready ? ' ✓' : '')}
                 </span>
               ))}
             </div>
@@ -214,6 +231,21 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 )
               })}
             </div>
+
+            {state.phase === 'question' && state.players.length > 0 && (
+              <div className="mt-4 text-center text-sm text-white/45">
+                {(() => {
+                  const waiting = state.players.filter((pl) => !state.answers?.[pl.id])
+                  if (!waiting.length) return <span className="text-emerald-300 font-bold">Kõik vastanud!</span>
+                  return (
+                    <span>
+                      Ootame veel:{' '}
+                      {waiting.map((pl) => (pl.avatar || '') + pl.name).join(', ')}
+                    </span>
+                  )
+                })()}
+              </div>
+            )}
 
             {state.phase === 'reveal' && (state.lastPhotoFinish?.length || 0) > 0 && (
               <div className="mt-5 w-full max-w-lg mx-auto rounded-2xl bg-black/40 border border-cyan-300/30 px-4 py-3">
@@ -324,7 +356,7 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   <div key={p.id} className={`flex flex-col items-center w-24 md:w-36 ${anim}`}>
                     <div className="text-2xl mb-1">{medal}</div>
                     <div className="font-display font-black text-amber-200 text-lg md:text-2xl mb-1 truncate max-w-full">
-                      {p.name}
+                      {p.avatar ? p.avatar + ' ' : ''}{p.name}
                     </div>
                     <div className="text-white/55 text-sm mb-2">{p.score} p</div>
                     <div
@@ -336,18 +368,28 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 )
               })}
             </div>
-            <div className="w-full max-w-md space-y-1.5">
+            <div className="w-full max-w-md space-y-1.5 mb-6">
               {ranked.map((p, i) => (
                 <div
                   key={p.id}
                   className="flex justify-between px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-sm backdrop-blur-sm"
                 >
                   <span>
-                    {i + 1}. {p.name}
+                    {i + 1}. {p.avatar ? p.avatar + ' ' : ''}{p.name}
                   </span>
                   <span className="font-display font-bold text-amber-200">{p.score}</span>
                 </div>
               ))}
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(appUrl(`/blitz/${code}/tulemused`))}`}
+                alt="Tulemused"
+                className="rounded-xl border-2 border-amber-300/40 bg-white p-2"
+                width={140}
+                height={140}
+              />
+              <p className="text-amber-200/80 text-sm font-bold">Skanni tulemusi jagamiseks</p>
             </div>
           </div>
         )}

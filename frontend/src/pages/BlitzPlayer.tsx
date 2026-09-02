@@ -3,9 +3,11 @@ import { useParams, Link } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
 import type { BlitzChoice, BlitzState, BlitzTeamId } from '@/games/blitz/types'
 import { sortedPlayers } from '@/games/blitz/types'
-import { joinPlayer, setPlayerTeam } from '@/games/blitz/logic'
+import { joinPlayer, setPlayerTeam, usePowerUp, NICK_SUGGESTIONS, setPlayerReady } from '@/games/blitz/logic'
+import type { BlitzPowerUp } from '@/games/blitz/types'
 import { submitAnswerWithRetry, joinWithRetry } from '@/games/blitz/submitAnswer'
 import { playFx } from '@/lib/audio'
+import { appUrl } from '@/lib/config'
 import { Zap, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from '@/games/blitz/BlitzStage'
 
@@ -270,6 +272,18 @@ export default function BlitzPlayer() {
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && onJoin()}
               />
+              <div className="flex flex-wrap gap-1">
+                {NICK_SUGGESTIONS.slice(0, 6).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/70"
+                    onClick={() => setName(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 className="btn-gold w-full"
@@ -300,7 +314,10 @@ export default function BlitzPlayer() {
           {joined && me && (
             <>
               <div className="blitz-glass flex justify-between items-center mb-4 text-sm rounded-xl px-3 py-2">
-                <span className="text-amber-200 font-bold text-base">{me.name}</span>
+                <span className="text-amber-200 font-bold text-base">
+                  {me.avatar ? me.avatar + ' ' : ''}
+                  {me.name}
+                </span>
                 <span className="text-white/60">
                   <span className="font-display font-black text-white text-lg">{me.score}</span> p
                   {scorePop != null && scorePop > 0 && (
@@ -317,6 +334,42 @@ export default function BlitzPlayer() {
                 <div className="text-center py-10 text-white/60 space-y-4">
                   <p className="text-xl text-white/80">Ootame hosti…</p>
                   <p className="text-sm">{state.players?.length || 0} mängijat sees</p>
+                  <button
+                    type="button"
+                    className={`px-6 py-3 rounded-xl font-bold border-2 ${
+                      me.ready
+                        ? 'bg-emerald-600 border-emerald-300 text-white'
+                        : 'bg-white/10 border-white/25'
+                    }`}
+                    onClick={async () => {
+                      if (!sessionId) return
+                      const next = !me.ready
+                      try {
+                        if (isLocal) {
+                          const k = `session_${sessionId}`
+                          const raw = localStorage.getItem(k)
+                          if (!raw) return
+                          const s = setPlayerReady(JSON.parse(raw), playerId, next)
+                          localStorage.setItem(k, JSON.stringify(s))
+                          setState(s)
+                        } else {
+                          const rec = await pb.collection('game_sessions').getOne(sessionId)
+                          const s = setPlayerReady(rec.state as BlitzState, playerId, next)
+                          await pb.collection('game_sessions').update(sessionId, { state: s })
+                          setState(s)
+                        }
+                        playFx('click')
+                      } catch {}
+                    }}
+                  >
+                    {me.ready ? '✓ Olen valmis' : 'Vajuta: olen valmis'}
+                  </button>
+                  {state.requireReady && (
+                    <p className="text-xs text-white/40">
+                      Host ootab, et kõik oleksid valmis (
+                      {state.players.filter((x) => x.ready).length}/{state.players.length})
+                    </p>
+                  )}
                   {state.teamsEnabled && (
                     <div className="flex justify-center gap-3 pt-2">
                       {(['a', 'b'] as const).map((tid) => (
@@ -391,6 +444,49 @@ export default function BlitzPlayer() {
                       <div className="blitz-q-card mb-4">
                         <p className="text-center font-bold text-lg leading-snug text-white">{q.q}</p>
                       </div>
+
+                      {state.powerUpsEnabled !== false && me.powers && !myAnswer && (
+                        <div className="flex flex-wrap justify-center gap-2 mb-3">
+                          {(
+                            [
+                              ['fifty', '50/50', me.powers.fifty],
+                              ['double', '2×', me.powers.double],
+                              ['time', '+5s', me.powers.time],
+                            ] as [BlitzPowerUp, string, number | undefined][]
+                          ).map(([key, label, left]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              disabled={!left || busy || (key === 'double' && !!me.activeDouble)}
+                              className="btn-outline !text-[11px] !py-1 !px-2 disabled:opacity-30"
+                              onClick={async () => {
+                                if (!sessionId) return
+                                try {
+                                  if (isLocal) {
+                                    const k = `session_${sessionId}`
+                                    const raw = localStorage.getItem(k)
+                                    if (!raw) return
+                                    const s = usePowerUp(JSON.parse(raw), playerId, key)
+                                    localStorage.setItem(k, JSON.stringify(s))
+                                    setState(s)
+                                  } else {
+                                    const rec = await pb.collection('game_sessions').getOne(sessionId)
+                                    const s = usePowerUp(rec.state as BlitzState, playerId, key)
+                                    await pb.collection('game_sessions').update(sessionId, { state: s })
+                                    setState(s)
+                                  }
+                                  playFx('click')
+                                } catch {}
+                              }}
+                            >
+                              {label} ({left || 0})
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {me.activeDouble && !myAnswer && (
+                        <p className="text-center text-amber-300 text-xs font-bold mb-2">2× aktiivne!</p>
+                      )}
                       {answerErr && (
                         <p className="text-center text-rose-400 text-xs mb-2">{answerErr}</p>
                       )}
@@ -409,20 +505,35 @@ export default function BlitzPlayer() {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-3">
-                          {(q.choices || []).map((c, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              disabled={busy}
-                              onClick={() => onAnswer(i as BlitzChoice)}
-                              className={`blitz-answer ${BLITZ_ANSWER_STYLE[i]?.bg || 'bg-white/20'} blitz-answer-tile text-base disabled:opacity-60 w-full`}
-                            >
-                              <span className="blitz-shape-badge">
-                                <AnswerShape index={i} />
-                              </span>
-                              <span className="flex-1 text-left">{c}</span>
-                            </button>
-                          ))}
+                          {(q.choices || []).map((c, i) => {
+                            if (me.hiddenChoices?.includes(i)) {
+                              return (
+                                <div
+                                  key={i}
+                                  className="blitz-answer blitz-answer-tile text-base opacity-25 grayscale pointer-events-none"
+                                >
+                                  <span className="blitz-shape-badge">
+                                    <AnswerShape index={i} />
+                                  </span>
+                                  <span className="flex-1 text-left">—</span>
+                                </div>
+                              )
+                            }
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                disabled={busy}
+                                onClick={() => onAnswer(i as BlitzChoice)}
+                                className={`blitz-answer ${BLITZ_ANSWER_STYLE[i]?.bg || 'bg-white/20'} blitz-answer-tile text-base disabled:opacity-60 w-full`}
+                              >
+                                <span className="blitz-shape-badge">
+                                  <AnswerShape index={i} />
+                                </span>
+                                <span className="flex-1 text-left">{c}</span>
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
                     </>
@@ -480,6 +591,9 @@ export default function BlitzPlayer() {
                     </p>
                   )}
                   <p className="text-white/60">Kokku {me.score} p</p>
+                  {(me.streak || 0) >= 2 && (
+                    <p className="text-amber-300 font-black text-lg">🔥 Streak {me.streak}</p>
+                  )}
                 </div>
               )}
 
@@ -513,6 +627,14 @@ export default function BlitzPlayer() {
                   <p className="text-center text-amber-300 font-display text-3xl font-black mb-4">
                     Lõpp!
                   </p>
+                  <div className="text-center mb-4">
+                    <a
+                      href={appUrl(`/blitz/${code}/tulemused`)}
+                      className="btn-gold text-xs inline-flex"
+                    >
+                      Vaata / jaga tulemusi
+                    </a>
+                  </div>
                   <div className="space-y-1.5">
                     {ranked.map((p, i) => (
                       <div

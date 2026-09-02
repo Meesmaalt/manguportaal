@@ -9,6 +9,7 @@ import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/To
 import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
 import BlitzHost from '@/games/blitz/BlitzHost'
 import type { BlitzState } from '@/games/blitz/types'
+import { normalizeBlitzState } from '@/games/blitz/logic'
 import type { KinnistuDealState } from '@/games/kinnistu-deal/types'
 import { GAME_META, type GameType } from '@/lib/types'
 import GameShowFrame from '@/components/GameShowFrame'
@@ -130,7 +131,7 @@ export default function PlayGeneric() {
           <ViimanePustiGame state={state as ViimanePustiState} update={update} isHost sessionCode={code} />
         )}
         {gameType === 'blitz' && (
-          <BlitzHost state={state as BlitzState} update={update} isHost sessionCode={code} />
+          <BlitzHost state={(normalizeBlitzState(state as BlitzState) || state) as BlitzState} update={update} isHost sessionCode={code} />
         )}
         {gameType === 'kinnistu_deal' && (
           <KinnistuDealGame state={state as KinnistuDealState} update={update} isHost sessionCode={code} />
