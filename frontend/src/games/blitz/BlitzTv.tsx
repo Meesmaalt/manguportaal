@@ -276,13 +276,6 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   ))}
                 </ol>
               </div>
-            )}s
-                        <span className="text-emerald-300 ml-2">+{row.points}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
 
             {state.phase === 'reveal' && state.lastAnswerDist && (
