@@ -1,6 +1,23 @@
 import type { BlitzAnswer, BlitzChoice, BlitzPlayer, BlitzPowerUp, BlitzQuestion, BlitzState, BlitzTeamId } from './types'
 import { calcPoints, makePlayerId, shuffleQuestions } from './types'
 
+export function normalizeBlitzState(s: BlitzState | null | undefined): BlitzState | null {
+  if (!s || typeof s !== 'object') return null
+  return {
+    ...s,
+    players: Array.isArray(s.players) ? s.players : [],
+    questions: Array.isArray(s.questions) ? s.questions : [],
+    answers: s.answers && typeof s.answers === 'object' ? s.answers : {},
+    lastRoundPoints:
+      s.lastRoundPoints && typeof s.lastRoundPoints === 'object' ? s.lastRoundPoints : {},
+    qIndex: typeof s.qIndex === 'number' ? s.qIndex : 0,
+    secondsPerQuestion: s.secondsPerQuestion || 20,
+    pointsMax: s.pointsMax || 1000,
+    revealSeconds: s.revealSeconds ?? 5,
+    phase: s.phase || 'lobby',
+  }
+}
+
 export function emptyBlitzState(code: string, packData?: BlitzState['packData']): BlitzState {
   const questions = (packData?.questions || []) as BlitzQuestion[]
   return {
@@ -148,7 +165,7 @@ export function reveal(s: BlitzState): BlitzState {
   // Warmup: show answer, no points, back to lobby
   if (s.isWarmup) {
     const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
-    for (const ans of Object.values(s.answers)) {
+    for (const ans of Object.values(s.answers || {})) {
       lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
     }
     return {
@@ -163,31 +180,49 @@ export function reveal(s: BlitzState): BlitzState {
 
   const lastRoundPoints: Record<string, number> = {}
   const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
-  const players = s.players.map((p) => {
-    const ans = s.answers[p.id]
+  const answers = s.answers || {}
+  const players = (s.players || []).map((p) => {
+    const ans = answers[p.id]
     if (!ans) {
       lastRoundPoints[p.id] = 0
-      return { ...p, streak: 0 }
+      return { ...p, streak: 0, activeDouble: false, hiddenChoices: undefined }
     }
     lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
     const correct = ans.choice === q.correct
     let pts = calcPoints(correct, ans.at, s.secondsPerQuestion, s.pointsMax)
     const streak = correct ? (p.streak || 0) + 1 : 0
-    // streak bonus: +50 per consecutive correct after first (cap +200)
     if (correct && streak > 1) {
       pts += Math.min(200, (streak - 1) * 50)
     }
-    // last question: double points
-    const isFinalQ = s.qIndex === s.questions.length - 1 && s.questions.length > 0
+    const isFinalQ = s.qIndex === (s.questions || []).length - 1 && (s.questions || []).length > 0
     if (correct && isFinalQ) {
       pts = Math.round(pts * 2)
     }
+    if (correct && p.activeDouble) {
+      pts = Math.round(pts * 2)
+    }
     lastRoundPoints[p.id] = pts
-    return { ...p, score: p.score + pts, streak }
+    return {
+      ...p,
+      score: p.score + pts,
+      streak,
+      bestStreak: Math.max(p.bestStreak || 0, streak),
+      activeDouble: false,
+      hiddenChoices: undefined,
+    }
   })
-  const lastPhotoFinish = s.players
+
+  let streakEvent = s.streakEvent
+  for (const p of players) {
+    const prev = (s.players || []).find((x) => x.id === p.id)
+    if (p.streak && p.streak >= 3 && p.streak > (prev?.streak || 0)) {
+      streakEvent = { playerId: p.id, name: p.name, streak: p.streak, at: Date.now() }
+    }
+  }
+
+  const lastPhotoFinish = (s.players || [])
     .map((p) => {
-      const ans = s.answers[p.id]
+      const ans = answers[p.id]
       if (!ans || ans.choice !== q.correct) return null
       return {
         playerId: p.id,

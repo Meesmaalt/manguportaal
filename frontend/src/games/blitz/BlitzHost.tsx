@@ -22,6 +22,7 @@ import {
   setRequireReady,
   refillPowerUps,
   allPlayersReady,
+  normalizeBlitzState,
 } from './logic'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -36,15 +37,20 @@ type Props = {
   isHost?: boolean
 }
 
-export default function BlitzHost({ state, update, sessionCode, isHost = true }: Props) {
-  const code = sessionCode || state.code || ''
+export default function BlitzHost({ state: rawState, update, sessionCode, isHost = true }: Props) {
+  const state = normalizeBlitzState(rawState) || rawState
+  const code = sessionCode || state.code || 
   const [copied, setCopied] = useState(false)
   const [listOpen, setListOpen] = useState(true)
   const [soundOk, setSoundOk] = useState(false)
   const [tvOpened, setTvOpened] = useState(false)
-  const q = state.questions[state.qIndex]
-  const answered = Object.keys(state.answers).length
-  const ranked = useMemo(() => sortedPlayers(state.players), [state.players])
+  const questions = state.questions || []
+  const players = state.players || []
+  const answers = state.answers || {}
+  const lastRoundPoints = state.lastRoundPoints || {}
+  const q = questions[state.qIndex]
+  const answered = Object.keys(answers).length
+  const ranked = useMemo(() => sortedPlayers(state.players || []), [state.players])
   const teams = useMemo(() => teamTotals(state), [state])
   useEffect(() => {
     if (state.phase === 'podium') playFx('drumroll')
@@ -84,16 +90,19 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
   // All players answered → close early (don't wait for timer)
   useEffect(() => {
     if (!isHost || state.phase !== 'question') return
-    if (state.players.length < 1) return
-    if (answered >= state.players.length && answered > 0) {
+    const pls = state.players || []
+    if (pls.length < 1) return
+    if (answered >= pls.length && answered > 0) {
       playFx('reveal')
       update((s) => {
         if (s.phase !== 'question') return s
-        if (Object.keys(s.answers).length < s.players.length) return s
+        const ans = s.answers || {}
+        const pl = s.players || []
+        if (Object.keys(ans).length < pl.length) return s
         return reveal(s)
       })
     }
-  }, [answered, state.players.length, state.phase, isHost]) // eslint-disable-line
+  }, [answered, state.players, state.phase, isHost]) // eslint-disable-line
 
   // Auto-advance after reveal
   useEffect(() => {
