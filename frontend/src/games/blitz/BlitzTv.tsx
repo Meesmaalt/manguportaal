@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { BlitzState } from './types'
 import { sortedPlayers } from './types'
-import { teamTotals, normalizeBlitzState } from './logic'
+import { teamTotals } from './logic'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from './BlitzStage'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
-import { appUrl } from '@/lib/config'
 import { Trophy, Zap } from 'lucide-react'
 
-export default function BlitzTv({ state: raw, sessionCode }: { state: BlitzState; sessionCode?: string }) {
-  const state = normalizeBlitzState(raw) || raw
+export default function BlitzTv({ state, sessionCode }: { state: BlitzState; sessionCode?: string }) {
   const code = sessionCode || state.code || ''
   const q = state.questions[state.qIndex]
   const ranked = useMemo(() => sortedPlayers(state.players), [state.players])
@@ -144,12 +142,9 @@ export default function BlitzTv({ state: raw, sessionCode }: { state: BlitzState
                   style={{ animationDelay: `${i * 0.05}s` }}
                 >
                   {p.avatar ? p.avatar + ' ' : ''}{p.name}
-<<<<<<< HEAD
-=======
                       {state.teamsEnabled && p.team && state.captains?.[p.team] === p.id && (
                         <span className="ml-1 text-amber-300" title="Kapten">★</span>
                       )}
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                   {state.requireReady && (p.ready ? ' ✓' : '')}
                 </span>
               ))}
@@ -390,28 +385,18 @@ export default function BlitzTv({ state: raw, sessionCode }: { state: BlitzState
                 )
               })}
             </div>
-            <div className="w-full max-w-md space-y-1.5 mb-6">
+            <div className="w-full max-w-md space-y-1.5">
               {ranked.map((p, i) => (
                 <div
                   key={p.id}
                   className="flex justify-between px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-sm backdrop-blur-sm"
                 >
                   <span>
-                    {i + 1}. {p.avatar ? p.avatar + ' ' : ''}{p.name}
+                    {i + 1}. {p.name}
                   </span>
                   <span className="font-display font-bold text-amber-200">{p.score}</span>
                 </div>
               ))}
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(appUrl(`/blitz/${code}/tulemused`))}`}
-                alt="Tulemused"
-                className="rounded-xl border-2 border-amber-300/40 bg-white p-2"
-                width={140}
-                height={140}
-              />
-              <p className="text-amber-200/80 text-sm font-bold">Skanni tulemusi jagamiseks</p>
             </div>
           </div>
         )}

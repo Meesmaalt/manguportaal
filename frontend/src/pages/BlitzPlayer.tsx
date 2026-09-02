@@ -7,7 +7,6 @@ import { joinPlayer, setPlayerTeam, usePowerUp, NICK_SUGGESTIONS, setPlayerReady
 import type { BlitzPowerUp } from '@/games/blitz/types'
 import { submitAnswerWithRetry, joinWithRetry } from '@/games/blitz/submitAnswer'
 import { playFx } from '@/lib/audio'
-import { appUrl } from '@/lib/config'
 import { Zap, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from '@/games/blitz/BlitzStage'
 
@@ -627,14 +626,6 @@ export default function BlitzPlayer() {
                   <p className="text-center text-amber-300 font-display text-3xl font-black mb-4">
                     Lõpp!
                   </p>
-                  <div className="text-center mb-4">
-                    <a
-                      href={appUrl(`/blitz/${code}/tulemused`)}
-                      className="btn-gold text-xs inline-flex"
-                    >
-                      Vaata / jaga tulemusi
-                    </a>
-                  </div>
                   <div className="space-y-1.5">
                     {ranked.map((p, i) => (
                       <div

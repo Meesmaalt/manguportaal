@@ -85,15 +85,6 @@ export type BlitzState = {
   requireReady?: boolean
   /** last high streak event for TV confetti */
   streakEvent?: { playerId: string; name: string; streak: number; at: number }
-<<<<<<< HEAD
-  /** frozen podium table for share page */
-  resultsSnapshot?: {
-    at: number
-    code: string
-    rows: { name: string; score: number; avatar?: string; team?: string }[]
-  }
-=======
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
   packData?: {
     secondsPerQuestion?: number
     pointsMax?: number
@@ -129,8 +120,8 @@ export function calcPoints(
   return Math.max(100, Math.min(pointsMax, raw))
 }
 
-export function sortedPlayers(players: BlitzPlayer[] | undefined | null): BlitzPlayer[] {
-  return [...(players || [])].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
+export function sortedPlayers(players: BlitzPlayer[]): BlitzPlayer[] {
+  return [...players].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
 }
 
 export function shuffleQuestions(questions: BlitzQuestion[]): BlitzQuestion[] {

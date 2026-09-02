@@ -1,23 +1,6 @@
 import type { BlitzAnswer, BlitzChoice, BlitzPlayer, BlitzPowerUp, BlitzQuestion, BlitzState, BlitzTeamId } from './types'
 import { calcPoints, makePlayerId, shuffleQuestions } from './types'
 
-export function normalizeBlitzState(s: BlitzState | null | undefined): BlitzState | null {
-  if (!s || typeof s !== 'object') return null
-  return {
-    ...s,
-    players: Array.isArray(s.players) ? s.players : [],
-    questions: Array.isArray(s.questions) ? s.questions : [],
-    answers: s.answers && typeof s.answers === 'object' ? s.answers : {},
-    lastRoundPoints:
-      s.lastRoundPoints && typeof s.lastRoundPoints === 'object' ? s.lastRoundPoints : {},
-    qIndex: typeof s.qIndex === 'number' ? s.qIndex : 0,
-    secondsPerQuestion: s.secondsPerQuestion || 20,
-    pointsMax: s.pointsMax || 1000,
-    revealSeconds: s.revealSeconds ?? 5,
-    phase: s.phase || 'lobby',
-  }
-}
-
 export function emptyBlitzState(code: string, packData?: BlitzState['packData']): BlitzState {
   const questions = (packData?.questions || []) as BlitzQuestion[]
   return {
@@ -139,16 +122,15 @@ export function mergePlayerAnswer(
   clientNow?: number
 ): BlitzState {
   if (server.phase !== 'question' || !server.questionStartedAt) return server
-  const answers = server.answers || {}
-  if (answers[playerId]) return server
-  if (!(server.players || []).some((p) => p.id === playerId)) return server
+  if (server.answers[playerId]) return server
+  if (!server.players.some((p) => p.id === playerId)) return server
   const elapsed = Math.max(0, (clientNow || Date.now()) - server.questionStartedAt)
-  const limit = (server.secondsPerQuestion || 20) * 1000 + 800
+  const limit = server.secondsPerQuestion * 1000 + 800
   if (elapsed > limit) return server
   return {
     ...server,
     answers: {
-      ...answers,
+      ...server.answers,
       [playerId]: { choice, at: elapsed },
     },
   }
@@ -314,7 +296,6 @@ function maybeSuddenDeathOrPodium(s: BlitzState): BlitzState {
 }
 
 function finalizePodium(s: BlitzState): BlitzState {
-  const ranked = [...s.players].sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
   return {
     ...s,
     phase: 'podium',
@@ -324,16 +305,6 @@ function finalizePodium(s: BlitzState): BlitzState {
     revealStartedAt: undefined,
     suddenDeathActive: false,
     midboardUntil: undefined,
-    resultsSnapshot: {
-      at: Date.now(),
-      code: s.code || '',
-      rows: ranked.map((p) => ({
-        name: p.name,
-        score: p.score,
-        avatar: p.avatar,
-        team: p.team,
-      })),
-    },
   }
 }
 
@@ -409,7 +380,7 @@ export function toggleTeams(s: BlitzState, enabled: boolean): BlitzState {
 export function teamTotals(s: BlitzState): { a: number; b: number } {
   let a = 0
   let b = 0
-  for (const p of s.players || []) {
+  for (const p of s.players) {
     if (p.team === 'a') a += p.score
     else if (p.team === 'b') b += p.score
   }
@@ -558,8 +529,6 @@ export function refillPowerUps(s: BlitzState): BlitzState {
 export function allPlayersReady(s: BlitzState): boolean {
   return s.players.length > 0 && s.players.every((p) => p.ready)
 }
-<<<<<<< HEAD
-=======
 
 
 export function setCaptain(s: BlitzState, team: BlitzTeamId, playerId: string | undefined): BlitzState {
@@ -568,4 +537,3 @@ export function setCaptain(s: BlitzState, team: BlitzTeamId, playerId: string | 
   else captains[team] = playerId
   return { ...s, captains }
 }
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111

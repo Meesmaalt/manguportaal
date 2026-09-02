@@ -22,10 +22,6 @@ import {
   setRequireReady,
   refillPowerUps,
   allPlayersReady,
-<<<<<<< HEAD
-  normalizeBlitzState,
-=======
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
 } from './logic'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -40,26 +36,15 @@ type Props = {
   isHost?: boolean
 }
 
-export default function BlitzHost({ state: rawState, update, sessionCode, isHost = true }: Props) {
-  const state = normalizeBlitzState(rawState) || rawState
+export default function BlitzHost({ state, update, sessionCode, isHost = true }: Props) {
   const code = sessionCode || state.code || ''
   const [copied, setCopied] = useState(false)
   const [listOpen, setListOpen] = useState(true)
   const [soundOk, setSoundOk] = useState(false)
   const [tvOpened, setTvOpened] = useState(false)
-<<<<<<< HEAD
-  const questions = state.questions || []
-  const players = state.players || []
-  const answers = state.answers || {}
-  const lastRoundPoints = state.lastRoundPoints || {}
-  const q = questions[state.qIndex]
-  const answered = Object.keys(answers).length
-  const ranked = useMemo(() => sortedPlayers(players), [players])
-=======
   const q = state.questions[state.qIndex]
   const answered = Object.keys(state.answers).length
   const ranked = useMemo(() => sortedPlayers(state.players), [state.players])
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
   const teams = useMemo(() => teamTotals(state), [state])
   useEffect(() => {
     if (state.phase === 'podium') playFx('drumroll')
@@ -99,18 +84,16 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
   // All players answered → close early (don't wait for timer)
   useEffect(() => {
     if (!isHost || state.phase !== 'question') return
-    if (players.length < 1) return
-    if (answered >= players.length && answered > 0) {
+    if (state.players.length < 1) return
+    if (answered >= state.players.length && answered > 0) {
       playFx('reveal')
       update((s) => {
         if (s.phase !== 'question') return s
-        const ans = s.answers || {}
-        const pls = s.players || []
-        if (Object.keys(ans).length < pls.length) return s
+        if (Object.keys(s.answers).length < s.players.length) return s
         return reveal(s)
       })
     }
-  }, [answered, players.length, state.phase, isHost]) // eslint-disable-line
+  }, [answered, state.players.length, state.phase, isHost]) // eslint-disable-line
 
   // Auto-advance after reveal
   useEffect(() => {
@@ -153,7 +136,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                   <button
                     type="button"
                     className="btn-outline text-xs flex items-center gap-1"
-                    disabled={players.length < 1}
+                    disabled={state.players.length < 1}
                     onClick={() => {
                       playFx('click')
                       update((s) => startWarmup(s))
@@ -165,21 +148,12 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                     type="button"
                     className="btn-gold text-xs flex items-center gap-1"
                     disabled={
-<<<<<<< HEAD
-                      players.length < 1 ||
-                      !questions.length ||
-                      (!!state.requireReady && !allPlayersReady(state))
-                    }
-                    title={
-                      players.length < 1 || !questions.length
-=======
                       state.players.length < 1 ||
                       !state.questions.length ||
                       (!!state.requireReady && !allPlayersReady(state))
                     }
                     title={
                       state.players.length < 1 || !state.questions.length
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                         ? 'Vaja küsimusi ja vähemalt 1 mängijat'
                         : state.requireReady && !allPlayersReady(state)
                           ? 'Kõik mängijad peavad olema “valmis”'
@@ -191,11 +165,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                     }}
                   >
                     <Play size={14} /> Alusta
-<<<<<<< HEAD
-                    {questions.length > 0 && players.length >= 1 ? ' ✓' : ''}
-=======
                     {state.questions.length > 0 && state.players.length >= 1 ? ' ✓' : ''}
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                   </button>
                 </>
               )}
@@ -260,7 +230,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                     ? 'Tagasi lobby'
                     : state.suddenDeathActive
                       ? 'Podium'
-                      : state.qIndex + 1 >= questions.length
+                      : state.qIndex + 1 >= state.questions.length
                         ? 'Podium'
                         : 'Järgmine'}
                   {state.revealSeconds > 0 && revealLeft != null && revealLeft > 0 && (
@@ -285,8 +255,8 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
       <div className="text-center mb-4">
         <h2 className="font-display text-3xl blitz-logo">⚡ BLITZ</h2>
         <p className="text-white/50 text-sm">Kiire trivia · õige + kiirus = punktid</p>
-        {questions.length > 0 &&
-          state.qIndex === questions.length - 1 &&
+        {state.questions.length > 0 &&
+          state.qIndex === state.questions.length - 1 &&
           state.phase !== 'lobby' &&
           state.phase !== 'podium' && (
             <p className="blitz-final-banner text-rose-300 text-xs font-black uppercase mt-2">
@@ -325,7 +295,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               </a>
             </div>
             <p className="text-[11px] text-white/35">
-              {questions.length} küsimust · {state.secondsPerQuestion}s · reveal{' '}
+              {state.questions.length} küsimust · {state.secondsPerQuestion}s · reveal{' '}
               {state.revealSeconds || 0}s · max {state.pointsMax}p
               {state.shuffleOnStart ? ' · sega' : ''}
             </p>
@@ -416,18 +386,6 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                 </p>
                 <ul className="space-y-1.5 text-xs text-white/70">
                   <li className="flex items-center gap-2">
-<<<<<<< HEAD
-                    <span className={questions.length > 0 ? 'text-emerald-400' : 'text-white/30'}>
-                      {questions.length > 0 ? '✓' : '○'}
-                    </span>
-                    Küsimused laetud ({questions.length})
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className={players.length >= 1 ? 'text-emerald-400' : 'text-white/30'}>
-                      {players.length >= 1 ? '✓' : '○'}
-                    </span>
-                    Vähemalt 1 mängija ({players.length})
-=======
                     <span className={state.questions.length > 0 ? 'text-emerald-400' : 'text-white/30'}>
                       {state.questions.length > 0 ? '✓' : '○'}
                     </span>
@@ -438,7 +396,6 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                       {state.players.length >= 1 ? '✓' : '○'}
                     </span>
                     Vähemalt 1 mängija ({state.players.length})
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                   </li>
                   <li className="flex items-center gap-2">
                     <span className={tvOpened ? 'text-emerald-400' : 'text-white/30'}>
@@ -481,13 +438,8 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                       <span className={allPlayersReady(state) ? 'text-emerald-400' : 'text-white/30'}>
                         {allPlayersReady(state) ? '✓' : '○'}
                       </span>
-<<<<<<< HEAD
-                      Kõik “valmis” ({players.filter((p) => p.ready).length}/
-                      {players.length})
-=======
                       Kõik “valmis” ({state.players.filter((p) => p.ready).length}/
                       {state.players.length})
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                     </li>
                   )}
                 </ul>
@@ -513,7 +465,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
       <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 mb-4 text-center">
         {state.phase === 'lobby' && (
           <p className="text-white/60">
-            Lobby · <strong className="text-gold">{players.length}</strong> mängijat
+            Lobby · <strong className="text-gold">{state.players.length}</strong> mängijat
           </p>
         )}
         {state.phase === 'countdown' && (
@@ -524,10 +476,10 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
         {state.phase === 'question' && q && (
           <div>
             <p className="text-cyan-200 font-display text-xl font-black">
-              {state.qIndex + 1}/{questions.length}
+              {state.qIndex + 1}/{state.questions.length}
               {remaining != null && <span className="text-gold ml-3 tabular-nums">{remaining}s</span>}
               <span className="text-white/50 text-sm font-sans font-normal ml-3">
-                vastanud {answered}/{players.length}
+                vastanud {answered}/{state.players.length}
               </span>
             </p>
             {remaining != null && state.secondsPerQuestion > 0 && (
@@ -562,57 +514,6 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               <Trophy /> Lõpp
             </p>
             {isHost && (
-<<<<<<< HEAD
-              <div className="flex flex-col items-center gap-2 mt-3">
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <button
-                    type="button"
-                    className="btn-outline text-xs"
-                    onClick={() => {
-                      const rows = [['Koht', 'Nimi', 'Punktid', 'Avatar']]
-                      ranked.forEach((p, i) => {
-                        rows.push([String(i + 1), p.name, String(p.score), p.avatar || ''])
-                      })
-                      const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
-                      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-                      const a = document.createElement('a')
-                      a.href = URL.createObjectURL(blob)
-                      a.download = `blitz-${code}-tulemused.csv`
-                      a.click()
-                    }}
-                  >
-                    Ekspordi CSV
-                  </button>
-                  <a
-                    href={appUrl(`/blitz/${code}/tulemused`)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-gold text-xs"
-                  >
-                    Tulemuste link
-                  </a>
-                  <button
-                    type="button"
-                    className="btn-outline text-xs"
-                    onClick={() => {
-                      navigator.clipboard.writeText(appUrl(`/blitz/${code}/tulemused`)).then(() => {
-                        playFx('click')
-                      }).catch(() => {})
-                    }}
-                  >
-                    Kopeeri jagamislink
-                  </button>
-                </div>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(appUrl(`/blitz/${code}/tulemused`))}`}
-                  alt="Tulemused QR"
-                  className="rounded-lg border border-white/20 bg-white p-1"
-                  width={120}
-                  height={120}
-                />
-                <p className="text-[10px] text-white/35">Skanni — edetabel telefonis</p>
-              </div>
-=======
               <button
                 type="button"
                 className="btn-outline text-xs mt-2"
@@ -631,7 +532,6 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               >
                 Ekspordi CSV
               </button>
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
             )}
           </div>
         )}
@@ -655,12 +555,12 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
         </div>
       )}
 
-      {isHost && state.phase === 'reveal' && questions[state.qIndex + 1] && (
+      {isHost && state.phase === 'reveal' && state.questions[state.qIndex + 1] && (
         <div className="card-panel border-amber-500/30 p-3 mb-4 text-sm">
           <p className="text-amber-200/80 text-xs uppercase tracking-wide mb-1">Järgmise eelvaade (ainult host)</p>
-          <p className="text-white/80">{questions[state.qIndex + 1].q}</p>
+          <p className="text-white/80">{state.questions[state.qIndex + 1].q}</p>
           <p className="text-[11px] text-white/35 mt-1">
-            Õige: {questions[state.qIndex + 1].choices[questions[state.qIndex + 1].correct]}
+            Õige: {state.questions[state.qIndex + 1].choices[state.questions[state.qIndex + 1].correct]}
           </p>
         </div>
       )}
@@ -714,20 +614,12 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
             className="w-full flex items-center justify-between text-sm text-gold font-bold"
             onClick={() => setListOpen((v) => !v)}
           >
-<<<<<<< HEAD
-            <span>Küsimuste nimekiri ({questions.length})</span>
-=======
             <span>Küsimuste nimekiri ({state.questions.length})</span>
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
             <span className="text-white/40 text-xs">{listOpen ? 'peida' : 'näita'}</span>
           </button>
           {listOpen && (
             <div className="mt-2 max-h-64 overflow-y-auto space-y-1">
-<<<<<<< HEAD
-              {questions.map((qq, i) => {
-=======
               {state.questions.map((qq, i) => {
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                 const done = !state.isWarmup && state.phase !== 'lobby' && i < state.qIndex
                 const current =
                   !state.isWarmup &&
@@ -779,11 +671,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                   </div>
                 )
               })}
-<<<<<<< HEAD
-              {questions.length === 0 && (
-=======
               {state.questions.length === 0 && (
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
                 <p className="text-white/40 text-xs py-2">Küsimusi pole — vali sett uuesti.</p>
               )}
             </div>
@@ -791,35 +679,6 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
         </div>
       )}
 
-<<<<<<< HEAD
-      {state.phase === 'question' && (
-        <div className="card-panel border-cyan-400/20 p-3 mb-3 text-xs">
-          <p className="text-cyan-200 font-bold mb-1">
-            Vastanud {answered}/{players.length}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {players.map((p) => {
-              const a = answers[p.id]
-              return (
-                <span
-                  key={p.id}
-                  className={`px-2 py-0.5 rounded-full border ${
-                    a
-                      ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-100'
-                      : 'border-white/10 text-white/35'
-                  }`}
-                >
-                  {p.avatar || ''} {p.name}
-                  {a ? ` · ${(a.at / 1000).toFixed(1)}s` : ''}
-                </span>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-=======
->>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
       {ranked.map((p, i) => (
           <div
             key={p.id}
@@ -881,11 +740,11 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                   )}
                 </span>
               )}
-              {state.phase === 'question' && answers[p.id] && (
+              {state.phase === 'question' && state.answers[p.id] && (
                 <span className="text-[10px] text-cyan-300">✓</span>
               )}
-              {state.phase === 'reveal' && (lastRoundPoints[p.id] || 0) > 0 && (
-                <span className="text-[10px] text-emerald-300">+{lastRoundPoints[p.id]}</span>
+              {state.phase === 'reveal' && (state.lastRoundPoints[p.id] || 0) > 0 && (
+                <span className="text-[10px] text-emerald-300">+{state.lastRoundPoints[p.id]}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
