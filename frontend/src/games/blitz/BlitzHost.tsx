@@ -39,7 +39,7 @@ type Props = {
 
 export default function BlitzHost({ state: rawState, update, sessionCode, isHost = true }: Props) {
   const state = normalizeBlitzState(rawState) || rawState
-  const code = sessionCode || state.code || 
+  const code = sessionCode || state.code || ''
   const [copied, setCopied] = useState(false)
   const [listOpen, setListOpen] = useState(true)
   const [soundOk, setSoundOk] = useState(false)
