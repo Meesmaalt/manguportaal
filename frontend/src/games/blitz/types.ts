@@ -12,6 +12,8 @@ export type BlitzQuestion = {
 
 export type BlitzTeamId = 'a' | 'b'
 
+export type BlitzPowerUp = 'fifty' | 'double' | 'time'
+
 export type BlitzPlayer = {
   id: string
   name: string
@@ -19,7 +21,20 @@ export type BlitzPlayer = {
   joinedAt: number
   streak?: number
   team?: BlitzTeamId
+  /** emoji avatar */
+  avatar?: string
+  /** one-shot power-ups remaining */
+  powers?: Partial<Record<BlitzPowerUp, number>>
+  /** active this question */
+  activeDouble?: boolean
+  /** 50/50 eliminated choice indices */
+  hiddenChoices?: number[]
+  /** lobby ready checkbox */
+  ready?: boolean
+  /** max streak this session */
+  bestStreak?: number
 }
+
 
 export type BlitzPhase = 'lobby' | 'countdown' | 'question' | 'reveal' | 'midboard' | 'podium' | 'sudden_death'
 
@@ -57,6 +72,14 @@ export type BlitzState = {
   /** shown between blocks of questions */
   midboardUntil?: number
   suddenDeathActive?: boolean
+  /** Kahoot-like power-ups */
+  powerUpsEnabled?: boolean
+  /** play only N random questions from pack (0 = all) */
+  questionLimit?: number
+  /** host: must all players mark ready before start */
+  requireReady?: boolean
+  /** last high streak event for TV confetti */
+  streakEvent?: { playerId: string; name: string; streak: number; at: number }
   packData?: {
     secondsPerQuestion?: number
     pointsMax?: number

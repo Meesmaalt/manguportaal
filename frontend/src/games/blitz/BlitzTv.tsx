@@ -30,6 +30,13 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
   }, [state.players?.length, state.phase])
 
   useEffect(() => {
+    if (state.streakEvent && state.phase === 'reveal' && state.streakEvent.streak >= 3) {
+      confettiBurst({ particleCount: 60, spread: 55, y: 0.35 })
+      playFx('correct')
+    }
+  }, [state.streakEvent?.at])
+
+  useEffect(() => {
     if (state.phase === 'podium') {
       confettiBurst({ particleCount: 180, spread: 95, y: 0.5 })
       setTimeout(() => confettiBurst({ particleCount: 100, spread: 70, y: 0.7 }), 400)
@@ -77,6 +84,13 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
           </div>
         </div>
 
+        {state.streakEvent && state.phase === 'reveal' && state.streakEvent.streak >= 3 && (
+          <div className="text-center mb-3">
+            <span className="blitz-final-banner inline-block font-display font-black text-amber-300 text-lg md:text-2xl">
+              🔥 {state.streakEvent.name} · streak {state.streakEvent.streak}!
+            </span>
+          </div>
+        )}
         {state.isWarmup && state.phase !== 'lobby' && state.phase !== 'podium' && (
           <div className="text-center mb-2">
             <span className="inline-block font-display font-black text-cyan-300 text-sm uppercase tracking-widest">
@@ -127,7 +141,8 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   }`}
                   style={{ animationDelay: `${i * 0.05}s` }}
                 >
-                  {p.name}
+                  {p.avatar ? p.avatar + ' ' : ''}{p.name}
+                  {state.requireReady && (p.ready ? ' ✓' : '')}
                 </span>
               ))}
             </div>
@@ -214,6 +229,21 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 )
               })}
             </div>
+
+            {state.phase === 'question' && state.players.length > 0 && (
+              <div className="mt-4 text-center text-sm text-white/45">
+                {(() => {
+                  const waiting = state.players.filter((pl) => !state.answers?.[pl.id])
+                  if (!waiting.length) return <span className="text-emerald-300 font-bold">Kõik vastanud!</span>
+                  return (
+                    <span>
+                      Ootame veel:{' '}
+                      {waiting.map((pl) => (pl.avatar || '') + pl.name).join(', ')}
+                    </span>
+                  )
+                })()}
+              </div>
+            )}
 
             {state.phase === 'reveal' && (state.lastPhotoFinish?.length || 0) > 0 && (
               <div className="mt-5 w-full max-w-lg mx-auto rounded-2xl bg-black/40 border border-cyan-300/30 px-4 py-3">
@@ -324,7 +354,7 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   <div key={p.id} className={`flex flex-col items-center w-24 md:w-36 ${anim}`}>
                     <div className="text-2xl mb-1">{medal}</div>
                     <div className="font-display font-black text-amber-200 text-lg md:text-2xl mb-1 truncate max-w-full">
-                      {p.name}
+                      {p.avatar ? p.avatar + ' ' : ''}{p.name}
                     </div>
                     <div className="text-white/55 text-sm mb-2">{p.score} p</div>
                     <div

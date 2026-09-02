@@ -15,6 +15,12 @@ import {
   teamTotals,
   startWarmup,
   continueAfterMidboard,
+  jumpToQuestion,
+  setPowerUpsEnabled,
+  setQuestionLimit,
+  setRequireReady,
+  refillPowerUps,
+  allPlayersReady,
 } from './logic'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -32,6 +38,9 @@ type Props = {
 export default function BlitzHost({ state, update, sessionCode, isHost = true }: Props) {
   const code = sessionCode || state.code || ''
   const [copied, setCopied] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
+  const [soundOk, setSoundOk] = useState(false)
+  const [tvOpened, setTvOpened] = useState(false)
   const q = state.questions[state.qIndex]
   const answered = Object.keys(state.answers).length
   const ranked = useMemo(() => sortedPlayers(state.players), [state.players])
@@ -137,13 +146,25 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                   <button
                     type="button"
                     className="btn-gold text-xs flex items-center gap-1"
-                    disabled={state.players.length < 1 || !state.questions.length}
+                    disabled={
+                      state.players.length < 1 ||
+                      !state.questions.length ||
+                      (!!state.requireReady && !allPlayersReady(state))
+                    }
+                    title={
+                      state.players.length < 1 || !state.questions.length
+                        ? 'Vaja küsimusi ja vähemalt 1 mängijat'
+                        : state.requireReady && !allPlayersReady(state)
+                          ? 'Kõik mängijad peavad olema “valmis”'
+                          : 'Alusta quiz’i'
+                    }
                     onClick={() => {
                       playFx('correct')
                       update((s) => startQuestion(s, 0))
                     }}
                   >
                     <Play size={14} /> Alusta
+                    {state.questions.length > 0 && state.players.length >= 1 ? ' ✓' : ''}
                   </button>
                 </>
               )}
@@ -315,6 +336,118 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                   />
                   Meeskonnad (A / B)
                 </label>
+                <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={state.powerUpsEnabled !== false}
+                    onChange={(e) => update((s) => setPowerUpsEnabled(s, e.target.checked))}
+                  />
+                  Power-upid (50/50, 2×, +5s)
+                </label>
+                <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!state.requireReady}
+                    onChange={(e) => update((s) => setRequireReady(s, e.target.checked))}
+                  />
+                  Nõua “valmis” enne starti
+                </label>
+                {state.powerUpsEnabled !== false && (
+                  <button
+                    type="button"
+                    className="btn-outline text-[10px] !py-1"
+                    onClick={() => {
+                      playFx('click')
+                      update((s) => refillPowerUps(s))
+                    }}
+                  >
+                    Taasta kõigile power-upid
+                  </button>
+                )}
+                <label className="flex items-center justify-between gap-3 text-xs text-white/60">
+                  <span>Juhuslik N küsimust (0 = kõik)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    className="input-field !py-1 !px-2 w-20 text-sm"
+                    value={state.questionLimit || 0}
+                    onChange={(e) =>
+                      update((s) => setQuestionLimit(s, Number(e.target.value) || 0))
+                    }
+                  />
+                </label>
+
+            {state.phase === 'lobby' && isHost && (
+              <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                <p className="text-[11px] text-gold/80 font-bold uppercase tracking-wide">
+                  Kõik valmis?
+                </p>
+                <ul className="space-y-1.5 text-xs text-white/70">
+                  <li className="flex items-center gap-2">
+                    <span className={state.questions.length > 0 ? 'text-emerald-400' : 'text-white/30'}>
+                      {state.questions.length > 0 ? '✓' : '○'}
+                    </span>
+                    Küsimused laetud ({state.questions.length})
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className={state.players.length >= 1 ? 'text-emerald-400' : 'text-white/30'}>
+                      {state.players.length >= 1 ? '✓' : '○'}
+                    </span>
+                    Vähemalt 1 mängija ({state.players.length})
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className={tvOpened ? 'text-emerald-400' : 'text-white/30'}>
+                      {tvOpened ? '✓' : '○'}
+                    </span>
+                    <button
+                      type="button"
+                      className="underline decoration-white/30 hover:text-gold"
+                      onClick={() => {
+                        window.open(appUrl(`/ekraan/${code}`), '_blank')
+                        setTvOpened(true)
+                      }}
+                    >
+                      TV ekraan avatud
+                    </button>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className={soundOk ? 'text-emerald-400' : 'text-white/30'}>
+                      {soundOk ? '✓' : '○'}
+                    </span>
+                    <button
+                      type="button"
+                      className="underline decoration-white/30 hover:text-gold"
+                      onClick={() => {
+                        playFx('jingle')
+                        setSoundOk(true)
+                      }}
+                    >
+                      Testi heli
+                    </button>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className={state.warmupDone ? 'text-emerald-400' : 'text-white/30'}>
+                      {state.warmupDone ? '✓' : '○'}
+                    </span>
+                    Proovivoor (valikuline)
+                  </li>
+                  {state.requireReady && (
+                    <li className="flex items-center gap-2">
+                      <span className={allPlayersReady(state) ? 'text-emerald-400' : 'text-white/30'}>
+                        {allPlayersReady(state) ? '✓' : '○'}
+                      </span>
+                      Kõik “valmis” ({state.players.filter((p) => p.ready).length}/
+                      {state.players.length})
+                    </li>
+                  )}
+                </ul>
+                <p className="text-[10px] text-white/35">
+                  Rohelised linnukesed = valmis. Alusta, kui küsimused + mängija on olemas.
+                </p>
+              </div>
+            )}
+
               </div>
             )}
           </div>
@@ -375,9 +508,31 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
           <p className="text-cyan-200 text-sm font-bold">Proovivoor — punktid ei loe</p>
         )}
         {state.phase === 'podium' && (
-          <p className="text-gold font-display text-2xl font-black flex items-center justify-center gap-2">
-            <Trophy /> Lõpp
-          </p>
+          <div>
+            <p className="text-gold font-display text-2xl font-black flex items-center justify-center gap-2">
+              <Trophy /> Lõpp
+            </p>
+            {isHost && (
+              <button
+                type="button"
+                className="btn-outline text-xs mt-2"
+                onClick={() => {
+                  const rows = [['Koht', 'Nimi', 'Punktid', 'Avatar']]
+                  ranked.forEach((p, i) => {
+                    rows.push([String(i + 1), p.name, String(p.score), p.avatar || ''])
+                  })
+                  const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+                  const a = document.createElement('a')
+                  a.href = URL.createObjectURL(blob)
+                  a.download = `blitz-${code}-tulemused.csv`
+                  a.click()
+                }}
+              >
+                Ekspordi CSV
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -443,14 +598,95 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
 
       <div className="space-y-1.5">
         <h3 className="text-xs uppercase tracking-wide text-white/40 mb-1">Edetabel</h3>
-        {ranked.map((p, i) => (
+        
+      {isHost && (
+        <div className="card-panel border-white/10 p-3 mb-4">
+          <button
+            type="button"
+            className="w-full flex items-center justify-between text-sm text-gold font-bold"
+            onClick={() => setListOpen((v) => !v)}
+          >
+            <span>Küsimuste nimekiri ({state.questions.length})</span>
+            <span className="text-white/40 text-xs">{listOpen ? 'peida' : 'näita'}</span>
+          </button>
+          {listOpen && (
+            <div className="mt-2 max-h-64 overflow-y-auto space-y-1">
+              {state.questions.map((qq, i) => {
+                const done = !state.isWarmup && state.phase !== 'lobby' && i < state.qIndex
+                const current =
+                  !state.isWarmup &&
+                  (state.phase === 'question' ||
+                    state.phase === 'countdown' ||
+                    state.phase === 'reveal') &&
+                  i === state.qIndex
+                const canJump =
+                  state.phase === 'lobby' ||
+                  state.phase === 'reveal' ||
+                  state.phase === 'midboard' ||
+                  state.phase === 'podium'
+                return (
+                  <div
+                    key={qq.id || i}
+                    className={`rounded-lg px-2 py-1.5 text-xs border ${
+                      current
+                        ? 'border-amber-400/50 bg-amber-400/10'
+                        : done
+                          ? 'border-white/5 bg-white/5 opacity-60'
+                          : 'border-white/10 bg-black/20'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-white/35 tabular-nums w-5 shrink-0">{i + 1}.</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/80 truncate">{qq.q}</p>
+                        {qq.hostNote && (
+                          <p className="text-amber-200/70 text-[10px] mt-0.5">Host: {qq.hostNote}</p>
+                        )}
+                        <p className="text-white/30 text-[10px] mt-0.5 truncate">
+                          Õige: {qq.choices?.[qq.correct]}
+                        </p>
+                      </div>
+                      {canJump && (
+                        <button
+                          type="button"
+                          className="btn-outline !text-[10px] !py-0.5 !px-1.5 shrink-0"
+                          disabled={state.isWarmup}
+                          onClick={() => {
+                            playFx('click')
+                            update((s) => jumpToQuestion(s, i))
+                          }}
+                        >
+                          Mine
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {state.questions.length === 0 && (
+                <p className="text-white/40 text-xs py-2">Küsimusi pole — vali sett uuesti.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {ranked.map((p, i) => (
           <div
             key={p.id}
             className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2"
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-white/35 w-5 text-sm">{i + 1}.</span>
-              <span className="font-semibold text-gold truncate">{p.name}</span>
+              <span className="font-semibold text-gold truncate">
+                {p.avatar ? p.avatar + ' ' : ''}
+                {p.name}
+                {state.phase === 'lobby' && state.requireReady && (
+                  <span className={`ml-1 text-[10px] ${p.ready ? 'text-emerald-400' : 'text-white/30'}`}>
+                    {p.ready ? '✓' : '…'}
+                  </span>
+                )}
+              </span>
               {state.teamsEnabled && (
                 <span className="flex gap-0.5">
                   {(['a', 'b'] as const).map((tid) => (
