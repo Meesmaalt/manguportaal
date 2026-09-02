@@ -47,6 +47,9 @@ export default function Home() {
           <Link to="/dashboard" className="btn-gold text-lg px-8 py-3 flex items-center gap-2">
             <Play size={20} /> {t('homePlay')}
           </Link>
+          <Link to="/gallery" className="btn-outline text-lg px-6 py-3">
+            {t('galleryTitle')}
+          </Link>
           {!isLoggedIn && (
             <Link to="/login" className="btn-outline text-lg px-6 py-3">
               {t('homeAccount')}

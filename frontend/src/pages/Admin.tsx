@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { pb, formatPbError, type Pack, ensurePbUrl } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
+import AdminSounds from '@/components/AdminSounds'
+import { backupUserAuth, restoreUserAuth, clearAuthBackup } from '@/lib/adminAuth'
+import { hideTemplate, isTemplateHidden, clearHiddenTemplates, unhideTemplate } from '@/lib/hiddenTemplates'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/translations'
 import { GAME_META, type GameType } from '@/lib/types'
@@ -80,6 +83,7 @@ export default function Admin() {
     setBusy('login')
     ensurePbUrl()
     try {
+      backupUserAuth()
       try {
         await pb.collection('_superusers').authWithPassword(email.trim(), password)
       } catch {
@@ -98,7 +102,7 @@ export default function Admin() {
   }
 
   function logout() {
-    pb.authStore.clear()
+    restoreUserAuth()
     setAsAdmin(false)
     setPacks([])
     setMsg('')
@@ -178,6 +182,9 @@ export default function Admin() {
         }
       }
       await pb.collection('packs').delete(id)
+      // Remember deletion so code templates are not offered again until "restore"
+      const pack = packs.find((x) => x.id === id)
+      if (pack) hideTemplate(pack.game_type, pack.name)
       setMsg(`✓ ${t('deletePack')}: ${name}`)
       setPacks((prev) => prev.filter((p) => p.id !== id))
       await loadPacks()
@@ -225,6 +232,7 @@ export default function Admin() {
     setError('')
     setMsg('')
     try {
+      unhideTemplate(tpl.game_type, tpl.name)
       const action = await upsertTemplate(tpl)
       setMsg(action === 'updated' ? `✓ ${tpl.name} uuendatud` : `✓ ${tpl.name} → baasi`)
       await loadPacks()
@@ -304,6 +312,7 @@ export default function Admin() {
   const missingTemplates = useMemo(() => {
     return OFFICIAL_PACKS.filter((tpl) => {
       if (gameFilter !== 'all' && tpl.game_type !== gameFilter) return false
+      if (isTemplateHidden(tpl.game_type, tpl.name)) return false
       return !packs.some((p) => p.name === tpl.name && p.game_type === tpl.game_type)
     })
   }, [packs, gameFilter])
@@ -557,6 +566,18 @@ export default function Admin() {
                   >
                     <Upload size={14} /> {t('adminSeedAll')} ({missingTemplates.length})
                   </button>
+                  <button
+                    type="button"
+                    className="btn-outline text-sm"
+                    disabled={!!busy}
+                    onClick={() => {
+                      clearHiddenTemplates()
+                      setMsg(`✓ ${t('adminRestoreHidden')}`)
+                      setShowTemplates(true)
+                    }}
+                  >
+                    {t('adminRestoreHidden')}
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {missingTemplates.map((tpl) => (
@@ -587,6 +608,8 @@ export default function Admin() {
           </div>
         )}
       </div>
+
+      <AdminSounds />
 
       <p className="text-white/30 text-xs mt-10 text-center">
         PB: <code className="text-white/40">{pb.baseUrl}</code>

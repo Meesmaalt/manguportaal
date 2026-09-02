@@ -3,6 +3,7 @@ import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
 import { emptyPlayer, startGame, endTurn, resolvePay, skipDefend, hostMoveProperty } from './logic'
 import { CardFace, PlayerTableBoard, BankStrip } from './DealCards'
+import TvJoinPanel from '@/components/TvJoinPanel'
 import { playFx } from '@/lib/audio'
 import { shareSessionLinks } from '@/lib/stats'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
@@ -124,6 +125,36 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
   return (
     <div className="max-w-6xl mx-auto px-2 md:px-4 pb-10">
       {isHost && <SessionCodeBadge code={code} />}
+      {isHost && phase === 'lobby' && (
+        <div className="card-panel border-gold/30 p-3 mb-3 max-w-xl mx-auto text-sm text-white/75 space-y-1">
+          <p className="text-gold font-display text-sm">Peo soovitus (2–5 mängijat)</p>
+          <p>1. Lisa nimed all · 2. Anna igaühele oma QR/link · 3. Ava TV samast koodist · 4. Alusta mängu</p>
+          <p className="text-white/45 text-xs">Iga mängija telefon = käsi. Host saab vajadusel käike aidata.</p>
+        </div>
+      )}
+      {isHost && code && (
+        <TvJoinPanel code={code} />
+      )}
+
+      {isHost && phase === 'turn' && !state.coachDismissed && (state.turnCount || 0) < 2 && (
+        <div className="card-panel border-cyan-400/40 bg-cyan-950/40 p-3 mb-3 max-w-xl mx-auto text-sm">
+          <p className="text-cyan-200 font-display text-sm mb-1">Esimese käigu meeldetuletus</p>
+          <ol className="text-white/75 text-xs space-y-0.5 list-decimal list-inside">
+            <li>Võta 2 kaarti pakist (automaatne käigu alguses, kui loogika seda teeb).</li>
+            <li>Mängi kuni 3 kaarti: raha → pank, kinnistu → rida, tegevus → vali sihtmärk.</li>
+            <li>Käe lõpuks max 7 kaarti — ülejääk ära viska / panka.</li>
+            <li>Host: „Lõpeta käik“ kui mängija on valmis.</li>
+          </ol>
+          <button
+            type="button"
+            className="btn-outline text-xs mt-2"
+            onClick={() => update({ ...state, coachDismissed: true })}
+          >
+            Sain aru
+          </button>
+        </div>
+      )}
+
       {isHost && (
         <GameToolbar
           onReset={resetLobby}

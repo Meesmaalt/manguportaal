@@ -36,6 +36,11 @@ Eesmärk: kogu 3 täielikku kinnistukomplekti (värvid). Iga käik: võta 2 kaar
 Raha → panka, kinnistu → oma reale, tegevused (üür, vargus, tehingumurdja…) → vali vastane. Host juhib; TV näitab lauda.
 
 Ei ole Hasbro toode — peo versioon eesti kinnistunimedega.`,
+    blitz: `Blitz — kiire trivia show.
+
+Küsimused telefonis, teleril suur lava. Õige + kiirus = punktid. Üksinda või tiimides.
+
+Host juhib; külalised liituvad lingi/QR-iga. Sobib peole ja kontorisse — kõrge tempo.`,
     tode_voi_tegu: `Tõde või tegu — julged küsimused ja ülesanded.
 
 Mängija valib: vastata ausalt või teha tegu. Sett annab ideid; seltskond hoiab piire.
@@ -82,6 +87,11 @@ Not affiliated with Hasbro — party rules with local property names.`,
 Players choose honesty or action. The pack suggests prompts; the group sets the limits.
 
 Classic party fun for friends who want laughs and a little courage.`,
+    blitz: `Blitz — fast trivia show.
+
+Questions on phones; TV is the stage. Correct + speed = points.
+
+Host runs rounds; guests join via link or QR.`,
   },
   ru: {
     kuldvillak: `Классическая викторина в духе «Своей игры».
@@ -121,6 +131,11 @@ Classic party fun for friends who want laughs and a little courage.`,
 Игрок выбирает: ответить честно или сделать. Набор подсказывает; границы — у компании.
 
 Классика вечеринки для друзей, которые любят смех и вызов.`,
+    blitz: `Blitz — быстрая викторина.
+
+Вопросы на телефонах; ТВ — сцена. Верно + скорость = очки.
+
+Ведущий ведёт; гости по ссылке или QR.`,
   },
 } as const
 
@@ -132,6 +147,7 @@ export type GuideGame =
   | 'viimane_pusti'
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
+  | 'blitz'
 
 export function getGuide(lang: Lang, gameType: string): string {
   const table = guides[lang] || guides.et

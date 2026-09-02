@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
 import { pb, type Pack } from '@/lib/pocketbase'
-import { Plus, Layers, Upload, RotateCcw } from 'lucide-react'
+import { Plus, Layers, Upload, RotateCcw, Sparkles } from 'lucide-react'
 import { getRememberedHostSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import { getStats } from '@/lib/stats'
 import { motion } from 'framer-motion'
@@ -54,6 +54,18 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="card-panel p-3 mb-6 border-gold/30 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+          <div className="text-gold font-display text-sm tracking-wide">{t('partyFlowTitle')}</div>
+          <div className="flex flex-wrap gap-2 text-xs text-white/70 items-center">
+            <span className="px-2 py-1 rounded-full bg-gold/10 border border-gold/25">1. {t('partyFlow1')}</span>
+            <span className="px-2 py-1 rounded-full bg-gold/10 border border-gold/25">2. {t('partyFlow2')}</span>
+            <span className="px-2 py-1 rounded-full bg-gold/10 border border-gold/25">3. {t('partyFlow3')}</span>
+            <Link to="/gallery" className="px-2 py-1 rounded-full border border-gold/40 text-gold hover:bg-gold/10 inline-flex items-center gap-1">
+              <Sparkles size={12} /> {t('galleryTitle')}
+            </Link>
+          </div>
+        </div>
+
         <h1 className="font-display text-3xl md:text-4xl text-gold mb-2">
           {isLoggedIn
             ? t('dashHello', { name: user?.name || user?.email || '' })

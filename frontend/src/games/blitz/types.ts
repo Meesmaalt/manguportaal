@@ -1,5 +1,7 @@
 export type BlitzChoice = 0 | 1 | 2 | 3
 
+export type BlitzDifficulty = 'easy' | 'medium' | 'hard'
+
 export type BlitzQuestion = {
   id: string
   q: string
@@ -8,6 +10,7 @@ export type BlitzQuestion = {
   /** optional image (https or data URL) */
   imageUrl?: string
   hostNote?: string
+  difficulty?: BlitzDifficulty
 }
 
 export type BlitzTeamId = 'a' | 'b'
@@ -66,6 +69,8 @@ export type BlitzState = {
   revealStartedAt?: number
   shuffleOnStart?: boolean
   teamsEnabled?: boolean
+  /** team captains (player ids) */
+  captains?: { a?: string; b?: string }
   /** practice round — no points */
   isWarmup?: boolean
   warmupDone?: boolean
@@ -80,12 +85,15 @@ export type BlitzState = {
   requireReady?: boolean
   /** last high streak event for TV confetti */
   streakEvent?: { playerId: string; name: string; streak: number; at: number }
+<<<<<<< HEAD
   /** frozen podium table for share page */
   resultsSnapshot?: {
     at: number
     code: string
     rows: { name: string; score: number; avatar?: string; team?: string }[]
   }
+=======
+>>>>>>> 624f4b6e868454df0bdd146dd20f4ab9b21c8111
   packData?: {
     secondsPerQuestion?: number
     pointsMax?: number

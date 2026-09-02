@@ -95,6 +95,7 @@ export function endTurn(s: KinnistuDealState): KinnistuDealState {
   st.pending = null
   st.payFrom = undefined
   st.payAmount = undefined
+  st.turnCount = (st.turnCount || 0) + 1
   const discardNote = discarded ? ` (viskas ${discarded})` : ''
   st.log = [`→ ${np.name} käik${discardNote}`, ...st.log].slice(0, 16)
   return st

@@ -141,6 +141,18 @@ function buildInitialState(gameType: string, packData: any, code: string) {
   }
 }
 
+function blitzDiffSummary(data: unknown): string {
+  const qs = (data as { questions?: { difficulty?: string }[] })?.questions
+  if (!Array.isArray(qs) || !qs.length) return ''
+  let e = 0, m = 0, h = 0
+  for (const q of qs) {
+    if (q.difficulty === 'easy') e++
+    else if (q.difficulty === 'hard') h++
+    else m++
+  }
+  return `${qs.length} küsimust · ${e}K ${m}S ${h}R`
+}
+
 function localOfficial(gameType: string): Pack[] {
   return OFFICIAL_PACKS.filter((p) => p.game_type === gameType).map((p, i) => ({
     id: `local-${gameType}-${i}`,
@@ -160,6 +172,7 @@ export default function PackSelect() {
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState<string | null>(null)
   const [startError, setStartError] = useState('')
+  const [packFilter, setPackFilter] = useState<'all' | 'official' | 'mine'>('all')
 
   const isValid = [
     'kuldvillak',
@@ -305,6 +318,12 @@ export default function PackSelect() {
     }
   }
 
+  const visiblePacks = packs.filter((pack) => {
+    if (packFilter === 'official') return !!(pack.is_official || pack.is_public)
+    if (packFilter === 'mine') return !!(user?.id && pack.owner === user.id)
+    return true
+  })
+
   if (!isValid) {
     return (
       <div className="text-center py-20">
@@ -340,6 +359,27 @@ export default function PackSelect() {
       )}
       {isLoggedIn && <div className="mb-6" />}
 
+      <div className="flex flex-wrap gap-2 mb-5">
+        {([
+          ['all', t('packFilterAll')],
+          ['official', t('packFilterOfficial')],
+          ['mine', t('packFilterMine')],
+        ] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setPackFilter(id)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition ${
+              packFilter === id
+                ? 'bg-gold text-bg border-gold font-bold'
+                : 'border-gold/35 text-gold/90 hover:border-gold'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {startError && (
         <div
           className={`mb-4 p-3 rounded-xl text-sm border ${
@@ -354,24 +394,42 @@ export default function PackSelect() {
 
       {loading ? (
         <div className="text-center text-gold animate-pulse py-12">{t('packLoading')}</div>
-      ) : packs.length === 0 ? (
-        <div className="card-panel p-6 text-center space-y-2">
+      ) : visiblePacks.length === 0 ? (
+        <div className="card-panel p-6 text-center space-y-3">
           <p className="text-white/60 text-sm">{t('packEmptyDb')}</p>
           <p className="text-white/35 text-xs">{t('packEmptyDbHint')}</p>
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
+            <Link to="/gallery" className="btn-outline text-xs">
+              {t('galleryTitle')}
+            </Link>
+            <Link to="/admin" className="btn-gold text-xs">
+              {t('adminTitle')} — {t('adminSeedAll')}
+            </Link>
+            {isLoggedIn && (
+              <Link to="/packs/new" className="btn-outline text-xs">
+                {t('packCreate')}
+              </Link>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {packs.map((pack, i) => (
+        <div className={gameType === 'blitz' ? 'grid sm:grid-cols-2 gap-3' : 'space-y-3'}>
+          {visiblePacks.map((pack, i) => (
             <motion.div
               key={pack.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="card-panel p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              className={`card-panel p-5 flex flex-col ${gameType === 'blitz' ? '' : 'sm:flex-row sm:items-center'} justify-between gap-4 ${gameType === 'blitz' ? 'border-gold/25 hover:border-gold/50 transition' : ''}`}
             >
               <div>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-display text-xl text-gold">{packTitle(pack, lang)}</h3>
+                  {gameType === 'blitz' && blitzDiffSummary(pack.data) && (
+                    <span className="text-[10px] text-white/40 border border-white/15 rounded-full px-2 py-0.5">
+                      {blitzDiffSummary(pack.data)}
+                    </span>
+                  )}
                   {pack.is_official && (
                     <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full">
                       {t('packOfficial')}

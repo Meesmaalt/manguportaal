@@ -39,26 +39,23 @@ export default function Layout() {
               <LayoutGrid size={16} />
               <span className="hidden sm:inline">{t('navGames')}</span>
             </Link>
-
             <ThemePicker />
             <select
+              className="bg-transparent text-sm text-white/70 border border-gold/20 rounded-full px-2 py-1"
               value={lang}
               onChange={(e) => setLang(e.target.value as Lang)}
-              className="bg-bg-card border border-gold/30 text-gold text-xs rounded-full px-2 py-1.5 cursor-pointer focus:outline-none focus:border-gold"
               aria-label="Language"
             >
-              {(Object.keys(langs) as Lang[]).map((l) => (
-                <option key={l} value={l}>
-                  {langs[l]}
+              {Object.entries(langs).map(([code, label]) => (
+                <option key={code} value={code} className="bg-bg text-white">
+                  {label}
                 </option>
               ))}
             </select>
-
             {isLoggedIn ? (
               <>
-                <span className="flex items-center gap-1.5 text-sm text-gold/90 px-2">
-                  <User size={16} />
-                  <span className="hidden sm:inline max-w-[100px] truncate">{user?.name || user?.email}</span>
+                <span className="text-white/50 text-xs hidden md:inline max-w-[120px] truncate">
+                  {user?.name || user?.email}
                 </span>
                 <button
                   type="button"
@@ -66,15 +63,19 @@ export default function Layout() {
                     logout()
                     navigate('/')
                   }}
-                  className="btn-outline text-sm !px-3 !py-1.5 flex items-center gap-1.5"
+                  className="flex items-center gap-1 text-sm text-white/70 hover:text-gold px-2 py-1.5"
                 >
-                  <LogOut size={14} />
+                  <LogOut size={16} />
                   <span className="hidden sm:inline">{t('navLogout')}</span>
                 </button>
               </>
             ) : (
-              <Link to="/login" className="btn-gold text-sm !px-4 !py-2">
-                {t('navLogin')}
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 text-sm text-gold hover:text-gold-hover px-2 py-1.5"
+              >
+                <User size={16} />
+                <span className="hidden sm:inline">{t('navLogin')}</span>
               </Link>
             )}
           </nav>
@@ -88,11 +89,17 @@ export default function Layout() {
       <footer className="border-t border-gold/10 py-6 text-center text-white/40 text-sm">
         {t('footer')}
         <span className="mx-2 opacity-40">·</span>
-        <span className="text-white/25 text-xs tabular-nums">v{APP_VERSION}</span>
+        <Link to="/changelog" className="text-white/25 text-xs tabular-nums hover:text-gold/60">v{APP_VERSION}</Link>
         <span className="mx-2 opacity-40">·</span>
-        <Link to="/admin" className="text-white/20 text-xs hover:text-gold/60">admin</Link>
+        <Link to="/admin" className="text-white/20 text-xs hover:text-gold/60">
+          admin
+        </Link>
         <span className="mx-2 opacity-40">·</span>
-        <span className={`text-xs tabular-nums ${pbOk === true ? 'text-accent-green/70' : pbOk === false ? 'text-accent-red/80' : 'text-white/25'}`}>
+        <span
+          className={`text-xs tabular-nums ${
+            pbOk === true ? 'text-accent-green/70' : pbOk === false ? 'text-accent-red/80' : 'text-white/25'
+          }`}
+        >
           PB {pbOk === true ? 'ok' : pbOk === false ? 'fail' : '…'}
         </span>
       </footer>
