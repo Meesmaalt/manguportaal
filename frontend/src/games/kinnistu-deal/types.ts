@@ -61,6 +61,8 @@ export type PendingAction = {
 }
 
 export type KinnistuDealState = {
+  coachDismissed?: boolean
+  turnCount?: number
   players: PlayerBoard[]
   deck: DealCard[]
   discard: DealCard[]

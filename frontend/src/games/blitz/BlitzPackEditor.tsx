@@ -16,6 +16,8 @@ type Props = {
   }) => void
 }
 
+const MAX_IMAGE_BYTES = 400_000 // prefer URL; keep session JSON small
+
 export default function BlitzPackEditor({
   questions,
   secondsPerQuestion,
@@ -185,9 +187,22 @@ export default function BlitzPackEditor({
           <div key={q.id} className="card-panel border-white/10 p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-white/40">#{i + 1}</span>
-              <button type="button" className="text-accent-red/70 p-1" onClick={() => removeQ(i)}>
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  className="input-field text-xs !py-1 !px-2 w-auto"
+                  value={q.difficulty || 'medium'}
+                  onChange={(e) =>
+                    patchQ(i, { difficulty: e.target.value as 'easy' | 'medium' | 'hard' })
+                  }
+                >
+                  <option value="easy">Kerge</option>
+                  <option value="medium">Keskmine</option>
+                  <option value="hard">Raske</option>
+                </select>
+                <button type="button" className="text-accent-red/70 p-1" onClick={() => removeQ(i)}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
             <input
               className="input-field text-sm"
@@ -234,8 +249,8 @@ export default function BlitzPackEditor({
                   onChange={(e) => {
                     const f = e.target.files?.[0]
                     if (!f) return
-                    if (f.size > 1_500_000) {
-                      alert('Pilt liiga suur (max ~1.5 MB). Tihenda või kasuta URL-i.')
+                    if (f.size > 400_000) {
+                      alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või https URL-i — suur dataURL aeglustab sessiooni.')
                       return
                     }
                     const reader = new FileReader()

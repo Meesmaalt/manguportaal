@@ -210,5 +210,45 @@
     "createRule": "",
     "updateRule": "",
     "deleteRule": ""
+  },
+  {
+    "name": "game_sounds",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "key",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 1,
+          "max": 64
+        }
+      },
+      {
+        "name": "file",
+        "type": "file",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 15242880,
+          "mimeTypes": [
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/wav",
+            "audio/ogg",
+            "audio/webm"
+          ]
+        }
+      }
+    ],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_game_sounds_key ON game_sounds (key)"
+    ]
   }
 ]

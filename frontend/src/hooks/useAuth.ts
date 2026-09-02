@@ -23,8 +23,16 @@ export function useAuth() {
           try {
             await pb.collection('users').authRefresh()
           } catch {
-            // Token dead — clear so UI matches reality
-            pb.authStore.clear()
+            // May be superuser session (admin page) — try that before clearing
+            try {
+              await pb.collection('_superusers').authRefresh()
+            } catch {
+              try {
+                await pb.collection('superusers').authRefresh()
+              } catch {
+                pb.authStore.clear()
+              }
+            }
           }
         }
         sync()

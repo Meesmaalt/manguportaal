@@ -1,3 +1,45 @@
+## v3.21
+
+- TV panel auto-opens when connection is not LIVE
+- Empty pack list → gallery + admin seed CTAs
+- /changelog + version link in footer
+- Clearer empty-pack copy
+
+## v3.20
+
+- Admin: superuser ei hävita tavalist kasutaja sessiooni (backup/restore)
+- useAuth: superuser token ei lähe maha users.authRefresh peale
+- Helide haldus adminis (PB `game_sounds` + migratsioon)
+- audio.ts loeb kohandatud helisid
+- Footer: PB health (juba olemas)
+
+## v3.19
+
+- Blitz: tiimikaptenid (★ lobby + TV)
+- Kinnistu Deal: esimese käigu meeldetuletus hostile
+- Avaleht: link settide galeriisse
+
+## v3.18
+
+- Kinnistu Deal: peo lobby soovitus + TV panel
+- Blitz juhend + raskuse kokkuvõte settide nimekirjas
+- Avalik settide galerii `/gallery`
+- Dashboard link galeriisse
+
+## v3.17
+
+- Pack galerii filtrid (kõik / valmis / minu); Blitz kaardivaade
+- Blitz küsimuse raskusaste (kerge/keskmine/raske) + silt host/TV
+- TV ühendus vaikimisi kokku klapitud (kood + LIVE näha)
+- Dashboard: peo flow 3 sammu
+
+## v3.16
+
+- Host: teema vaikimisi kinni; peenike LIVE riba
+- Admin: kustutatud valmis setid ei ilmu tagasi (peidetud list); selgem eesti keel
+- Blitz: photo finish TV-l selgem
+- Default packid: baas on allikas; seed ainult puuduvatele
+
 ## v3.4
 
 - **Kinnistu Deal** — Monopoly Deal–style party card game (host + TV)

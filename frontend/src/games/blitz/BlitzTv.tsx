@@ -142,6 +142,9 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   style={{ animationDelay: `${i * 0.05}s` }}
                 >
                   {p.avatar ? p.avatar + ' ' : ''}{p.name}
+                      {state.teamsEnabled && p.team && state.captains?.[p.team] === p.id && (
+                        <span className="ml-1 text-amber-300" title="Kapten">★</span>
+                      )}
                   {state.requireReady && (p.ready ? ' ✓' : '')}
                 </span>
               ))}
@@ -204,7 +207,14 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 key={q.id + state.phase}
                 className="font-display font-black text-2xl md:text-4xl lg:text-5xl leading-tight text-center text-white"
               >
-                {q.q}
+                {q.difficulty ? (
+                  <span className={`inline-block text-xs font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full border mb-2 ${
+                    q.difficulty === 'easy' ? 'border-emerald-400/50 text-emerald-300' :
+                    q.difficulty === 'hard' ? 'border-red-400/50 text-red-300' :
+                    'border-amber-400/50 text-amber-200'
+                  }`}>{q.difficulty}</span>
+                ) : null}
+                <span className="block">{q.q}</span>
               </h1>
             </div>
 
@@ -246,18 +256,27 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
             )}
 
             {state.phase === 'reveal' && (state.lastPhotoFinish?.length || 0) > 0 && (
-              <div className="mt-5 w-full max-w-lg mx-auto rounded-2xl bg-black/40 border border-cyan-300/30 px-4 py-3">
-                <p className="text-cyan-200 text-xs font-black uppercase tracking-widest text-center mb-2">
-                  Photo finish
+              <div className="mt-4 mx-auto max-w-md rounded-2xl border border-cyan-400/40 bg-cyan-950/50 px-4 py-3 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
+                <p className="text-cyan-200 text-sm md:text-base font-black uppercase tracking-[0.2em] mb-2 text-center">
+                  ⚡ Photo finish
                 </p>
-                <div className="space-y-1">
-                  {state.lastPhotoFinish!.map((row, i) => (
-                    <div key={row.playerId} className="flex justify-between text-sm md:text-base">
-                      <span className="font-semibold text-white">
-                        {i === 0 ? '⚡ ' : ''}{i + 1}. {row.name}
-                      </span>
-                      <span className="text-cyan-200 tabular-nums font-bold">
-                        {(row.atMs / 1000).toFixed(2)}s
+                <ol className="space-y-1.5">
+                  {state.lastPhotoFinish!.slice(0, 5).map((row, i) => (
+                    <li
+                      key={row.playerId}
+                      className={`flex items-center justify-between gap-3 rounded-xl px-3 py-1.5 ${
+                        i === 0 ? 'bg-cyan-400/20 text-white' : 'bg-white/5 text-white/85'
+                      }`}
+                    >
+                      <span className="font-black text-cyan-300 w-6">{i + 1}.</span>
+                      <span className="flex-1 font-bold truncate">{row.name}</span>
+                      <span className="text-xs text-white/50 tabular-nums">{(row.atMs / 1000).toFixed(2)}s</span>
+                      <span className="text-emerald-300 font-black tabular-nums">+{row.points}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}s
                         <span className="text-emerald-300 ml-2">+{row.points}</span>
                       </span>
                     </div>

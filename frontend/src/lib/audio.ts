@@ -1,4 +1,5 @@
 import { assetUrl } from '@/lib/config'
+import { getSoundUrl } from '@/lib/gameSounds'
 
 let masterGain = 1 // 0..2 (200%)
 let audioCtx: AudioContext | null = null
@@ -61,16 +62,16 @@ function get(src: string): HTMLAudioElement {
 
 export const sounds = {
   get kuldvillakBgm() {
-    return assetUrl('sounds/kuldvillak.mp3')
+    return getSoundUrl('kuldvillak_bgm') || assetUrl('sounds/kuldvillak.mp3')
   },
   get roosCorrect() {
-    return assetUrl('sounds/roosidesoda-oige.mp3')
+    return getSoundUrl('roos_correct') || assetUrl('sounds/roosidesoda-oige.mp3')
   },
   get roosError() {
-    return assetUrl('sounds/roosidesoda-error.mp3')
+    return getSoundUrl('roos_error') || assetUrl('sounds/roosidesoda-error.mp3')
   },
   get roosBgm() {
-    return assetUrl('sounds/roosidesoda-taustamuusika.mp3')
+    return getSoundUrl('roos_bgm') || assetUrl('sounds/roosidesoda-taustamuusika.mp3')
   },
 }
 

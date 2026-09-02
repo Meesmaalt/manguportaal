@@ -1,5 +1,7 @@
 export type BlitzChoice = 0 | 1 | 2 | 3
 
+export type BlitzDifficulty = 'easy' | 'medium' | 'hard'
+
 export type BlitzQuestion = {
   id: string
   q: string
@@ -8,6 +10,7 @@ export type BlitzQuestion = {
   /** optional image (https or data URL) */
   imageUrl?: string
   hostNote?: string
+  difficulty?: BlitzDifficulty
 }
 
 export type BlitzTeamId = 'a' | 'b'
@@ -66,6 +69,8 @@ export type BlitzState = {
   revealStartedAt?: number
   shuffleOnStart?: boolean
   teamsEnabled?: boolean
+  /** team captains (player ids) */
+  captains?: { a?: string; b?: string }
   /** practice round — no points */
   isWarmup?: boolean
   warmupDone?: boolean

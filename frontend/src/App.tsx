@@ -20,6 +20,8 @@ import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
 import EditPack from '@/pages/EditPack'
 import Admin from '@/pages/Admin'
+import Gallery from '@/pages/Gallery'
+import Changelog from '@/pages/Changelog'
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -42,11 +44,13 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         {/* Dashboard & mängud avatud ka külalisele */}
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/gallery" element={<Gallery />} />
         <Route path="/playlist" element={<Playlist />} />
         <Route path="/print" element={<PrintPack />} />
         <Route path="/packs/import" element={<ImportPack />} />
         <Route path="/pack/:id" element={<SharePack />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/changelog" element={<Changelog />} />
         <Route
           path="/packs/:id/edit"
           element={

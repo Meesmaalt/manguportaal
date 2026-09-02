@@ -120,7 +120,7 @@ export default function ThemeStudio({
     activeId
 
   return (
-    <div className={`card-panel ${compact ? 'p-2' : 'p-4'} border-gold/25`}>
+    <div className={`card-panel ${compact ? 'p-1.5' : 'p-3'} border-gold/25`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

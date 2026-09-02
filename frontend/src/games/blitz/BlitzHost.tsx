@@ -11,6 +11,7 @@ import {
   skipQuestion,
   skipQuestionVoid,
   toggleTeams,
+  setCaptain,
   setPlayerTeam,
   teamTotals,
   startWarmup,
@@ -573,7 +574,14 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
               className="max-h-40 mx-auto mb-3 rounded-xl object-contain border border-white/10"
             />
           )}
-          <p className="text-white text-lg font-semibold mb-3">{q.q}</p>
+          <p className="text-white text-lg font-semibold mb-3">{q.difficulty ? (
+            <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border mr-2 mb-1 ${
+              q.difficulty === 'easy' ? 'border-emerald-400/50 text-emerald-300' :
+              q.difficulty === 'hard' ? 'border-red-400/50 text-red-300' :
+              'border-amber-400/50 text-amber-200'
+            }`}>{q.difficulty}</span>
+          ) : null}
+          {q.q}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {q.choices.map((c, i) => (
               <div
@@ -688,7 +696,7 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                 )}
               </span>
               {state.teamsEnabled && (
-                <span className="flex gap-0.5">
+                <span className="flex gap-0.5 items-center">
                   {(['a', 'b'] as const).map((tid) => (
                     <button
                       key={tid}
@@ -705,6 +713,31 @@ export default function BlitzHost({ state, update, sessionCode, isHost = true }:
                       {tid.toUpperCase()}
                     </button>
                   ))}
+                  {p.team && isHost && (
+                    <button
+                      type="button"
+                      title="Kapten"
+                      className={`text-[11px] px-1 rounded ${
+                        state.captains?.[p.team] === p.id
+                          ? 'text-amber-300'
+                          : 'text-white/25 hover:text-amber-200/80'
+                      }`}
+                      onClick={() =>
+                        update((s) =>
+                          setCaptain(
+                            s,
+                            p.team!,
+                            s.captains?.[p.team!] === p.id ? undefined : p.id
+                          )
+                        )
+                      }
+                    >
+                      ★
+                    </button>
+                  )}
+                  {p.team && state.captains?.[p.team] === p.id && (
+                    <span className="text-[9px] text-amber-300/90 uppercase">kapten</span>
+                  )}
                 </span>
               )}
               {state.phase === 'question' && state.answers[p.id] && (

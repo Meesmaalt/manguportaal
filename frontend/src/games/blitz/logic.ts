@@ -366,6 +366,7 @@ export function toggleTeams(s: BlitzState, enabled: boolean): BlitzState {
     return {
       ...s,
       teamsEnabled: false,
+      captains: {},
       players: s.players.map((p) => ({ ...p, team: undefined })),
     }
   }
@@ -527,4 +528,12 @@ export function refillPowerUps(s: BlitzState): BlitzState {
 
 export function allPlayersReady(s: BlitzState): boolean {
   return s.players.length > 0 && s.players.every((p) => p.ready)
+}
+
+
+export function setCaptain(s: BlitzState, team: BlitzTeamId, playerId: string | undefined): BlitzState {
+  const captains = { ...(s.captains || {}) }
+  if (!playerId) delete captains[team]
+  else captains[team] = playerId
+  return { ...s, captains }
 }

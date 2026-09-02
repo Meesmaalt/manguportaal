@@ -1,8 +1,8 @@
 import { appUrl } from '@/lib/config'
 import { useI18n } from '@/i18n/I18nContext'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
-import { Copy, Check, ExternalLink, Tv, Wifi, WifiOff, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { Copy, Check, ExternalLink, Tv, Wifi, WifiOff, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 type Props = {
   code?: string
@@ -14,6 +14,13 @@ type Props = {
 export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0, onRetry }: Props) {
   const { t } = useI18n()
   const [copied, setCopied] = useState<'link' | 'code' | 'buzz' | null>(null)
+  const [open, setOpen] = useState(false)
+  // Auto-expand until TV is connected (live) or same-device local
+  useEffect(() => {
+    if (connection === 'offline' || connection === 'reconnecting') {
+      setOpen(true)
+    }
+  }, [connection, code])
   if (!code) return null
 
   const url = appUrl(`/ekraan/${code}`)
@@ -26,7 +33,9 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
       await navigator.clipboard.writeText(text)
       setCopied(kind)
       setTimeout(() => setCopied(null), 2000)
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
 
   const statusLabel =
@@ -55,108 +64,111 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
         : WifiOff
 
   return (
-    <div className="card-panel p-4 md:p-5 mb-5 border-gold/40 max-w-xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <div className="flex items-center gap-2 text-gold font-display font-bold text-lg">
-          <Tv size={20} />
+    <div className="card-panel p-2 md:p-3 mb-4 border-gold/40 max-w-xl mx-auto">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 flex-wrap text-left"
+      >
+        <div className="flex items-center gap-2 text-gold font-display font-bold text-sm md:text-base">
+          <Tv size={18} />
           {t('tvJoinTitle')}
+          <span className="font-mono text-white/55 text-xs tracking-widest">{code}</span>
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${statusClass}`}
+            className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusClass}`}
           >
-            <StatusIcon size={12} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
+            <StatusIcon size={11} className={connection === 'reconnecting' ? 'animate-spin' : ''} />
             {statusLabel}
           </span>
-          {(connection === 'reconnecting' || connection === 'offline') && onRetry && (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-amber-500/50 text-amber-200 hover:bg-amber-500/15"
-            >
-              {t('connRetry')}
-            </button>
-          )}
+          {open ? <ChevronUp size={16} className="text-gold/70" /> : <ChevronDown size={16} className="text-gold/70" />}
         </div>
-      </div>
+      </button>
 
-      <p className="text-white/55 text-sm mb-4">{t('tvJoinHint')}</p>
-
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
-        <div className="shrink-0 bg-white p-2 rounded-xl shadow-lg">
-          <img src={qrSrc} alt="QR" width={160} height={160} className="block rounded-lg" />
-        </div>
-
-        <div className="flex-1 w-full space-y-3 min-w-0">
-          <div>
-            <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('sessionCode')}</div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-display text-2xl md:text-3xl font-black text-gold tracking-[0.2em]">
-                {code}
-              </span>
-              <button
-                type="button"
-                onClick={() => copy('code')}
-                className="btn-outline text-xs !py-1 !px-2 flex items-center gap-1"
-              >
-                {copied === 'code' ? <Check size={12} /> : <Copy size={12} />}
-                {copied === 'code' ? t('sessionCopied') : t('sessionCopy')}
-              </button>
-            </div>
+      {open && (
+        <div className="mt-3 pt-3 border-t border-gold/15 grid md:grid-cols-[140px_1fr] gap-4">
+          <div className="flex flex-col items-center gap-2">
+            <img
+              src={qrSrc}
+              alt="QR"
+              className="w-[140px] h-[140px] rounded-xl bg-white p-2 border border-gold/20"
+            />
+            <p className="text-white/40 text-[10px] text-center">{t('tvQrHint')}</p>
           </div>
+          <div className="space-y-3 min-w-0">
+            <div>
+              <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('sessionCode')}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-2xl text-gold tracking-[0.2em] font-black">{code}</span>
+                <button
+                  type="button"
+                  onClick={() => copy('code')}
+                  className="btn-outline text-xs !py-1 !px-2 flex items-center gap-1"
+                >
+                  {copied === 'code' ? <Check size={12} /> : <Copy size={12} />}
+                  {copied === 'code' ? t('sessionCopied') : t('sessionCopy')}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('tvLink')}</div>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent-cyan hover:text-gold text-sm break-all underline underline-offset-2 inline-flex items-start gap-1"
-            >
-              <ExternalLink size={14} className="shrink-0 mt-0.5" />
-              {url}
-            </a>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => copy('link')}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+            <div>
+              <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('tvLink')}</div>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-cyan hover:text-gold text-sm break-all underline underline-offset-2 inline-flex items-start gap-1"
               >
-                {copied === 'link' ? <Check size={12} /> : <Copy size={12} />}
-                {copied === 'link' ? t('sessionCopied') : t('tvCopyLink')}
-              </button>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold text-xs !py-1.5 !px-3">
-                {t('tvOpen')}
+                <ExternalLink size={14} className="shrink-0 mt-0.5" />
+                {url}
               </a>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => copy('link')}
+                  className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+                >
+                  {copied === 'link' ? <Check size={12} /> : <Copy size={12} />}
+                  {copied === 'link' ? t('sessionCopied') : t('tvCopyLink')}
+                </button>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="btn-gold text-xs !py-1.5 !px-3">
+                  {t('tvOpen')}
+                </a>
+                {onRetry && (
+                  <button type="button" onClick={onRetry} className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1">
+                    <RefreshCw size={12} /> {t('connRetry')}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
 
-
-          <div>
-            <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('buzzLink')}</div>
-            <p className="text-white/45 text-xs mb-2">{t('shareBuzzHint')}</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => copy('buzz')}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
-              >
-                {copied === 'buzz' ? <Check size={12} /> : <Copy size={12} />}
-                {copied === 'buzz' ? t('sessionCopied') : t('shareCopyBuzz')}
-              </button>
-              <a href={buzzUrl} target="_blank" rel="noopener noreferrer" className="btn-outline text-xs !py-1.5 !px-3">
-                {t('shareOpenBuzz')}
-              </a>
+            <div>
+              <div className="text-white/40 text-xs uppercase tracking-widest mb-1">{t('buzzLink')}</div>
+              <p className="text-white/45 text-xs mb-2">{t('shareBuzzHint')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => copy('buzz')}
+                  className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
+                >
+                  {copied === 'buzz' ? <Check size={12} /> : <Copy size={12} />}
+                  {copied === 'buzz' ? t('sessionCopied') : t('shareCopyBuzz')}
+                </button>
+                <a href={buzzUrl} target="_blank" rel="noopener noreferrer" className="btn-outline text-xs !py-1.5 !px-3">
+                  {t('shareOpenBuzz')}
+                </a>
+              </div>
             </div>
-          </div>
 
-          {lastSync > 0 && (
-            <p className="text-white/30 text-[10px]">
-              {t('connLastSync')}: {new Date(lastSync).toLocaleTimeString()}
-            </p>
-          )}
+            {lastSync > 0 && (
+              <p className="text-white/30 text-[10px]">
+                {t('connLastSync')}: {new Date(lastSync).toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
