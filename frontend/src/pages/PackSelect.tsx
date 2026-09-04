@@ -306,7 +306,8 @@ export default function PackSelect() {
         packId: pack.id.startsWith('local-') ? null : pack.id,
         hostId: user?.id || null,
         state: initialState as Record<string, unknown>,
-        allowLocal: false,
+        // Külaline: PB ebaõnnestumisel kohalik sessioon — mäng käib ilma kontota
+        allowLocal: true,
       })
       rememberHostSession({ sessionId, code: sessCode, gameType: gameType! })
       trackSessionStart(gameType!)
@@ -359,26 +360,33 @@ export default function PackSelect() {
       )}
       {isLoggedIn && <div className="mb-6" />}
 
-      <div className="flex flex-wrap gap-2 mb-5">
-        {([
-          ['all', t('packFilterAll')],
-          ['official', t('packFilterOfficial')],
-          ['mine', t('packFilterMine')],
-        ] as const).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setPackFilter(id)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition ${
-              packFilter === id
-                ? 'bg-gold text-bg border-gold font-bold'
-                : 'border-gold/35 text-gold/90 hover:border-gold'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {packs.length > 0 && (
+        <div className="mb-5">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ['all', t('packFilterAll')],
+                ['official', t('packFilterOfficial')],
+                ...(isLoggedIn ? ([['mine', t('packFilterMine')]] as const) : []),
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPackFilter(id)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                  packFilter === id
+                    ? 'bg-gold text-bg border-gold font-bold'
+                    : 'border-gold/35 text-gold/90 hover:border-gold'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-white/35 mt-1.5">{t('packFilterHint')}</p>
+        </div>
+      )}
 
       {startError && (
         <div
@@ -397,17 +405,19 @@ export default function PackSelect() {
       ) : visiblePacks.length === 0 ? (
         <div className="card-panel p-6 text-center space-y-3">
           <p className="text-white/60 text-sm">{t('packEmptyDb')}</p>
-          <p className="text-white/35 text-xs">{t('packEmptyDbHint')}</p>
+          <p className="text-white/35 text-xs">{t('packEmptyDbHintPublic')}</p>
           <div className="flex flex-wrap justify-center gap-2 pt-1">
             <Link to="/gallery" className="btn-outline text-xs">
               {t('galleryTitle')}
             </Link>
-            <Link to="/admin" className="btn-gold text-xs">
-              {t('adminTitle')} — {t('adminSeedAll')}
-            </Link>
             {isLoggedIn && (
               <Link to="/packs/new" className="btn-outline text-xs">
                 {t('packCreate')}
+              </Link>
+            )}
+            {!isLoggedIn && (
+              <Link to="/login" className="btn-outline text-xs">
+                {t('dashLogin')}
               </Link>
             )}
           </div>

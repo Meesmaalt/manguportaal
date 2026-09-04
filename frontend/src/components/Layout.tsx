@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
 import type { Lang } from '@/i18n/translations'
@@ -7,12 +7,19 @@ import ThemePicker from '@/components/ThemePicker'
 import { APP_VERSION } from '@/lib/version'
 import { checkPbHealth } from '@/lib/sessions'
 import { useEffect, useState } from 'react'
+import { getRememberedHostSession } from '@/hooks/useGameSession'
 
 export default function Layout() {
   const { user, logout, isLoggedIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t, lang, setLang, langs } = useI18n()
   const [pbOk, setPbOk] = useState<boolean | null>(null)
+  const [hostResume, setHostResume] = useState(() => getRememberedHostSession())
+
+  useEffect(() => {
+    setHostResume(getRememberedHostSession())
+  }, [location.pathname])
 
   useEffect(() => {
     checkPbHealth().then(setPbOk)
@@ -81,6 +88,25 @@ export default function Layout() {
           </nav>
         </div>
       </header>
+
+      {hostResume &&
+        !location.pathname.includes(`/play/${hostResume.gameType}/${hostResume.sessionId}`) &&
+        !location.pathname.startsWith('/ekraan') &&
+        !location.pathname.startsWith('/blitz') &&
+        !location.pathname.startsWith('/buzzer') &&
+        !location.pathname.startsWith('/buzz') &&
+        !location.pathname.startsWith('/deal/') && (
+        <div className="bg-gold/15 border-b border-gold/40 px-4 py-2 text-center sticky top-[52px] z-40">
+          <Link
+            to={`/play/${hostResume.gameType}/${hostResume.sessionId}`}
+            className="text-gold font-bold text-sm hover:underline inline-flex items-center gap-2"
+          >
+            ← {t('resumeHostCta')}
+            <span className="text-white/50 font-normal text-xs">({hostResume.code})</span>
+          </Link>
+          <span className="text-white/40 text-xs ml-2 hidden sm:inline">{t('resumeHostHint')}</span>
+        </div>
+      )}
 
       <main className="flex-1">
         <Outlet />

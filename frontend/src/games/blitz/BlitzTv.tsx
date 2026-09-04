@@ -5,6 +5,7 @@ import { teamTotals } from './logic'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from './BlitzStage'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
+import { appUrl } from '@/lib/config'
 import { Trophy, Zap } from 'lucide-react'
 
 export default function BlitzTv({ state, sessionCode }: { state: BlitzState; sessionCode?: string }) {
@@ -79,7 +80,9 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                   {answered}/{state.players.length} vastanud
                 </span>
               )}
-              <span className="blitz-code-pill text-sm md:text-base">{code}</span>
+              {(state.phase === 'lobby' || state.phase === 'podium') && (
+                <span className="blitz-code-pill text-sm md:text-base">{code}</span>
+              )}
             </div>
           </div>
         </div>
@@ -115,10 +118,20 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
 
         {state.phase === 'lobby' && (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <p className="text-white/60 text-lg mb-2">Liitu telefoniga</p>
-            <p className="blitz-code-pill text-4xl md:text-6xl mb-6 inline-block tracking-[0.4em]">
+            <p className="text-white/60 text-lg mb-2">Liitu telefoniga — skanni QR</p>
+            <div className="bg-white p-3 rounded-2xl mb-4 shadow-[0_0_40px_rgba(251,191,36,0.25)]">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&margin=8&data=${encodeURIComponent(appUrl(`/blitz/${code}`))}`}
+                width={200}
+                height={200}
+                alt="Join"
+                className="rounded-lg"
+              />
+            </div>
+            <p className="blitz-code-pill text-3xl md:text-5xl mb-4 inline-block tracking-[0.35em]">
               {code}
             </p>
+            <p className="text-white/50 text-sm mb-6">või ava telefonis ja sisesta kood</p>
             <p className="text-white/70 text-xl mb-8">
               <span className="text-amber-200 font-bold">{state.players.length}</span> mängijat ootel
             </p>

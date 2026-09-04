@@ -134,7 +134,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
 
   return (
     <div className="max-w-4xl mx-auto px-2 pb-10">
-      {isHost && <SessionCodeBadge code={code} />}
+      {isHost && state.phase !== 'lobby' && <SessionCodeBadge code={code} compact />}
       {isHost && (
         <GameToolbar
           onReset={() => update((s) => restartQuiz(s))}
@@ -274,9 +274,9 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
           )}
       </div>
 
-      {isHost && code && (
+      {isHost && code && state.phase === 'lobby' && (
         <div className="card-panel border-gold/30 p-4 mb-4 flex flex-wrap gap-4 items-start">
-          <div className="bg-white p-1.5 rounded-lg">
+          <div className="bg-white p-1.5 rounded-lg shrink-0">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(appUrl(`/blitz/${code}`))}`}
               width={100}
@@ -284,29 +284,28 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               alt="Join QR"
               className="rounded"
             />
+            <p className="text-[10px] text-center text-bg/70 mt-1 font-mono tracking-wider">{code}</p>
           </div>
           <div className="flex-1 min-w-0 space-y-2">
-            <p className="text-sm text-white/70 break-all">
-              Join: <span className="text-gold">{appUrl(`/blitz/${code}`)}</span>
-            </p>
+            <p className="text-sm text-white/70">Mängijad skannivad QR-i või sisestavad koodi telefonis.</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={copyJoin}>
                 {copied ? <Check size={12} /> : <Copy size={12} />}
-                {copied ? 'Kopeeritud' : 'Kopeeri join'}
+                {copied ? 'Kopeeritud' : 'Kopeeri join-link'}
               </button>
               <a
                 href={appUrl(`/ekraan/${code}`)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-outline text-xs flex items-center gap-1"
+                onClick={() => setTvOpened(true)}
               >
-                <Tv size={12} /> <ExternalLink size={12} /> TV
+                <Tv size={12} /> <ExternalLink size={12} /> Ava teler
               </a>
             </div>
             <p className="text-[11px] text-white/35">
-              {state.questions.length} küsimust · {state.secondsPerQuestion}s · reveal{' '}
-              {state.revealSeconds || 0}s · max {state.pointsMax}p
-              {state.shuffleOnStart ? ' · sega' : ''}
+              {questions.length} küsimust · {state.secondsPerQuestion}s ·{' '}
+              {state.revealSeconds ? `auto ${state.revealSeconds}s` : 'käsitsi edasi'} · max {state.pointsMax}p
             </p>
             {state.phase === 'lobby' && (
               <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
@@ -324,20 +323,32 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                     }}
                   />
                 </label>
-                <label className="flex items-center justify-between gap-3 text-xs text-white/60">
-                  <span>Tulemuste näit (sek, 0 = käsitsi)</span>
+                <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
                   <input
-                    type="number"
-                    min={0}
-                    max={30}
-                    className="input-field !py-1 !px-2 w-20 text-sm"
-                    value={state.revealSeconds ?? 5}
-                    onChange={(e) => {
-                      const n = Math.min(30, Math.max(0, Number(e.target.value) || 0))
-                      update({ revealSeconds: n })
-                    }}
+                    type="checkbox"
+                    checked={(state.revealSeconds ?? 0) > 0}
+                    onChange={(e) =>
+                      update({ revealSeconds: e.target.checked ? (state.revealSeconds || 5) || 5 : 0 })
+                    }
                   />
+                  Järgmine küsimus automaatselt
                 </label>
+                {(state.revealSeconds ?? 0) > 0 && (
+                  <label className="flex items-center justify-between gap-3 text-xs text-white/60 pl-6">
+                    <span>Ooteaeg enne järgmist (sek)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      className="input-field !py-1 !px-2 w-20 text-sm"
+                      value={state.revealSeconds ?? 5}
+                      onChange={(e) => {
+                        const n = Math.min(30, Math.max(1, Number(e.target.value) || 5))
+                        update({ revealSeconds: n })
+                      }}
+                    />
+                  </label>
+                )}
                 <label className="flex items-center gap-2 text-xs text-white/60 cursor-pointer">
                   <input
                     type="checkbox"
@@ -391,69 +402,70 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
             {state.phase === 'lobby' && isHost && (
               <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
                 <p className="text-[11px] text-gold/80 font-bold uppercase tracking-wide">
-                  Kõik valmis?
+                  Enne starti
                 </p>
                 <ul className="space-y-1.5 text-xs text-white/70">
                   <li className="flex items-center gap-2">
-                    <span className={state.questions.length > 0 ? 'text-emerald-400' : 'text-white/30'}>
-                      {state.questions.length > 0 ? '✓' : '○'}
+                    <span className={questions.length > 0 ? 'text-emerald-400' : 'text-white/30'}>
+                      {questions.length > 0 ? '✓' : '○'}
                     </span>
-                    Küsimused laetud ({state.questions.length})
+                    Küsimused ({questions.length})
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className={state.players.length >= 1 ? 'text-emerald-400' : 'text-white/30'}>
-                      {state.players.length >= 1 ? '✓' : '○'}
+                    <span className={players.length >= 1 ? 'text-emerald-400' : 'text-white/30'}>
+                      {players.length >= 1 ? '✓' : '○'}
                     </span>
-                    Vähemalt 1 mängija ({state.players.length})
+                    Mängijad ({players.length})
                   </li>
                   <li className="flex items-center gap-2">
                     <span className={tvOpened ? 'text-emerald-400' : 'text-white/30'}>
                       {tvOpened ? '✓' : '○'}
                     </span>
-                    <button
-                      type="button"
-                      className="underline decoration-white/30 hover:text-gold"
-                      onClick={() => {
-                        window.open(appUrl(`/ekraan/${code}`), '_blank')
-                        setTvOpened(true)
-                      }}
-                    >
-                      TV ekraan avatud
-                    </button>
+                    {tvOpened ? (
+                      <span>Teler valmis</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="underline decoration-white/30 hover:text-gold"
+                        onClick={() => {
+                          window.open(appUrl(`/ekraan/${code}`), '_blank')
+                          setTvOpened(true)
+                        }}
+                      >
+                        Ava teler (üks kord)
+                      </button>
+                    )}
                   </li>
                   <li className="flex items-center gap-2">
                     <span className={soundOk ? 'text-emerald-400' : 'text-white/30'}>
                       {soundOk ? '✓' : '○'}
                     </span>
-                    <button
-                      type="button"
-                      className="underline decoration-white/30 hover:text-gold"
-                      onClick={() => {
-                        playFx('jingle')
-                        setSoundOk(true)
-                      }}
-                    >
-                      Testi heli
-                    </button>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className={state.warmupDone ? 'text-emerald-400' : 'text-white/30'}>
-                      {state.warmupDone ? '✓' : '○'}
-                    </span>
-                    Proovivoor (valikuline)
+                    {soundOk ? (
+                      <span>Heli OK</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="underline decoration-white/30 hover:text-gold"
+                        onClick={() => {
+                          playFx('jingle')
+                          setSoundOk(true)
+                        }}
+                      >
+                        Testi heli
+                      </button>
+                    )}
                   </li>
                   {state.requireReady && (
                     <li className="flex items-center gap-2">
                       <span className={allPlayersReady(state) ? 'text-emerald-400' : 'text-white/30'}>
                         {allPlayersReady(state) ? '✓' : '○'}
                       </span>
-                      Kõik “valmis” ({state.players.filter((p) => p.ready).length}/
-                      {state.players.length})
+                      Kõik „valmis“ ({players.filter((p) => p.ready).length}/{players.length})
                     </li>
                   )}
                 </ul>
                 <p className="text-[10px] text-white/35">
-                  Rohelised linnukesed = valmis. Alusta, kui küsimused + mängija on olemas.
+                  Proovivoor on eraldi nupp üleval — valikuline soojendus, mitte kohustus.
                 </p>
               </div>
             )}

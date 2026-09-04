@@ -3,7 +3,14 @@ import { useI18n } from '@/i18n/I18nContext'
 import { ExternalLink, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 
-export default function SessionCodeBadge({ code }: { code?: string }) {
+/** Compact host helper — avoid repeating full TV URL when a richer panel already exists. */
+export default function SessionCodeBadge({
+  code,
+  compact = false,
+}: {
+  code?: string
+  compact?: boolean
+}) {
   const [copied, setCopied] = useState(false)
   const { t } = useI18n()
   if (!code) return null
@@ -12,10 +19,26 @@ export default function SessionCodeBadge({ code }: { code?: string }) {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(url)
+      await navigator.clipboard.writeText(code)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {}
+  }
+
+  if (compact) {
+    return (
+      <div className="text-center mb-3">
+        <span className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 text-gold px-3 py-1 rounded-full text-xs font-bold tracking-widest">
+          {code}
+          <button type="button" onClick={copy} className="opacity-80 hover:opacity-100" title={t('sessionCopy')}>
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+          </button>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-gold" title="TV">
+            <ExternalLink size={12} />
+          </a>
+        </span>
+      </div>
+    )
   }
 
   return (
@@ -34,18 +57,7 @@ export default function SessionCodeBadge({ code }: { code?: string }) {
           {copied ? t('sessionCopied') : t('sessionCopy')}
         </button>
       </div>
-      <div>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-accent-cyan hover:text-gold text-sm underline underline-offset-2 break-all"
-        >
-          <ExternalLink size={14} />
-          {url}
-        </a>
-        <p className="text-white/40 text-xs mt-1">{t('sessionOpenTv')}</p>
-      </div>
+      <p className="text-white/40 text-xs">{t('sessionOpenTv')}</p>
     </div>
   )
 }

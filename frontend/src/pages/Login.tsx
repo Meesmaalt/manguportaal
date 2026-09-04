@@ -55,8 +55,13 @@ export default function Login() {
         <h1 className="font-display text-3xl text-gold text-center mb-2">
           {mode === 'login' ? 'Sisene' : 'Loo konto'}
         </h1>
-        <p className="text-white/50 text-center text-sm mb-8">
-          {mode === 'login' ? 'Tere tulemast tagasi!' : 'Alusta oma mängude kogumist'}
+        <p className="text-white/50 text-center text-sm mb-2">
+          {mode === 'login' ? 'Tere tulemast tagasi!' : 'Konto on vajalik ainult oma küsimustike salvestamiseks.'}
+        </p>
+        <p className="text-center mb-6">
+          <Link to="/dashboard" className="text-gold/80 text-sm hover:underline">
+            Jätka ilma kontota →
+          </Link>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

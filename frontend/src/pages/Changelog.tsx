@@ -5,6 +5,17 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.22.2',
+    items: [
+      'Kasutaja UX: vähem dubleeritud hosti/TV linke',
+      'TV lobby QR liitumiseks; kood peidus vooru ajal',
+      'Tagasi hosti (peidetud mängija/TV/buzzer vaates)',
+      'Login: jätka ilma kontota; „Loo konto“',
+      'Blitz checklist ja auto/käsitsi järgmine küsimus',
+      'Buzzer/Blitz: selgem „pole sisselogimist“',
+    ],
+  },
+  {
     v: '3.21',
     items: [
       'TV ühendus avaneb automaatselt, kui pole LIVE',

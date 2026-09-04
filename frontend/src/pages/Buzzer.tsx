@@ -107,6 +107,7 @@ export default function Buzzer() {
 
       {(status === 'ready' || status === 'buzzed') && (
         <div className="w-full max-w-sm space-y-4">
+          <p className="text-center text-white/55 text-sm leading-relaxed">{t('buzzGuestLead')}</p>
           {msg && status === 'ready' && (
             <p className="text-amber-200/80 text-xs text-center leading-relaxed">{msg}</p>
           )}

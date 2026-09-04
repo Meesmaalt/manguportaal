@@ -261,7 +261,7 @@ export default function BlitzPlayer() {
 
           {!joined && (
             <div className="blitz-glass rounded-2xl p-5 space-y-3">
-              <p className="text-sm text-white/70">Sisesta nimi — sisselogimist pole vaja.</p>
+              <p className="text-sm text-white/70">Kirjuta nimi ja oota hosti. Sisselogimist pole.</p>
               {error && <p className="text-rose-400 text-xs">{error}</p>}
               <input
                 className="input-field"

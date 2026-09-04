@@ -1,21 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { Sparkles, Tv, Layers, Play, User } from 'lucide-react'
+import { Sparkles, Tv, Layers, Play, User, Info } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
 
-const ORDER: GameType[] = [
-  'kuldvillak',
-  'roosidesoda',
-  'blitz',
-  'kinnistu_deal',
-  'sonaseletus',
-  'ma_ei_ole_kunagi',
-  'viimane_pusti',
-  'tode_voi_tegu',
-]
+/** Featured on homepage — full list is on /dashboard */
+const FEATURED: GameType[] = ['kuldvillak', 'blitz', 'kinnistu_deal']
 
 const EMOJI: Record<GameType, string> = {
   kuldvillak: '🏆',
@@ -58,12 +50,12 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Clear 3 steps */}
-      <div className="grid sm:grid-cols-3 gap-3 mb-12 max-w-3xl mx-auto">
+      {/* Steps — informational, not buttons */}
+      <div className="grid sm:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
         {[t('homeStep1'), t('homeStep2'), t('homeStep3')].map((step, i) => (
           <div
             key={i}
-            className="card-panel p-4 text-center text-sm text-white/80 border-gold/30"
+            className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-white/70"
           >
             <span className="text-gold font-display font-bold text-lg block mb-1">{i + 1}</span>
             {step.replace(/^\d+\.\s*/, '')}
@@ -71,25 +63,34 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Feature notes — clearly not clickable */}
       <div className="grid md:grid-cols-3 gap-4 mb-14">
         {[
-          { icon: <User className="text-gold" size={24} />, title: t('homeFeatureGuest'), text: t('homeFeatureGuestText') },
-          { icon: <Tv className="text-gold" size={24} />, title: t('homeFeatureTv'), text: t('homeFeatureTvText') },
-          { icon: <Layers className="text-gold" size={24} />, title: t('homeFeaturePacks'), text: t('homeFeaturePacksText') },
+          { icon: <User className="text-gold/80" size={22} />, title: t('homeFeatureGuest'), text: t('homeFeatureGuestText') },
+          { icon: <Tv className="text-gold/80" size={22} />, title: t('homeFeatureTv'), text: t('homeFeatureTvText') },
+          { icon: <Layers className="text-gold/80" size={22} />, title: t('homeFeaturePacks'), text: t('homeFeaturePacksText') },
         ].map((f, i) => (
-          <div key={i} className="card-panel p-5 text-center">
-            <div className="flex justify-center mb-2">{f.icon}</div>
-            <h3 className="font-display text-lg text-gold mb-1">{f.title}</h3>
-            <p className="text-white/55 text-sm">{f.text}</p>
+          <div
+            key={i}
+            className="rounded-xl border border-dashed border-white/15 bg-transparent p-5 text-center"
+          >
+            <div className="flex justify-center mb-2 opacity-90">{f.icon}</div>
+            <h3 className="font-display text-base text-gold/90 mb-1">{f.title}</h3>
+            <p className="text-white/50 text-sm leading-relaxed">{f.text}</p>
           </div>
         ))}
       </div>
 
-      <h2 className="font-display text-2xl text-gold text-center mb-6 flex items-center justify-center gap-2">
-        <Sparkles size={22} /> {t('homeGames')}
+      <h2
+        id="mangud"
+        className="font-display text-2xl text-gold text-center mb-2 flex items-center justify-center gap-2 scroll-mt-24"
+      >
+        <Sparkles size={22} /> {t('homeGamesFeatured')}
       </h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-        {ORDER.map((key) => {
+      <p className="text-center text-white/40 text-sm mb-6">{t('homeGamesFeaturedHint')}</p>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {FEATURED.map((key) => {
           const titleKey = `game_${key}` as TranslationKey
           const subKey = `game_${key}_sub` as TranslationKey
           const descKey = `game_${key}_desc` as TranslationKey
@@ -97,7 +98,7 @@ export default function Home() {
             <Link
               key={key}
               to={`/play/${key}`}
-              className="card-panel p-5 hover:border-gold/50 transition group"
+              className="card-panel p-5 hover:border-gold/50 transition group cursor-pointer"
             >
               <span className="text-2xl">{EMOJI[key]}</span>
               <p className="text-gold/60 text-xs uppercase tracking-widest mt-1">{t(subKey)}</p>
@@ -109,7 +110,18 @@ export default function Home() {
         })}
       </div>
 
-      <p className="text-center text-white/40 text-sm">
+      <div className="text-center mb-12">
+        <Link to="/dashboard" className="btn-outline text-sm px-5 py-2 inline-flex items-center gap-2">
+          {t('homeAllGames')} →
+        </Link>
+      </div>
+
+      <p className="text-center text-white/40 text-sm flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <Info size={12} className="text-white/30" />
+        <span>{t('homeGuestTruth')}</span>
+      </p>
+
+      <p className="text-center text-white/35 text-sm mt-6">
         <Link to="/playlist" className="hover:text-gold/80 underline-offset-2 hover:underline">
           {t('navPlaylist')}
         </Link>
