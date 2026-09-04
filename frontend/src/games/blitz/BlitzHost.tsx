@@ -53,7 +53,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
   const ranked = useMemo(() => sortedPlayers(state.players || []), [state.players])
   const teams = useMemo(() => teamTotals(state), [state])
   useEffect(() => {
-    if (state.phase === 'podium') playFx('drumroll')
+    if (state.phase === 'podium') playFx('drumroll', { prefer: 'blitz_podium' })
   }, [state.phase])
   const remaining = useCountdown(
     state.phase === 'question' ? state.questionStartedAt : undefined,
@@ -73,7 +73,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
   useEffect(() => {
     if (!isHost || state.phase !== 'countdown' || cdLeft == null) return
     if (cdLeft <= 0) {
-      playFx('jingle')
+      playFx('jingle', { prefer: 'blitz_countdown' })
       update((s) => openQuestion(s))
     }
   }, [cdLeft, state.phase, isHost]) // eslint-disable-line
@@ -169,7 +169,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                           : 'Alusta quiz’i'
                     }
                     onClick={() => {
-                      playFx('correct')
+                      playFx('correct', { prefer: 'blitz_correct' })
                       update((s) => startQuestion(s, 0))
                     }}
                   >
@@ -447,7 +447,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                         type="button"
                         className="underline decoration-white/30 hover:text-gold"
                         onClick={() => {
-                          playFx('jingle')
+                          playFx('jingle', { prefer: 'blitz_countdown' })
                           setSoundOk(true)
                         }}
                       >

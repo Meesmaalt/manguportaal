@@ -10,6 +10,7 @@ import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import KinnistuDealTv from '@/games/kinnistu-deal/KinnistuDealTv'
 import BlitzTv from '@/games/blitz/BlitzTv'
 import GameShowFrame from '@/components/GameShowFrame'
+import DisplayCornerTools from '@/components/DisplayCornerTools'
 import ConnectionChip from '@/components/ConnectionChip'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
@@ -201,6 +202,7 @@ export default function Display() {
 
   return (
     <div className="relative">
+      <DisplayCornerTools />
       <div className="fixed top-3 right-3 z-[60] flex flex-col items-end gap-2">
         <ConnectionChip connection={connection} onRetry={() => window.location.reload()} />
         {hostStale && (

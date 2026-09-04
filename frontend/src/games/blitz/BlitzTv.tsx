@@ -26,7 +26,7 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
 
   useEffect(() => {
     const n = state.players?.length || 0
-    if (state.phase === 'lobby' && n > prevPlayerCount.current) playFx('click')
+    if (state.phase === 'lobby' && n > prevPlayerCount.current) playFx('join')
     prevPlayerCount.current = n
   }, [state.players?.length, state.phase])
 

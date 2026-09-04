@@ -375,7 +375,7 @@ export const translations = {
     gallerySub: 'Avalikud küsimustikud kõigist mängudest — sirvi ja alusta.',
     galleryEmpty: 'Avalikke küsimustikke pole veel. Proovi hiljem või vali mäng otse.',
     soundsTitle: 'Helifailid',
-    soundsHint: 'Laadi üles mp3/wav mängude jaoks. Superuser salvestab PocketBase’i (game_sounds). Vaikimisi failid jäävad, kuni asendad.',
+    soundsHint: 'Rohkem hetki: üldine FX, Blitz, Kuldvillak, Roosid, Deal. Failita = süntees või vaikimisi.',
     soundsUpload: 'Laadi üles',
     soundsDeleteConfirm: 'Eemalda kohandatud heli ja taasta vaikimisi?',
     changelogTitle: 'Muudatused',},

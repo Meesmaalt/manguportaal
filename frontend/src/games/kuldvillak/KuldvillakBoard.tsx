@@ -77,7 +77,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     if (disabledCards.includes(cardId)) return
     const cat = categories[col]
     const q = cat.questions[row]
-    playFx('reveal')
+    playFx('reveal', { prefer: 'kuldvillak_open' })
     update({
       currentQuestion: {
         col,
@@ -108,11 +108,11 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     trackQuestionResolved()
     const cardId = `${currentQuestion.col}-${currentQuestion.row}`
     if (awardTo !== undefined) {
-      playFx('correct')
+      playFx('correct', { prefer: 'kuldvillak_correct' })
       setPulseTeam(awardTo)
       window.setTimeout(() => setPulseTeam(null), 650)
     } else {
-      playFx('wrong')
+      playFx('wrong', { prefer: 'kuldvillak_wrong' })
     }
     update((prev) => {
       const next: KuldvillakState = { ...prev }

@@ -44,7 +44,7 @@ export default function KinnistuDealTv({
   useEffect(() => {
     if (phase === 'over' && state.confettiAt) {
       confettiBurst({ particleCount: 160, spread: 90, y: 0.55 })
-      playFx('victory')
+      playFx('victory', { prefer: 'deal_win' })
     }
   }, [phase, state.confettiAt])
 

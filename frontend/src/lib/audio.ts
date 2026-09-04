@@ -89,14 +89,86 @@ export function playSound(src: string, volume = 1) {
   } catch {}
 }
 
-export function playFx(type: 'reveal' | 'correct' | 'wrong' | 'tick' | 'victory' | 'click' | 'jingle' | 'drumroll') {
+export type FxType =
+  | 'reveal'
+  | 'correct'
+  | 'wrong'
+  | 'tick'
+  | 'victory'
+  | 'click'
+  | 'jingle'
+  | 'drumroll'
+  | 'join'
+  | 'buzz'
+  | 'timer_urgent'
+
+/** Prefer uploaded file (fx_* or game-specific), else WebAudio synth. */
+export function playFx(type: FxType, opts?: { prefer?: string }) {
   try {
-    const ctx = ensureCtx(); const now = ctx.currentTime
-    const notes: Record<string, number[]> = { click:[440], tick:[620], reveal:[330,494,659], correct:[523,659,784], wrong:[220,165], victory:[523,659,784,1047], jingle:[392,494,587,784], drumroll:[150,160,170,180,190,200,210,220] }
-    const duration: Record<string, number> = { click:.06,tick:.07,reveal:.12,correct:.14,wrong:.18,victory:.18,jingle:.14,drumroll:.05 }
-    ;(notes[type] || [440]).forEach((freq,i)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type==='wrong'?'sawtooth':'sine';o.frequency.value=freq;const t=now+i*(type==='victory'?.09:type==='drumroll'?.04:type==='jingle'?.1:.045);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12*masterGain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+(duration[type]||.1));o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.25) })
-  } catch {}
+    const candidates = [
+      opts?.prefer,
+      type === 'correct' ? 'blitz_correct' : '',
+      type === 'wrong' ? 'blitz_wrong' : '',
+      type === 'jingle' ? 'blitz_countdown' : '',
+      type === 'victory' ? 'blitz_podium' : '',
+      `fx_${type}`,
+    ].filter(Boolean) as string[]
+    for (const key of candidates) {
+      const url = getSoundUrl(key)
+      if (url) {
+        playSound(url, type === 'timer_urgent' ? 0.9 : 1)
+        return
+      }
+    }
+    const ctx = ensureCtx()
+    const now = ctx.currentTime
+    const notes: Record<string, number[]> = {
+      click: [440],
+      tick: [620],
+      reveal: [330, 494, 659],
+      correct: [523, 659, 784],
+      wrong: [220, 165],
+      victory: [523, 659, 784, 1047],
+      jingle: [392, 494, 587, 784],
+      drumroll: [150, 160, 170, 180, 190, 200, 210, 220],
+      join: [523, 659],
+      buzz: [880, 660],
+      timer_urgent: [740, 740, 740],
+    }
+    const duration: Record<string, number> = {
+      click: 0.06,
+      tick: 0.07,
+      reveal: 0.12,
+      correct: 0.14,
+      wrong: 0.18,
+      victory: 0.18,
+      jingle: 0.14,
+      drumroll: 0.05,
+      join: 0.12,
+      buzz: 0.15,
+      timer_urgent: 0.08,
+    }
+    ;(notes[type] || [440]).forEach((freq, i) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.type = type === 'wrong' || type === 'buzz' ? 'sawtooth' : 'sine'
+      o.frequency.value = freq
+      const gap =
+        type === 'victory' ? 0.09 : type === 'drumroll' ? 0.04 : type === 'jingle' ? 0.1 : 0.045
+      const t0 = now + i * gap
+      g.gain.setValueAtTime(0.0001, t0)
+      g.gain.exponentialRampToValueAtTime(0.12 * masterGain, t0 + 0.008)
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + (duration[type] || 0.1))
+      o.connect(g)
+      g.connect(ctx.destination)
+      o.start(t0)
+      o.stop(t0 + 0.25)
+    })
+  } catch {
+    /* ignore */
+  }
 }
+
 
 export function createBgm(src: string, volume = 0.35) {
   const a = get(src)

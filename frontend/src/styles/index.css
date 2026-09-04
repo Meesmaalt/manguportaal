@@ -573,3 +573,86 @@ html[data-theme="emerald"] .card-panel {
 }
 .game-display-content{min-height:calc(100vh - 36px)!important}
 .layout-has-header .game-show:not(.game-show-display) .game-show-topbar{top:3.25rem}
+
+/* No second top bar — tools only on TV corner */
+.game-show-corner-tools{
+  position:fixed;bottom:1rem;right:1rem;z-index:55;
+  display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;
+  pointer-events:none;
+}
+.game-show-corner-tools > *{pointer-events:auto}
+.game-show-corner-tools .game-show-fullscreen{
+  display:flex;align-items:center;gap:6px;
+  color:rgba(255,255,255,.7);font-size:11px;
+  padding:6px 10px;border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);
+}
+.game-show-corner-tools .game-show-fullscreen:hover{color:#dfb342;border-color:rgba(223,179,66,.4)}
+/* Without topbar, content can use full height */
+.game-show:not(.game-show-display){padding-top:0}
+.layout-has-header .game-show:not(.game-show-display){min-height:calc(100vh - 3.5rem)}
+
+/* ===== Motion leap ===== */
+@keyframes ohtuPageIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ohtuPop {
+  0% { transform: scale(.92); opacity: 0; }
+  70% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ohtuShimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes ohtuFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes ohtuGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(223,179,66,0); }
+  50% { box-shadow: 0 0 28px 2px rgba(223,179,66,.25); }
+}
+.ohtu-page-enter { animation: ohtuPageIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.card-panel {
+  transition: transform .2s ease, border-color .2s ease, box-shadow .25s ease;
+}
+.card-panel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0,0,0,.35), 0 0 0 1px rgba(223,179,66,.12);
+}
+.btn-gold {
+  transition: transform .15s ease, box-shadow .2s ease, filter .15s;
+}
+.btn-gold:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.06);
+  box-shadow: 0 8px 24px rgba(223,179,66,.35);
+}
+.btn-gold:active { transform: translateY(1px) scale(.98); }
+a.card-panel, .group.card-panel {
+  animation: ohtuPop .5s cubic-bezier(.2,.8,.2,1) both;
+}
+.blitz-answer {
+  transition: transform .12s ease, filter .15s, box-shadow .2s !important;
+}
+.blitz-answer:not(:disabled):hover {
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.1);
+}
+.blitz-logo {
+  animation: ohtuFloat 4s ease-in-out infinite;
+}
+.blitz-code-pill {
+  animation: ohtuGlowPulse 2.5s ease-in-out infinite;
+}
+.font-display.text-gold, h1.font-display {
+  background-size: 200% auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ohtu-page-enter, .card-panel, .blitz-logo, .blitz-code-pill, a.card-panel {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,14 +1,42 @@
 import { pb, ensurePbUrl } from '@/lib/pocketbase'
 import { assetUrl } from '@/lib/config'
 
-/** Logical sound slots used by games */
+/** All uploadable sound slots — admin can replace any of these. */
 export const SOUND_SLOTS = [
-  { key: 'kuldvillak_bgm', label: 'Kuldvillak taust', fallback: 'sounds/kuldvillak.mp3' },
-  { key: 'roos_correct', label: 'Rooside Sõda õige', fallback: 'sounds/roosidesoda-oige.mp3' },
-  { key: 'roos_error', label: 'Rooside Sõda vale', fallback: 'sounds/roosidesoda-error.mp3' },
-  { key: 'roos_bgm', label: 'Rooside Sõda taust', fallback: 'sounds/roosidesoda-taustamuusika.mp3' },
-  { key: 'blitz_correct', label: 'Blitz õige (valikuline)', fallback: '' },
-  { key: 'blitz_wrong', label: 'Blitz vale (valikuline)', fallback: '' },
+  // Universal FX (used by playFx when file exists)
+  { key: 'fx_click', label: 'Üldine: klikk / nupp', fallback: '' },
+  { key: 'fx_tick', label: 'Üldine: taimer / tick', fallback: '' },
+  { key: 'fx_reveal', label: 'Üldine: vastuse avamine', fallback: '' },
+  { key: 'fx_correct', label: 'Üldine: õige vastus', fallback: '' },
+  { key: 'fx_wrong', label: 'Üldine: vale vastus', fallback: '' },
+  { key: 'fx_victory', label: 'Üldine: võit / podium', fallback: '' },
+  { key: 'fx_jingle', label: 'Üldine: intro / 3-2-1', fallback: '' },
+  { key: 'fx_drumroll', label: 'Üldine: trummipõrin', fallback: '' },
+  { key: 'fx_join', label: 'Üldine: mängija liitus', fallback: '' },
+  { key: 'fx_buzz', label: 'Üldine: buzzer', fallback: '' },
+  { key: 'fx_timer_urgent', label: 'Üldine: taimer lõpus (kiire)', fallback: '' },
+  // Blitz
+  { key: 'blitz_correct', label: 'Blitz: õige', fallback: '' },
+  { key: 'blitz_wrong', label: 'Blitz: vale', fallback: '' },
+  { key: 'blitz_countdown', label: 'Blitz: 3-2-1', fallback: '' },
+  { key: 'blitz_question', label: 'Blitz: uus küsimus', fallback: '' },
+  { key: 'blitz_podium', label: 'Blitz: lõpp / podium', fallback: '' },
+  // Kuldvillak
+  { key: 'kuldvillak_bgm', label: 'Kuldvillak: taustamuusika', fallback: 'sounds/kuldvillak.mp3' },
+  { key: 'kuldvillak_open', label: 'Kuldvillak: küsimus avaneb', fallback: '' },
+  { key: 'kuldvillak_correct', label: 'Kuldvillak: õige', fallback: '' },
+  { key: 'kuldvillak_wrong', label: 'Kuldvillak: vale', fallback: '' },
+  { key: 'kuldvillak_buzz', label: 'Kuldvillak: buzzer', fallback: '' },
+  // Rooside sõda
+  { key: 'roos_correct', label: 'Rooside Sõda: õige', fallback: 'sounds/roosidesoda-oige.mp3' },
+  { key: 'roos_error', label: 'Rooside Sõda: vale', fallback: 'sounds/roosidesoda-error.mp3' },
+  { key: 'roos_bgm', label: 'Rooside Sõda: taust', fallback: 'sounds/roosidesoda-taustamuusika.mp3' },
+  // Kinnistu Deal
+  { key: 'deal_play', label: 'Kinnistu Deal: kaardi mäng', fallback: '' },
+  { key: 'deal_rent', label: 'Kinnistu Deal: üür', fallback: '' },
+  { key: 'deal_win', label: 'Kinnistu Deal: võit', fallback: '' },
+  // Party
+  { key: 'party_lobby', label: 'Peo lobby / ooteala', fallback: '' },
 ] as const
 
 export type SoundKey = (typeof SOUND_SLOTS)[number]['key']
@@ -43,7 +71,6 @@ function persistLocal(map: Record<string, string>) {
   }
 }
 
-/** Load overrides from PocketBase game_sounds collection (if exists) */
 export async function loadSoundOverridesFromPb(): Promise<Record<string, string>> {
   ensurePbUrl()
   const map: Record<string, string> = {}
@@ -79,41 +106,39 @@ export async function listSoundRows(): Promise<SoundRow[]> {
   let byKey: Record<string, any> = {}
   try {
     const rows = await pb.collection('game_sounds').getFullList<any>({ requestKey: null })
-    for (const r of rows) {
-      byKey[r.key] = r
+    for (const row of rows) {
+      if (row.key) byKey[row.key] = row
     }
   } catch {
-    byKey = {}
+    /* collection missing */
   }
-  const map: Record<string, string> = {}
-  for (const [k, row] of Object.entries(byKey)) {
-    if (row.file) map[k] = pb.files.getURL(row, row.file)
-  }
-  if (Object.keys(map).length) persistLocal(map)
-
+  await loadSoundOverridesFromPb()
   return SOUND_SLOTS.map((slot) => {
     const row = byKey[slot.key]
-    const custom = row && row.file ? pb.files.getURL(row, row.file) : ''
+    const customUrl = row?.file ? pb.files.getURL(row, row.file) : memoryMap[slot.key]
     const fallback = slot.fallback ? assetUrl(slot.fallback) : ''
     return {
       id: row?.id,
       key: slot.key,
       label: slot.label,
-      fileUrl: custom || fallback,
-      hasCustom: !!custom,
+      fileUrl: customUrl || fallback,
+      hasCustom: Boolean(row?.file || (memoryMap[slot.key] && !fallback)),
     }
   })
 }
 
 export async function uploadSound(key: string, file: File): Promise<void> {
   ensurePbUrl()
+  const existing = await pb.collection('game_sounds').getFullList<any>({
+    filter: `key = "${key}"`,
+    requestKey: null,
+  }).catch(() => [])
   const form = new FormData()
   form.append('key', key)
   form.append('file', file)
-  try {
-    const existing = await pb.collection('game_sounds').getFirstListItem(`key="${key}"`)
-    await pb.collection('game_sounds').update(existing.id, form)
-  } catch {
+  if (existing[0]?.id) {
+    await pb.collection('game_sounds').update(existing[0].id, form)
+  } else {
     await pb.collection('game_sounds').create(form)
   }
   await loadSoundOverridesFromPb()
@@ -121,13 +146,13 @@ export async function uploadSound(key: string, file: File): Promise<void> {
 
 export async function deleteSound(key: string): Promise<void> {
   ensurePbUrl()
-  try {
-    const existing = await pb.collection('game_sounds').getFirstListItem(`key="${key}"`)
-    await pb.collection('game_sounds').delete(existing.id)
-  } catch {
-    /* ignore */
+  const existing = await pb.collection('game_sounds').getFullList<any>({
+    filter: `key = "${key}"`,
+    requestKey: null,
+  }).catch(() => [])
+  for (const row of existing) {
+    await pb.collection('game_sounds').delete(row.id)
   }
-  // remove from local cache
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (raw) {

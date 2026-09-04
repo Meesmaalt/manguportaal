@@ -4,6 +4,7 @@ import { pb, type GameSession } from '@/lib/pocketbase'
 import { tryClaimBuzz } from '@/lib/sessions'
 import { useI18n } from '@/i18n/I18nContext'
 import { Zap } from 'lucide-react'
+import { playFx } from '@/lib/audio'
 
 export default function Buzzer() {
   const { code: codeParam } = useParams<{ code: string }>()
@@ -67,6 +68,7 @@ export default function Buzzer() {
     setLocked(true)
     const res = await tryClaimBuzz({ sessionId, isLocal, name: name.trim() })
     if (res.ok) {
+      playFx('buzz')
       setStatus('buzzed')
       setMsg(t('buzzYou'))
     } else if (res.reason === 'taken') {

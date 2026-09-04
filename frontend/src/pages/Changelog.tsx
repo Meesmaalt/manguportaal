@@ -5,6 +5,23 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.23.0',
+    items: [
+      'Rohkem heliüleslaadimise kohti (FX, Blitz, Kuldvillak, Deal…)',
+      'playFx eelistab üleslaetud faile, muidu süntees',
+      'Tugevamad lehe/mängu animatsioonid (kaardid, nupud, Blitz)',
+    ],
+  },
+  {
+    v: '3.22.3',
+    items: [
+      'Eemaldatud game-show topbar (LIVE riba)',
+      'Täisekraan peamises menüüs + klahv F',
+      'TV: zoom/täisekraan nurgas, mitte teises ribas',
+      'Hosti vaates peidetud footer (puhtam lava)',
+    ],
+  },
+  {
     v: '3.22.2',
     items: [
       'Kasutaja UX: vähem dubleeritud hosti/TV linke',

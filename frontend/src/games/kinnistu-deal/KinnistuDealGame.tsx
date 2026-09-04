@@ -73,25 +73,25 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
   function doEndTurn() {
     if (!isHost || phase !== 'turn') return
-    playFx('reveal')
+    playFx('reveal', { prefer: 'deal_play' })
     update((s) => endTurn(s))
   }
 
   function hostForcePay() {
     if (!isHost || phase !== 'pay') return
-    playFx('correct')
+    playFx('correct', { prefer: 'deal_play' })
     update((s) => resolvePay(s))
   }
 
   function hostSkipDefend() {
     if (!isHost || phase !== 'defend' || state.pending?.target == null) return
-    playFx('tick')
+    playFx('tick', { prefer: 'deal_rent' })
     update((s) => skipDefend(s, s.pending!.target!))
   }
 
   function hostCancelPending() {
     if (!isHost || phase === 'lobby' || phase === 'turn' || phase === 'over') return
-    playFx('wrong')
+    playFx('wrong', { prefer: 'deal_rent' })
     update({
       phase: 'turn',
       pending: null,

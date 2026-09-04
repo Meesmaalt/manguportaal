@@ -2,7 +2,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
 import type { Lang } from '@/i18n/translations'
-import { LogOut, User, LayoutGrid } from 'lucide-react'
+import { LogOut, User, LayoutGrid, Maximize, Minimize } from 'lucide-react'
 import ThemePicker from '@/components/ThemePicker'
 import { APP_VERSION } from '@/lib/version'
 import { checkPbHealth } from '@/lib/sessions'
@@ -13,8 +13,37 @@ export default function Layout() {
   const { user, logout, isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const hideFooter = /\/play\/[^/]+\/[^/]+/.test(location.pathname)
   const { t, lang, setLang, langs } = useI18n()
   const [pbOk, setPbOk] = useState<boolean | null>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'f' || e.key === 'F') {
+        const tag = (e.target as HTMLElement)?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+        e.preventDefault()
+        toggleFullscreen()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen()
+      else await document.exitFullscreen()
+    } catch {}
+  }
+
   const [hostResume, setHostResume] = useState(() => getRememberedHostSession())
 
   useEffect(() => {
@@ -46,6 +75,16 @@ export default function Layout() {
               <LayoutGrid size={16} />
               <span className="hidden sm:inline">{t('navGames')}</span>
             </Link>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="flex items-center gap-1.5 text-sm text-white/70 hover:text-gold transition px-2 py-1.5 rounded-full border border-transparent hover:border-gold/30"
+              title={fullscreen ? t('fullscreenExit') : t('fullscreen')}
+              aria-label={fullscreen ? t('fullscreenExit') : t('fullscreen')}
+            >
+              {fullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+              <span className="hidden md:inline">{fullscreen ? t('fullscreenExit') : t('fullscreen')}</span>
+            </button>
             <ThemePicker />
             <select
               className="bg-transparent text-sm text-white/70 border border-gold/20 rounded-full px-2 py-1"
@@ -112,6 +151,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
+      {!hideFooter && (
       <footer className="border-t border-gold/10 py-6 text-center text-white/40 text-sm">
         {t('footer')}
         <span className="mx-2 opacity-40">·</span>
@@ -129,6 +169,7 @@ export default function Layout() {
           PB {pbOk === true ? 'ok' : pbOk === false ? 'fail' : '…'}
         </span>
       </footer>
+      )}
     </div>
   )
 }

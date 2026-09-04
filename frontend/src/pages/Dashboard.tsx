@@ -52,7 +52,7 @@ export default function Dashboard() {
   }, [user?.id])
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="max-w-5xl mx-auto px-4 py-10 ohtu-page-enter">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="card-panel p-3 mb-6 border-gold/30 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
           <div className="text-gold font-display text-sm tracking-wide">{t('partyFlowTitle')}</div>

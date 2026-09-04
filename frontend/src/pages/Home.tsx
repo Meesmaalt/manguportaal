@@ -25,7 +25,7 @@ export default function Home() {
   const { t } = useI18n()
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16">
+    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16 ohtu-page-enter">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
