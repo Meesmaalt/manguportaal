@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import type { TodeVoiTeguPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
+import GameAiModal from '@/components/GameAiModal'
+import { generateTodeVoiTeguAi } from '@/lib/aiGameGenerators'
 
 type Player = { name: string }
 
@@ -26,6 +29,7 @@ type Props = {
 export default function TodeVoiTeguGame({ state, update, isHost = true, sessionCode }: Props) {
   const { players, currentPlayer, truths, dares, currentCard } = state
   const { t } = useI18n()
+  const [aiModalOpen, setAiModalOpen] = useState(false)
   const player = players[currentPlayer]
 
   function draw(type: 'truth' | 'dare') {
@@ -62,7 +66,20 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
   return (
     <div className="max-w-2xl mx-auto px-4">
       {isHost && <SessionCodeBadge code={sessionCode} />}
-      {isHost && <GameToolbar />}
+      {isHost && (
+        <GameToolbar
+          extra={
+            <button
+              type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+            >
+              <Sparkles size={13} />
+              Loo AI-ga
+            </button>
+          }
+        />
+      )}
 
       <div className="text-center mb-6">
         <p className="text-white/50 text-sm uppercase tracking-widest">{t('nowPlaying')}</p>
@@ -123,6 +140,54 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
           {t('addPlayer')}
         </button>
       )}
+
+      {/* AI GENERATION MODAL */}
+      <GameAiModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title="Genereeri Tõde või Tegu kaardid AI-ga"
+        subtitle="Sisesta teema ja AI genereerib 20 tõde ja 20 tegu"
+        presetTopics={['Sõprade peoõhtu', 'Perekond ja lapsed', 'Romantiline & paarid', 'Naljakas & julge']}
+        defaultTopic="Sõprade peoõhtu ja seltskonnamängud"
+        promptTemplate='Genereeri täpselt 20 tõde ("truths") ja 20 tegu ("dares") seltskonnamängule "Tõde või tegu" teemal: "{TOPIC}". Vasta puhta JSON objektina.'
+        generateFn={(topic) => generateTodeVoiTeguAi(topic, 20)}
+        onApply={(data) => {
+          update({
+            truths: data.truths || [],
+            dares: data.dares || [],
+            currentCard: null,
+          })
+        }}
+        renderPreview={(data) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3 bg-slate-900/60 rounded-xl border border-gold/30">
+              <span className="font-display font-bold text-xs text-gold uppercase tracking-wider block mb-2">
+                Tõed ({data.truths?.length || 0}):
+              </span>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {data.truths?.map((t, idx) => (
+                  <p key={idx} className="text-xs text-white/90 p-1.5 rounded bg-slate-950/60">
+                    {idx + 1}. {t}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-900/60 rounded-xl border border-accent-red/30">
+              <span className="font-display font-bold text-xs text-accent-red uppercase tracking-wider block mb-2">
+                Teod ({data.dares?.length || 0}):
+              </span>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {data.dares?.map((d, idx) => (
+                  <p key={idx} className="text-xs text-white/90 p-1.5 rounded bg-slate-950/60">
+                    {idx + 1}. {d}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      />
     </div>
   )
 }

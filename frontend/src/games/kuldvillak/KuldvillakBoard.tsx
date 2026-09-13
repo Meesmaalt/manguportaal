@@ -1,7 +1,7 @@
 import { confettiBurst } from '@/lib/confettiBurst'
 import { useEffect, useRef, useState } from 'react'
 import type { KuldvillakState } from './types'
-import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon } from 'lucide-react'
+import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon, Sparkles } from 'lucide-react'
 import { createBgm, sounds, playFx } from '@/lib/audio'
 import GameShowFrame from '@/components/GameShowFrame'
 import { trackQuestionResolved } from '@/lib/stats'
@@ -12,6 +12,8 @@ import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
 import BuzzQrOverlay from '@/components/BuzzQrOverlay'
 import HostSheet from '@/components/HostSheet'
+import GameAiModal from '@/components/GameAiModal'
+import { generateKuldvillakAi } from '@/lib/aiGameGenerators'
 
 type Props = {
   state: KuldvillakState
@@ -31,6 +33,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
 
   const [musicOn, setMusicOn] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pulseTeam, setPulseTeam] = useState<number | null>(null)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
   const lastConfetti = useRef<number>(0)
@@ -209,6 +212,14 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                 className="btn-outline text-xs !py-1.5 !px-3"
               >
                 {t('hostSheet')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(true)}
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+              >
+                <Sparkles size={13} />
+                Loo AI-ga
               </button>
               <button
                 type="button"
@@ -626,6 +637,63 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       {isHost && sheetOpen && packData && (
         <HostSheet packData={packData} onClose={() => setSheetOpen(false)} />
       )}
+
+      {/* AI GENERATION MODAL */}
+      <GameAiModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title="Genereeri Kuldvillaku mäng AI-ga"
+        subtitle="Sisesta teema ja AI loob täieliku 5x5 küsimuste maatriksi koos finaalküsimusega"
+        presetTopics={['Eesti ajalugu & geograafia', 'Filmid ja telesarjad', '90ndate popmuusika', 'Teadus ja loodus', 'Õlle- ja toidukultuur']}
+        defaultTopic="Eesti ajalugu, popkultuur ja meelelahutus"
+        promptTemplate='Loo telesaate "Kuldvillak" stiilis 5 kategooriat (igas 5 küsimust 100-500p) + finaalküsimus teemal: "{TOPIC}". Vasta puhta JSON objektina.'
+        generateFn={generateKuldvillakAi}
+        onApply={(data) => {
+          update({
+            packData: {
+              categories: data.categories,
+              finalJeopardy: data.finalJeopardy,
+            },
+            disabledCards: [],
+            currentQuestion: null,
+            showAnswer: false,
+            finalPhase: 'none',
+            finalWagers: teams.map(() => 0),
+          })
+        }}
+        renderPreview={(data) => (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {data.categories?.map((cat: any, cIdx: number) => (
+                <div key={cIdx} className="p-3 rounded-xl bg-slate-900/80 border border-gold/30">
+                  <h4 className="font-display font-bold text-xs text-gold truncate mb-2">
+                    {cat.name}
+                  </h4>
+                  <div className="space-y-1">
+                    {cat.questions?.map((q: any, qIdx: number) => (
+                      <div key={qIdx} className="text-[11px] text-white/80 flex items-start gap-1.5">
+                        <span className="font-mono font-bold text-amber-400 shrink-0">{q.points}p:</span>
+                        <span className="truncate" title={`${q.q} -> Vastus: ${q.a}`}>
+                          {q.q}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {data.finalJeopardy && (
+              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/40">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
+                  Final Jeopardy küsimus:
+                </span>
+                <p className="text-xs text-white font-medium">{data.finalJeopardy.q}</p>
+                <p className="text-xs text-emerald-400 font-bold mt-0.5">Vastus: {data.finalJeopardy.a}</p>
+              </div>
+            )}
+          </div>
+        )}
+      />
     </GameShowFrame>
   )
 }

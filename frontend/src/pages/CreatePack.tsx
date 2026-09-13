@@ -13,6 +13,15 @@ import {
   MILJONAR_PEO_QUESTIONS,
 } from '@/games/miljonar/miljonarPacks'
 import { generateMiljonarQuizWithAi } from '@/games/miljonar/generateMiljonarQuiz'
+import {
+  generateKuldvillakAi,
+  generateRoosidesodaAi,
+  generateSonaseletusAi,
+  generateMaEiOleKunagiAi,
+  generateViimanePustiAi,
+  generateTodeVoiTeguAi,
+} from '@/lib/aiGameGenerators'
+import AiGeneratorBar from '@/components/AiGeneratorBar'
 import type { MiljonarQuestion } from '@/games/miljonar/types'
 import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
 
@@ -327,6 +336,25 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
         {/* Kuldvillak editor */}
         {gameType === 'kuldvillak' && (
           <div className="space-y-4">
+            <AiGeneratorBar
+              title="Genereeri 5x5 Kuldvillaku laud ja finaalküsimus"
+              placeholder="Teema (nt Eesti geograafia, 90ndate popkultuur, Teadus, Seltskond)..."
+              presetTopics={['Eesti ajalugu & geograafia', 'Filmid & seriaalid', 'Popmuusika', 'Teadus & loodus', 'Õlle & toidukultuur']}
+              defaultPrompt={`Loo telesaate "Kuldvillak" stiilis 5 kategooriat (igas 5 küsimust 100-500p) + finaalküsimus teemal: "{TOPIC}". Vasta puhta JSON objektina.`}
+              onGenerate={async (topic) => {
+                const res = await generateKuldvillakAi(topic)
+                if (res.categories && res.categories.length) {
+                  setCategories(res.categories)
+                  if (res.finalJeopardy) {
+                    setFinalQ(res.finalJeopardy.q || '')
+                    setFinalA(res.finalJeopardy.a || '')
+                    setFinalNote(res.finalJeopardy.hostNote || '')
+                  }
+                  if (!name) setName(`Kuldvillak: ${topic}`)
+                }
+              }}
+            />
+
             {categories.map((cat, cIdx) => (
               <div key={cIdx} className="card-panel p-4">
                 <div className="flex gap-2 mb-3">
@@ -415,6 +443,20 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
         {/* Rooside Sõda */}
         {gameType === 'roosidesoda' && (
           <div className="space-y-4">
+            <AiGeneratorBar
+              title="Genereeri 4 vooru Rooside Sõja küsitlusi"
+              placeholder="Teema (nt Eesti argielu, Suhted ja abielu, Peod ja reisimine, Töö ja kolleegid)..."
+              presetTopics={['Eesti argielu', 'Suhted ja kohtingud', 'Puhkus ja reisimine', 'Toidud ja jook', 'Töökoha huumor']}
+              defaultPrompt={`Loo telesaate "Rooside Sõda" (Family Feud) stiilis 4-vooruline mäng teemal: "{TOPIC}". Vasta puhta JSON objektina.`}
+              onGenerate={async (topic) => {
+                const res = await generateRoosidesodaAi(topic)
+                if (res.rounds && res.rounds.length) {
+                  setRounds(res.rounds)
+                  if (!name) setName(`Rooside Sõda: ${topic}`)
+                }
+              }}
+            />
+
             {rounds.map((r, rIdx) => (
               <div key={rIdx} className="card-panel p-4">
                 <div className="flex gap-2 mb-2">
@@ -500,6 +542,19 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
         {/* Sõnaseletus */}
         {gameType === 'sonaseletus' && (
           <div className="space-y-3">
+            <AiGeneratorBar
+              title="Genereeri 40 sõnaseletuse / Aliase kaarti"
+              placeholder="Teema (nt Kuulsad eestlased, 90ndate nostalgia, Filmid, Argipäev)..."
+              presetTopics={['Eesti kuulsused ja kohad', '90ndate nostalgia', 'Toidud & joogid', 'Ametid & hobid', 'Peod & meelelahutus']}
+              onGenerate={async (topic) => {
+                const list = await generateSonaseletusAi(topic, 45)
+                if (list && list.length) {
+                  setWordsText(list.join('\n'))
+                  if (!name) setName(`Sõnaseletus: ${topic}`)
+                }
+              }}
+            />
+
             <div>
               <label className="block text-sm text-gold/80 mb-1">Vooru pikkus (sek)</label>
               <input
@@ -523,6 +578,22 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
         {/* Ma ei ole / Viimane püsti */}
         {(gameType === 'ma_ei_ole_kunagi' || gameType === 'viimane_pusti') && (
           <div className="space-y-3">
+            <AiGeneratorBar
+              title={gameType === 'ma_ei_ole_kunagi' ? 'Genereeri 30 "Ma ei ole kunagi" väidet' : 'Genereeri 30 "Viimane püsti" väidet'}
+              placeholder="Teema (nt Peod, Suhted, Töö, Reisimine, Huumor)..."
+              presetTopics={['Lõbusad peod ja reisimine', 'Tööelu ja ülemused', 'Piinlikud olukorrad', 'Lapsepõlv & kooliaeg']}
+              onGenerate={async (topic) => {
+                const list =
+                  gameType === 'ma_ei_ole_kunagi'
+                    ? await generateMaEiOleKunagiAi(topic, 30)
+                    : await generateViimanePustiAi(topic, 30)
+                if (list && list.length) {
+                  setStatementsText(list.join('\n'))
+                  if (!name) setName(`${gameType === 'ma_ei_ole_kunagi' ? 'Ma ei ole kunagi' : 'Viimane püsti'}: ${topic}`)
+                }
+              }}
+            />
+
             {gameType === 'viimane_pusti' && (
               <div>
                 <label className="block text-sm text-gold/80 mb-1">Algused elud</label>
@@ -547,22 +618,38 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
 
         {/* Tõde või tegu */}
         {gameType === 'tode_voi_tegu' && (
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gold/80 mb-1">Tõed (üks real)</label>
-              <textarea
-                className="input-field min-h-[160px] text-sm"
-                value={truthsText}
-                onChange={(e) => setTruthsText(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gold/80 mb-1">Teod (üks real)</label>
-              <textarea
-                className="input-field min-h-[160px] text-sm"
-                value={daresText}
-                onChange={(e) => setDaresText(e.target.value)}
-              />
+          <div className="space-y-4">
+            <AiGeneratorBar
+              title="Genereeri 20 tõde ja 20 tegu"
+              placeholder="Teema (nt Sõpruskond, Vürtsikas peoõhtu, Perekondlik mäng, Naer ja huumor)..."
+              presetTopics={['Sõprade peoõhtu', 'Perekond ja lapsed', 'Romantiline & paarid', 'Naljakas & julge']}
+              onGenerate={async (topic) => {
+                const res = await generateTodeVoiTeguAi(topic, 20)
+                if (res.truths?.length && res.dares?.length) {
+                  setTruthsText(res.truths.join('\n'))
+                  setDaresText(res.dares.join('\n'))
+                  if (!name) setName(`Tõde või tegu: ${topic}`)
+                }
+              }}
+            />
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gold/80 mb-1">Tõed (üks real)</label>
+                <textarea
+                  className="input-field min-h-[160px] text-sm"
+                  value={truthsText}
+                  onChange={(e) => setTruthsText(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gold/80 mb-1">Teod (üks real)</label>
+                <textarea
+                  className="input-field min-h-[160px] text-sm"
+                  value={daresText}
+                  onChange={(e) => setDaresText(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         )}

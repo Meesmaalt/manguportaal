@@ -1,7 +1,11 @@
+import { useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import type { ViimanePustiPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
+import GameAiModal from '@/components/GameAiModal'
+import { generateViimanePustiAi } from '@/lib/aiGameGenerators'
 
 type Player = { name: string; lives: number; standing: boolean }
 
@@ -22,8 +26,9 @@ type Props = {
 }
 
 export default function ViimanePustiGame({ state, update, isHost = true, sessionCode }: Props) {
-  const { players, statements, index } = state
+  const { players, statements, index, startingLives } = state
   const { t } = useI18n()
+  const [aiModalOpen, setAiModalOpen] = useState(false)
   const standing = players.filter((p) => p.standing && p.lives > 0)
   const winner = standing.length === 1 ? standing[0] : null
 
@@ -58,7 +63,20 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
   return (
     <div className="max-w-2xl mx-auto px-4">
       {isHost && <SessionCodeBadge code={sessionCode} />}
-      {isHost && <GameToolbar />}
+      {isHost && (
+        <GameToolbar
+          extra={
+            <button
+              type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+            >
+              <Sparkles size={13} />
+              Loo AI-ga
+            </button>
+          }
+        />
+      )}
 
       {winner ? (
         <div className="card-panel p-10 text-center mb-6 border-gold shadow-gold">
@@ -96,6 +114,39 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
           {t('addPlayer')}
         </button>
       )}
+
+      {/* AI GENERATION MODAL */}
+      <GameAiModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title="Genereeri 'Viimane püsti' väited AI-ga"
+        subtitle="Sisesta teema ja AI genereerib 30 haaravat elimineerimisväidet"
+        presetTopics={['Lõbusad elukogemused', 'Töö ja harjumused', 'Eesti argielu', 'Lapsepõlv & seiklused']}
+        defaultTopic="Lõbusad elukogemused, harjumused ja seiklused"
+        promptTemplate='Genereeri täpselt 30 eestikeelset elimineerimisväidet seltskonnamängule "Viimane püsti" (Last Man Standing) teemal: "{TOPIC}". Vasta puhta JSON massiivina stringidest.'
+        generateFn={(topic) => generateViimanePustiAi(topic, 30)}
+        onApply={(list) => {
+          update({
+            statements: list,
+            index: 0,
+          })
+        }}
+        renderPreview={(list) => (
+          <div className="space-y-2">
+            <div className="text-xs text-white/60">Kokku {list.length} väidet:</div>
+            <div className="space-y-1 max-h-60 overflow-y-auto p-2 bg-slate-900/60 rounded-xl border border-white/5">
+              {list.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 rounded-lg bg-slate-800/80 text-xs text-white font-medium border border-white/5"
+                >
+                  {idx + 1}. {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      />
     </div>
   )
 }

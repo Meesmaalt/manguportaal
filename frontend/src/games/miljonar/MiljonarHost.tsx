@@ -8,6 +8,7 @@ import {
   MILJONAR_PEO_QUESTIONS,
 } from './miljonarPacks'
 import { generateMiljonarQuizWithAi } from './generateMiljonarQuiz'
+import MiljonarAiPreviewModal from './MiljonarAiPreviewModal'
 import {
   Lock,
   Eye,
@@ -73,6 +74,11 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
   const [jsonPasteError, setJsonPasteError] = useState('')
   const [newPlayerName, setNewPlayerName] = useState('')
   const [phoneSeconds, setPhoneSeconds] = useState(30)
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [previewQuestions, setPreviewQuestions] = useState<MiljonarQuestion[]>([])
+  const [previewBackups, setPreviewBackups] = useState<MiljonarQuestion[]>([])
+  const [previewIsAi, setPreviewIsAi] = useState(true)
+  const [previewTopic, setPreviewTopic] = useState('')
   const phoneIntervalRef = useRef<number | null>(null)
 
   // Keep audio sync
@@ -387,23 +393,32 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
     setAiGenerating(true)
     try {
       const res = await generateMiljonarQuizWithAi(aiTopic)
-      update({
-        questions: res.questions,
-        backupQuestions: res.backupQuestions,
-        currentTierIndex: 0,
-        phase: 'question',
-        selectedChoice: null,
-        isLocked: false,
-        eliminatedChoices: [],
-        accumulatedBank: 0,
-        guaranteedBank: 0,
-        lifelines: { fifty_fifty: true, ask_audience: true, phone_friend: true, switch_question: true },
-      })
+      setPreviewQuestions(res.questions)
+      setPreviewBackups(res.backupQuestions)
+      setPreviewIsAi(res.isAi)
+      setPreviewTopic(aiTopic.trim())
       setAiModalOpen(false)
-      setAiTopic('')
+      setPreviewModalOpen(true)
     } finally {
       setAiGenerating(false)
     }
+  }
+
+  function handleApplyPreviewQuestions(qs: MiljonarQuestion[], backups: MiljonarQuestion[]) {
+    update({
+      questions: qs,
+      backupQuestions: backups,
+      currentTierIndex: 0,
+      phase: 'question',
+      selectedChoice: null,
+      isLocked: false,
+      eliminatedChoices: [],
+      accumulatedBank: 0,
+      guaranteedBank: 0,
+      lifelines: { fifty_fifty: true, ask_audience: true, phone_friend: true, switch_question: true },
+    })
+    setPreviewModalOpen(false)
+    setAiTopic('')
   }
 
   function copyPromptToClipboard() {
@@ -982,6 +997,21 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
           </div>
         </div>
       )}
+
+      {/* AI GENERATED PREVIEW MODAL */}
+      <MiljonarAiPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        onApply={handleApplyPreviewQuestions}
+        generatedQuestions={previewQuestions}
+        generatedBackups={previewBackups}
+        topic={previewTopic}
+        isAi={previewIsAi}
+        onRegenerate={() => {
+          setPreviewModalOpen(false)
+          setAiModalOpen(true)
+        }}
+      />
     </div>
   )
 }

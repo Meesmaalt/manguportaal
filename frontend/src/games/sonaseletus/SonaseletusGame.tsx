@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Sparkles } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
+import GameAiModal from '@/components/GameAiModal'
+import { generateSonaseletusAi } from '@/lib/aiGameGenerators'
 
 type Team = { name: string; score: number }
 
@@ -29,6 +31,7 @@ type Props = {
 export default function SonaseletusGame({ state, update, isHost = true, sessionCode }: Props) {
   const { teams, activeTeam, words, wordIndex, roundSeconds, timeLeft, running } = state
   const { t } = useI18n()
+  const [aiModalOpen, setAiModalOpen] = useState(false)
   const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -97,7 +100,21 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
     <div className="max-w-2xl mx-auto px-4">
       <div id="game-scale-root">
       {isHost && <SessionCodeBadge code={sessionCode} />}
-      {isHost && <GameToolbar onReset={resetGame} />}
+      {isHost && (
+        <GameToolbar
+          onReset={resetGame}
+          extra={
+            <button
+              type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+            >
+              <Sparkles size={13} />
+              Loo AI-ga
+            </button>
+          }
+        />
+      )}
 
       <div className="text-center mb-6">
         <div className="text-white/50 text-sm uppercase tracking-widest mb-1">
@@ -158,6 +175,41 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
         ))}
       </div>
       </div>
+
+      {/* AI GENERATION MODAL */}
+      <GameAiModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title="Genereeri Sõnaseletuse / Aliase kaardid AI-ga"
+        subtitle="Sisesta teema ja AI genereerib 50 põnevat sõna/mõistet mängimiseks"
+        presetTopics={['Eesti kuulsused ja kohad', '90ndate nostalgia', 'Toidud & joogid', 'Ametid & hobid', 'Peod & meelelahutus']}
+        defaultTopic="Eesti kuulsused, popkultuur ja argielu"
+        promptTemplate='Genereeri täpselt 50 eestikeelset sõna/mõistet lauamängule "Alias / Sõnaseletus" teemal: "{TOPIC}". Vasta puhta JSON massiivina stringidest.'
+        generateFn={(topic) => generateSonaseletusAi(topic, 50)}
+        onApply={(wordsList) => {
+          update({
+            words: wordsList,
+            wordIndex: 0,
+            running: false,
+            timeLeft: roundSeconds,
+          })
+        }}
+        renderPreview={(wordsList) => (
+          <div className="space-y-2">
+            <div className="text-xs text-white/60">Kokku {wordsList.length} sõna:</div>
+            <div className="flex flex-wrap gap-1.5 max-h-60 overflow-y-auto p-2 bg-slate-900/60 rounded-xl border border-white/5">
+              {wordsList.map((w, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-xs text-white font-medium border border-white/10"
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      />
     </div>
   )
 }

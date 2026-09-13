@@ -1,7 +1,7 @@
 import { confettiBurst } from '@/lib/confettiBurst'
 import { useEffect, useRef, useState } from 'react'
 import type { RoosidesodaState } from './types'
-import { Plus, Minus, SkipForward, Banknote, Volume2, VolumeX } from 'lucide-react'
+import { Plus, Minus, SkipForward, Banknote, Volume2, VolumeX, Sparkles } from 'lucide-react'
 import { playSound, sounds, createBgm } from '@/lib/audio'
 import TvJoinPanel from '@/components/TvJoinPanel'
 import GameToolbar from '@/components/GameToolbar'
@@ -9,6 +9,8 @@ import GameShowFrame from '@/components/GameShowFrame'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
 import { useI18n } from '@/i18n/I18nContext'
 import { playFx } from '@/lib/audio'
+import GameAiModal from '@/components/GameAiModal'
+import { generateRoosidesodaAi } from '@/lib/aiGameGenerators'
 
 type Props = {
   state: RoosidesodaState
@@ -48,6 +50,7 @@ export default function RoosidesodaHost({
 
   const [musicOn, setMusicOn] = useState(false)
   const [sfxOn, setSfxOn] = useState(true)
+  const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pulseTeam, setPulseTeam] = useState<number | null>(null)
   const lastConfetti = useRef(0)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
@@ -235,6 +238,14 @@ export default function RoosidesodaHost({
                 {sfxOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
                 {sfxOn ? t('toolbarSfxOn') : t('toolbarSfx')}
               </button>
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(true)}
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+              >
+                <Sparkles size={13} />
+                Loo AI-ga
+              </button>
             </>
           }
         />
@@ -416,6 +427,56 @@ export default function RoosidesodaHost({
           </div>
         </div>
       )}
+
+      {/* AI GENERATION MODAL */}
+      <GameAiModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title="Genereeri Rooside Sõda AI-ga"
+        subtitle="Sisesta teema ja AI loob 4 vooru küsitlustulemusi koos topelt- ja kolmekordsete punktidega"
+        presetTopics={['Eesti argielu ja harjumused', 'Suhted ja kohtingud', 'Puhkus ja reisimine', 'Toidud ja jook', 'Töökoha huumor']}
+        defaultTopic="Eesti argielu, suhted ja harjumused"
+        promptTemplate='Loo telesaate "Rooside Sõda" (Family Feud) stiilis 4-vooruline mäng teemal: "{TOPIC}". Vasta puhta JSON objektina.'
+        generateFn={generateRoosidesodaAi}
+        onApply={(data) => {
+          update({
+            packData: { rounds: data.rounds },
+            currentRoundIdx: 0,
+            revealed: [],
+            strikes: 0,
+            bank: 0,
+            activeTeam: 0,
+            showStrikeOverlay: false,
+          })
+        }}
+        renderPreview={(data) => (
+          <div className="space-y-3">
+            {data.rounds?.map((r: any, rIdx: number) => (
+              <div key={rIdx} className="p-3.5 rounded-xl bg-slate-900/80 border border-gold/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-display font-bold text-xs text-gold">
+                    {r.title || `VOOR ${rIdx + 1}`} ({r.multiplier}× punktid)
+                  </span>
+                </div>
+                <p className="text-xs text-white font-medium">{r.question}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                  {r.answers?.map((ans: any, aIdx: number) => (
+                    <div
+                      key={aIdx}
+                      className="p-1.5 rounded-lg bg-slate-950/60 border border-white/5 text-[11px] flex items-center justify-between"
+                    >
+                      <span className="text-white/90">
+                        {aIdx + 1}. {ans.text}
+                      </span>
+                      <span className="font-mono font-bold text-amber-400">{ans.points}p</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      />
     </GameShowFrame>
   )
 }
