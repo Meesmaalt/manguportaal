@@ -33,7 +33,7 @@ export async function callGeminiDirectly(prompt: string, apiKeyOverride?: string
     throw new Error('Gemini API võti puudub.')
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`
 
   const res = await fetch(endpoint, {
     method: 'POST',

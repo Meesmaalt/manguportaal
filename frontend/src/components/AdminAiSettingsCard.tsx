@@ -46,7 +46,7 @@ export default function AdminAiSettingsCard() {
               )}
             </h3>
             <p className="text-white/60 text-xs">
-              Võimaldab mängude küsimuste (Miljonär, Blitz) automaatse genereerimise otse lehelt.
+              Võimaldab mängude sisu (Miljonär, Blitz, Kuldvillak, Rooside Sõda, Alias jne) automaatse genereerimise otse lehelt kasutades Gemini 3.6 Flash mudelit.
             </p>
           </div>
         </div>
