@@ -28,6 +28,9 @@ import {
   HelpCircle,
   Play,
   Share2,
+  Copy,
+  Check,
+  Upload,
 } from 'lucide-react'
 import { appUrl } from '@/lib/config'
 
@@ -64,6 +67,10 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
   const [aiTopic, setAiTopic] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
   const [aiModalOpen, setAiModalOpen] = useState(false)
+  const [copiedPrompt, setCopiedPrompt] = useState(false)
+  const [jsonPasteOpen, setJsonPasteOpen] = useState(false)
+  const [jsonPasteText, setJsonPasteText] = useState('')
+  const [jsonPasteError, setJsonPasteError] = useState('')
   const [newPlayerName, setNewPlayerName] = useState('')
   const [phoneSeconds, setPhoneSeconds] = useState(30)
   const phoneIntervalRef = useRef<number | null>(null)
@@ -396,6 +403,78 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
       setAiTopic('')
     } finally {
       setAiGenerating(false)
+    }
+  }
+
+  function copyPromptToClipboard() {
+    const topic = aiTopic.trim() || 'Üldteadmised, meelelahutus ja Eesti'
+    const promptText = `Loo telesaate "Kes tahab saada miljonäriks?" formaadis täpselt 15 küsimust eesti keeles teemal: "${topic}".
+Küsimused PEAVAD olema rangelt kasvavas raskusastmes (15 astet: 1-5 lihtsad soojendused, 6-10 keskmised ja faktilised, 11-14 rasked nuputamised, 15 tõeline elitaarne miljoniküsimus).
+
+Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
+[
+  {
+    "tier": 1,
+    "q": "Küsimus 1 tekst",
+    "choices": ["Valik A", "Valik B", "Valik C", "Valik D"],
+    "correct": 0,
+    "hostNote": "Selgitus saatejuhile"
+  },
+  ...
+]`
+    navigator.clipboard.writeText(promptText)
+    setCopiedPrompt(true)
+    setTimeout(() => setCopiedPrompt(false), 2500)
+  }
+
+  function handleImportJsonQuestions() {
+    setJsonPasteError('')
+    try {
+      let raw = jsonPasteText.trim()
+      if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+      if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(raw)
+      const list = Array.isArray(parsed) ? parsed : parsed.questions
+      if (!Array.isArray(list) || list.length < 5) {
+        throw new Error('JSON peab sisaldama vähemalt 5-15 küsimusega massiivi')
+      }
+      const formatted: MiljonarQuestion[] = list.slice(0, 15).map((item: any, idx: number) => {
+        const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
+        return {
+          id: `m-${Date.now()}-${idx}`,
+          tier: idx + 1,
+          prize: step.prize,
+          q: String(item.q || item.question || `Küsimus ${idx + 1}`),
+          choices: Array.isArray(item.choices) && item.choices.length === 4
+            ? [String(item.choices[0]), String(item.choices[1]), String(item.choices[2]), String(item.choices[3])]
+            : ['Valik A', 'Valik B', 'Valik C', 'Valik D'],
+          correct: (typeof item.correct === 'number' && item.correct >= 0 && item.correct <= 3 ? item.correct : 0) as 0 | 1 | 2 | 3,
+          hostNote: item.hostNote ? String(item.hostNote) : undefined,
+          difficulty: idx < 5 ? 'easy' : idx < 10 ? 'medium' : idx < 14 ? 'hard' : 'expert',
+        }
+      })
+      while (formatted.length < 15) {
+        const idx = formatted.length
+        const def = MILJONAR_KLASSIKA_QUESTIONS[idx]
+        formatted.push({ ...def, tier: idx + 1 })
+      }
+      update({
+        questions: formatted,
+        backupQuestions: MILJONAR_KLASSIKA_QUESTIONS.filter((q) => q.backup),
+        currentTierIndex: 0,
+        phase: 'question',
+        selectedChoice: null,
+        isLocked: false,
+        eliminatedChoices: [],
+        accumulatedBank: 0,
+        guaranteedBank: 0,
+        lifelines: { fifty_fifty: true, ask_audience: true, phone_friend: true, switch_question: true },
+      })
+      setJsonPasteOpen(false)
+      setJsonPasteText('')
+      setAiModalOpen(false)
+    } catch (e: any) {
+      setJsonPasteError(e.message || 'Vigane JSON formaat')
     }
   }
 
@@ -813,21 +892,77 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
 
             <input
               type="text"
-              placeholder="Teema..."
+              placeholder="Teema (nt Eesti popmuusika, Filmiklassika, Teadus)..."
               value={aiTopic}
               onChange={(e) => setAiTopic(e.target.value)}
-              className="input-field mb-4 text-sm"
+              className="input-field mb-3 text-sm"
               autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAiGenerate()
+                }
+              }}
             />
+
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <button
+                type="button"
+                onClick={copyPromptToClipboard}
+                className="btn-outline text-xs flex items-center gap-1.5 !py-1.5 !px-3"
+              >
+                {copiedPrompt ? (
+                  <>
+                    <Check size={13} className="text-emerald-400" /> ChatGPT Prompt kopeeritud!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={13} /> Kopeeri ChatGPT / Gemini prompt
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setJsonPasteOpen(!jsonPasteOpen)}
+                className="btn-outline text-xs flex items-center gap-1.5 !py-1.5 !px-3"
+              >
+                <Upload size={13} /> Kleebi valmis JSON
+              </button>
+            </div>
+
+            {jsonPasteOpen && (
+              <div className="card-panel p-3.5 mb-4 border-gold/40 bg-slate-900/90 space-y-2">
+                <p className="text-xs text-gold/80 font-bold">Kleebi ChatGPT või Gemini vastus:</p>
+                <textarea
+                  placeholder='[ { "tier": 1, "q": "...", "choices": ["A","B","C","D"], "correct": 0 }, ... ]'
+                  className="input-field font-mono text-xs min-h-[120px]"
+                  value={jsonPasteText}
+                  onChange={(e) => setJsonPasteText(e.target.value)}
+                />
+                {jsonPasteError && <p className="text-accent-red text-xs">{jsonPasteError}</p>}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleImportJsonQuestions}
+                    className="btn-gold text-xs px-3"
+                  >
+                    Laadi küsimused mängu
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setAiModalOpen(false)}
+                onClick={() => {
+                  setAiModalOpen(false)
+                  setJsonPasteOpen(false)
+                }}
                 disabled={aiGenerating}
                 className="btn-outline text-xs px-4"
               >
-                Tühista
+                Sulge
               </button>
               <button
                 type="button"
@@ -839,7 +974,7 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
                   <>Genereerin 15 astet...</>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Genereeri mäng
+                    <Sparkles size={14} /> Genereeri otse lehelt
                   </>
                 )}
               </button>

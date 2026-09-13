@@ -1,4 +1,5 @@
 import type { BlitzQuestion } from './types'
+import { callGeminiDirectly, hasClientGeminiKey } from '@/lib/geminiClient'
 
 export type QuizGenerateParams = {
   topic: string
@@ -194,6 +195,47 @@ export const FALLBACK_PACKS: Record<string, BlitzQuestion[]> = {
 }
 
 export async function requestAiQuiz(params: QuizGenerateParams): Promise<{ questions: BlitzQuestion[]; isAi: boolean }> {
+  // 1. Direct Gemini API call if key is set
+  if (hasClientGeminiKey()) {
+    try {
+      const count = Math.max(3, Math.min(20, params.count || 5))
+      const diffLabel = params.difficulty === 'easy' ? 'lihtne' : params.difficulty === 'hard' ? 'keeruline / nuputamisega' : 'keskmine'
+      const prompt = `Loo täpselt ${count} kvaliteetset ja lõbusat seltskonnaviktoriini küsimust Kahooti stiilis eesti keeles teemal: "${params.topic || 'Üldteadmised ja meelelahutus'}".
+Raskusaste: ${diffLabel}.
+
+Küsimuste tüübid võivad sisaldada:
+1. 'quiz': klassikaline 4 valikuga küsimus
+2. 'true_false': tõene/väär küsimus (choices: ["Tõene", "Väär", "", ""])
+3. 'multi': mitme õige vastusega küsimus (multiCorrect sisaldab õigete indeksite massiivi, nt [0, 2])
+4. 'slider': numbriline äraarvamine (sliderMin, sliderMax, sliderTarget, sliderUnit)
+5. 'type_answer': lühike tekstivastus (acceptedAnswers: massiiv õigetest sünonüümidest)
+
+Vasta AINULT kehtiva JSON massiivina ilma koodiplokkideta:
+[
+  {
+    "id": "q1",
+    "q": "Küsimuse tekst",
+    "type": "quiz",
+    "choices": ["Vastus A", "Vastus B", "Vastus C", "Vastus D"],
+    "correct": 0,
+    "hostNote": "Selgitus",
+    "difficulty": "${params.difficulty || 'medium'}"
+  }
+]`
+      const raw = await callGeminiDirectly(prompt)
+      let cleaned = raw.trim()
+      if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '').trim()
+      if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```/, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(cleaned)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return { questions: parsed, isAi: true }
+      }
+    } catch (e) {
+      console.warn('Direct Gemini call in Blitz failed:', e)
+    }
+  }
+
+  // 2. Server route
   try {
     const res = await fetch('/api/ai/quiz', {
       method: 'POST',

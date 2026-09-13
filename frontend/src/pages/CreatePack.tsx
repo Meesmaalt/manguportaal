@@ -3,11 +3,16 @@ import { useNavigate, Link } from 'react-router-dom'
 import { pb, formatPbError } from '@/lib/pocketbase'
 import { createOwnedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Save, Sparkles, Copy, Check, Upload, Loader2 } from 'lucide-react'
 import { GAME_META, type GameType } from '@/lib/types'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
 import type { BlitzQuestion } from '@/games/blitz/types'
-import { MILJONAR_KLASSIKA_QUESTIONS } from '@/games/miljonar/miljonarPacks'
+import {
+  MILJONAR_KLASSIKA_QUESTIONS,
+  MILJONAR_EESTI_QUESTIONS,
+  MILJONAR_PEO_QUESTIONS,
+} from '@/games/miljonar/miljonarPacks'
+import { generateMiljonarQuizWithAi } from '@/games/miljonar/generateMiljonarQuiz'
 import type { MiljonarQuestion } from '@/games/miljonar/types'
 import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
 
@@ -84,6 +89,90 @@ export default function CreatePack() {
   const [miljonarQs, setMiljonarQs] = useState<MiljonarQuestion[]>(() => {
     return MILJONAR_KLASSIKA_QUESTIONS.filter((q) => !q.backup).map((q) => ({ ...q }))
   })
+  const [miljonarTopic, setMiljonarTopic] = useState('')
+  const [miljonarAiLoading, setMiljonarAiLoading] = useState(false)
+  const [miljonarCopiedPrompt, setMiljonarCopiedPrompt] = useState(false)
+  const [miljonarJsonOpen, setMiljonarJsonOpen] = useState(false)
+  const [miljonarJsonText, setMiljonarJsonText] = useState('')
+  const [miljonarJsonError, setMiljonarJsonError] = useState('')
+
+  async function handleMiljonarAi() {
+    if (!miljonarTopic.trim()) return
+    setMiljonarAiLoading(true)
+    setError('')
+    try {
+      const res = await generateMiljonarQuizWithAi(miljonarTopic.trim())
+      if (res.questions && res.questions.length >= 15) {
+        setMiljonarQs(res.questions.slice(0, 15))
+        if (!name) setName(`Miljonär: ${miljonarTopic.trim()}`)
+      }
+    } catch (e: any) {
+      setError('AI genereerimine ebaõnnestus. Kasuta ChatGPT prompti või valmisteemasid.')
+    } finally {
+      setMiljonarAiLoading(false)
+    }
+  }
+
+  function copyMiljonarChatGptPrompt() {
+    const topic = miljonarTopic.trim() || 'Üldteadmised, meelelahutus ja Eesti'
+    const promptText = `Loo telesaate "Kes tahab saada miljonäriks?" formaadis täpselt 15 küsimust eesti keeles teemal: "${topic}".
+Küsimused PEAVAD olema rangelt kasvavas raskusastmes (15 astet: 1-5 lihtsad soojendused, 6-10 keskmised ja faktilised, 11-14 rasked nuputamised, 15 tõeline elitaarne miljoniküsimus).
+
+Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
+[
+  {
+    "tier": 1,
+    "q": "Küsimus 1 tekst",
+    "choices": ["Valik A", "Valik B", "Valik C", "Valik D"],
+    "correct": 0,
+    "hostNote": "Selgitus"
+  },
+  ...
+]`
+    navigator.clipboard.writeText(promptText)
+    setMiljonarCopiedPrompt(true)
+    setTimeout(() => setMiljonarCopiedPrompt(false), 2500)
+  }
+
+  function handleImportMiljonarJson() {
+    setMiljonarJsonError('')
+    try {
+      let raw = miljonarJsonText.trim()
+      if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+      if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(raw)
+      const list = Array.isArray(parsed) ? parsed : parsed.questions
+      if (!Array.isArray(list) || list.length < 5) {
+        throw new Error('JSON peab sisaldama vähemalt 5-15 küsimustega massiivi')
+      }
+      const formatted: MiljonarQuestion[] = list.slice(0, 15).map((item: any, idx: number) => {
+        const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
+        return {
+          id: `m-${Date.now()}-${idx}`,
+          tier: idx + 1,
+          prize: step.prize,
+          q: String(item.q || item.question || `Küsimus ${idx + 1}`),
+          choices: Array.isArray(item.choices) && item.choices.length === 4
+            ? [String(item.choices[0]), String(item.choices[1]), String(item.choices[2]), String(item.choices[3])]
+            : ['Valik A', 'Valik B', 'Valik C', 'Valik D'],
+          correct: (typeof item.correct === 'number' && item.correct >= 0 && item.correct <= 3 ? item.correct : 0) as 0 | 1 | 2 | 3,
+          hostNote: item.hostNote ? String(item.hostNote) : undefined,
+          difficulty: idx < 5 ? 'easy' : idx < 10 ? 'medium' : idx < 14 ? 'hard' : 'expert',
+        }
+      })
+      // Pad to 15 if fewer
+      while (formatted.length < 15) {
+        const idx = formatted.length
+        const def = MILJONAR_KLASSIKA_QUESTIONS[idx]
+        formatted.push({ ...def, tier: idx + 1 })
+      }
+      setMiljonarQs(formatted)
+      setMiljonarJsonOpen(false)
+      setMiljonarJsonText('')
+    } catch (e: any) {
+      setMiljonarJsonError(e.message || 'Vigane JSON formaat')
+    }
+  }
 
   function buildData() {
     switch (gameType) {
@@ -481,12 +570,133 @@ export default function CreatePack() {
         
         {gameType === 'miljonar' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-gold/30 rounded-2xl p-4">
               <div>
-                <h3 className="font-display text-lg text-gold">15 küsimust miljonini</h3>
-                <p className="text-white/50 text-xs">Iga astme jaoks 1 küsimus, 4 vastusevarianti ja 1 õige vastus.</p>
+                <h3 className="font-display text-lg text-gold flex items-center gap-2">
+                  <Sparkles size={18} /> 15 küsimust miljonini
+                </h3>
+                <p className="text-white/60 text-xs">
+                  Vali valmisteema, genereeri tehisintellektiga või kopeeri ChatGPT/Gemini prompt!
+                </p>
+              </div>
+
+              {/* Presets */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMiljonarQs(MILJONAR_KLASSIKA_QUESTIONS.filter((q) => !q.backup))}
+                  className="btn-outline text-xs !py-1 !px-2.5"
+                >
+                  🏆 Klassika
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMiljonarQs(MILJONAR_EESTI_QUESTIONS.filter((q) => !q.backup))}
+                  className="btn-outline text-xs !py-1 !px-2.5"
+                >
+                  🇪🇪 Eesti
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMiljonarQs(MILJONAR_PEO_QUESTIONS.filter((q) => !q.backup))}
+                  className="btn-outline text-xs !py-1 !px-2.5"
+                >
+                  🎉 Pidu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMiljonarJsonOpen(!miljonarJsonOpen)}
+                  className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1"
+                >
+                  <Upload size={13} /> Kleebi JSON
+                </button>
               </div>
             </div>
+
+            {/* AI Generator Bar */}
+            <div className="card-panel p-3.5 border-blue-900/60 bg-blue-950/30 flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                placeholder="Sisesta teema (nt Eesti filmid, Muusika 2000ndad, Teadus)..."
+                className="input-field text-xs flex-1"
+                value={miljonarTopic}
+                onChange={(e) => setMiljonarTopic(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleMiljonarAi()
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleMiljonarAi}
+                disabled={miljonarAiLoading || !miljonarTopic.trim()}
+                className="btn-gold text-xs flex items-center justify-center gap-1.5 px-4 shrink-0"
+              >
+                {miljonarAiLoading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Genereerin...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} /> Genereeri AI-ga
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={copyMiljonarChatGptPrompt}
+                className="btn-outline text-xs flex items-center justify-center gap-1.5 px-3 shrink-0"
+                title="Kopeeri valmis prompt ChatGPT või Gemini sisse kleepimiseks"
+              >
+                {miljonarCopiedPrompt ? (
+                  <>
+                    <Check size={14} className="text-emerald-400" /> Prompt kopeeritud!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} /> Kopeeri AI prompt
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* JSON Import Area */}
+            {miljonarJsonOpen && (
+              <div className="card-panel p-4 border-gold/40 bg-slate-900/90 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gold uppercase tracking-wider">
+                    Kleebi ChatGPT / Gemini genereeritud JSON:
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setMiljonarJsonOpen(false)}
+                    className="text-white/40 hover:text-white text-xs"
+                  >
+                    Sulge
+                  </button>
+                </div>
+                <textarea
+                  placeholder='Kleebi siia [ { "tier": 1, "q": "...", "choices": ["A","B","C","D"], "correct": 0 }, ... ]'
+                  className="input-field font-mono text-xs min-h-[140px]"
+                  value={miljonarJsonText}
+                  onChange={(e) => setMiljonarJsonText(e.target.value)}
+                />
+                {miljonarJsonError && (
+                  <p className="text-accent-red text-xs">{miljonarJsonError}</p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleImportMiljonarJson}
+                    className="btn-gold text-xs px-4"
+                  >
+                    Laadi küsimused tabelisse
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               {miljonarQs.map((q, idx) => {

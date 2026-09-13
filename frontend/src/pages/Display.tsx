@@ -86,6 +86,8 @@ export default function Display() {
                 id: key.replace('session_', ''),
                 code: data.code,
                 game_type:
+                  data.game_type ||
+                  (data.contestant || (data.questions && data.lifelines) ? 'miljonar' : undefined) ||
                   (data.packData?.categories && 'kuldvillak') ||
                   (data.packData?.rounds && 'roosidesoda') ||
                   (data.packData?.words && 'sonaseletus') ||

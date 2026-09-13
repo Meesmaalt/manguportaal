@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { pb, formatPbError, type Pack, ensurePbUrl } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import AdminSounds from '@/components/AdminSounds'
+import AdminAiSettingsCard from '@/components/AdminAiSettingsCard'
 import { backupUserAuth, restoreUserAuth, clearAuthBackup } from '@/lib/adminAuth'
 import { hideTemplate, isTemplateHidden, clearHiddenTemplates, unhideTemplate } from '@/lib/hiddenTemplates'
 import { useI18n } from '@/i18n/I18nContext'
@@ -396,6 +397,9 @@ export default function Admin() {
           </button>
         </div>
       </div>
+
+      {/* AI Settings Section for Superuser */}
+      <AdminAiSettingsCard />
 
       {/* Game filter */}
       <div className="mb-6 flex flex-wrap gap-2 items-center">
