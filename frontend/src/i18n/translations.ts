@@ -137,6 +137,9 @@ export const translations = {
     game_blitz: 'Blitz',
     game_blitz_sub: 'Kiire trivia',
     game_blitz_desc: 'Küsimused telefonis, teleril show. Õige + kiirus = punktid.',
+    game_miljonar: 'Kes tahab saada miljonäriks',
+    game_miljonar_sub: 'Miljonimäng',
+    game_miljonar_desc: '15 astet, turvasummad, 4 oljenööri ja pinev stuudioatmosfäär.',
 
 
     tvJoinTitle: 'Ava teleris',
@@ -511,6 +514,9 @@ export const translations = {
     game_blitz: 'Blitz',
     game_blitz_sub: 'Speed trivia',
     game_blitz_desc: 'Answer on your phone, watch the TV. Correct + speed = points.',
+    game_miljonar: 'Who Wants to Be a Millionaire',
+    game_miljonar_sub: 'Millionaire',
+    game_miljonar_desc: '15 tiers, milestones, 4 lifelines and intense studio suspense.',
 
 
     tvJoinTitle: 'Open on TV',
@@ -883,6 +889,9 @@ export const translations = {
     game_blitz: 'Blitz',
     game_blitz_sub: 'Быстрая викторина',
     game_blitz_desc: 'Отвечай в телефоне, смотри на ТВ. Верно + скорость = очки.',
+    game_miljonar: 'Кто хочет стать миллионером',
+    game_miljonar_sub: 'Игра на миллион',
+    game_miljonar_desc: '15 ступеней, несгораемые суммы, 4 подсказки и студийный накал.',
 
 
     tvJoinTitle: 'Открыть на ТВ',

@@ -18,6 +18,7 @@ export default function SessionCodeBadge({
   const url = appUrl(`/ekraan/${code}`)
 
   async function copy() {
+    if (!code) return
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true)

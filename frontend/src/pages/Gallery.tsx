@@ -1,20 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { pb, type Pack } from '@/lib/pocketbase'
+import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/translations'
 import { GAME_META, type GameType } from '@/lib/types'
-import { ArrowLeft, Play, Sparkles } from 'lucide-react'
+import { ArrowLeft, Play, Sparkles, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 /**
  * Public pack gallery — browse is_official / is_public packs across games.
  */
 export default function Gallery() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [packs, setPacks] = useState<Pack[]>([])
   const [loading, setLoading] = useState(true)
   const [gameFilter, setGameFilter] = useState<GameType | 'all'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -22,12 +24,45 @@ export default function Gallery() {
       try {
         const list = await pb.collection('packs').getList<Pack>(1, 200, { requestKey: null })
         if (!cancelled) {
-          setPacks(
-            list.items.filter((p) => p.is_official || p.is_public)
-          )
+          const remotePacks = list.items.filter((p) => p.is_official || p.is_public)
+          // Merge with local official packs
+          const localFormatted: Pack[] = OFFICIAL_PACKS.map((p, idx) => ({
+            id: `official-${p.game_type}-${p.slug || idx}`,
+            name: p.name,
+            description: p.description,
+            game_type: p.game_type,
+            data: p.data,
+            is_official: true,
+            is_public: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          })) as Pack[]
+
+          // Deduplicate by name + game_type
+          const map = new Map<string, Pack>()
+          for (const p of [...remotePacks, ...localFormatted]) {
+            const key = `${p.game_type}::${p.name}`
+            if (!map.has(key)) {
+              map.set(key, p)
+            }
+          }
+          setPacks(Array.from(map.values()))
         }
       } catch {
-        if (!cancelled) setPacks([])
+        if (!cancelled) {
+          const localFormatted: Pack[] = OFFICIAL_PACKS.map((p, idx) => ({
+            id: `official-${p.game_type}-${p.slug || idx}`,
+            name: p.name,
+            description: p.description,
+            game_type: p.game_type,
+            data: p.data,
+            is_official: true,
+            is_public: true,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          })) as Pack[]
+          setPacks(localFormatted)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -38,9 +73,17 @@ export default function Gallery() {
   }, [])
 
   const filtered = useMemo(() => {
-    if (gameFilter === 'all') return packs
-    return packs.filter((p) => p.game_type === gameFilter)
-  }, [packs, gameFilter])
+    return packs.filter((p) => {
+      if (gameFilter !== 'all' && p.game_type !== gameFilter) return false
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchName = p.name.toLowerCase().includes(q)
+        const matchDesc = (p.description || '').toLowerCase().includes(q)
+        return matchName || matchDesc
+      }
+      return true
+    })
+  }, [packs, gameFilter, searchQuery])
 
   const games = useMemo(() => {
     const s = new Set(packs.map((p) => p.game_type))
@@ -53,11 +96,26 @@ export default function Gallery() {
         <ArrowLeft size={16} /> {t('packBack')}
       </Link>
 
-      <div className="flex items-center gap-3 mb-2">
-        <Sparkles className="text-gold" size={28} />
-        <h1 className="font-display text-3xl text-gold">{t('galleryTitle')}</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <Sparkles className="text-gold" size={28} />
+            <h1 className="font-display text-3xl text-gold">{t('galleryTitle')}</h1>
+          </div>
+          <p className="text-white/55 text-sm">{t('gallerySub')}</p>
+        </div>
+
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
+          <input
+            type="text"
+            placeholder="Otsi teemat..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-field pl-9 text-xs py-2 w-full"
+          />
+        </div>
       </div>
-      <p className="text-white/55 text-sm mb-6">{t('gallerySub')}</p>
 
       <div className="flex flex-wrap gap-2 mb-6">
         <button
@@ -87,7 +145,7 @@ export default function Gallery() {
         <p className="text-gold animate-pulse">{t('packLoading')}</p>
       ) : filtered.length === 0 ? (
         <div className="card-panel p-6 text-center text-white/50 text-sm">
-          {t('galleryEmpty')}
+          {searchQuery ? `Otsingule "${searchQuery}" ei leitud ühtegi pakki.` : t('galleryEmpty')}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">

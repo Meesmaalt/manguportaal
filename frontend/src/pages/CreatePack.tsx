@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { formatPbError } from '@/lib/pocketbase'
+import { pb, formatPbError } from '@/lib/pocketbase'
 import { createOwnedPack } from '@/lib/sessions'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
 import { GAME_META, type GameType } from '@/lib/types'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
 import type { BlitzQuestion } from '@/games/blitz/types'
+import { MILJONAR_KLASSIKA_QUESTIONS } from '@/games/miljonar/miljonarPacks'
+import type { MiljonarQuestion } from '@/games/miljonar/types'
+import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
 
 const TYPES: GameType[] = [
   'kuldvillak',
+  'miljonar',
   'roosidesoda',
   'blitz',
   'kinnistu_deal',
@@ -76,8 +80,18 @@ export default function CreatePack() {
   const [blitzMax, setBlitzMax] = useState(1000)
   const [blitzReveal, setBlitzReveal] = useState(5)
 
+  // Miljonär
+  const [miljonarQs, setMiljonarQs] = useState<MiljonarQuestion[]>(() => {
+    return MILJONAR_KLASSIKA_QUESTIONS.filter((q) => !q.backup).map((q) => ({ ...q }))
+  })
+
   function buildData() {
     switch (gameType) {
+      case 'miljonar':
+        return {
+          questions: miljonarQs,
+          backupQuestions: MILJONAR_KLASSIKA_QUESTIONS.filter((q) => q.backup),
+        }
       case 'kuldvillak':
         return {
           categories,
@@ -465,6 +479,84 @@ export default function CreatePack() {
         )}
 
         
+        {gameType === 'miljonar' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-display text-lg text-gold">15 küsimust miljonini</h3>
+                <p className="text-white/50 text-xs">Iga astme jaoks 1 küsimus, 4 vastusevarianti ja 1 õige vastus.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {miljonarQs.map((q, idx) => {
+                const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
+                return (
+                  <div
+                    key={idx}
+                    className={`card-panel p-4 border transition ${step.isMilestone ? 'border-amber-500/60 bg-amber-950/10' : 'border-white/10'}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-display font-bold text-sm text-gold">
+                        Tase {idx + 1} · {formatPrize(step.prize)} {step.isMilestone && '(Turvasumma)'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder={`Tase ${idx + 1} küsimus...`}
+                        className="input-field text-sm font-medium w-full"
+                        value={q.q}
+                        onChange={(e) => {
+                          const updated = [...miljonarQs]
+                          updated[idx] = { ...updated[idx], q: e.target.value }
+                          setMiljonarQs(updated)
+                        }}
+                      />
+
+                      <div className="grid sm:grid-cols-2 gap-2 pt-1">
+                        {q.choices.map((choice, cIdx) => (
+                          <div key={cIdx} className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...miljonarQs]
+                                updated[idx] = { ...updated[idx], correct: cIdx as 0 | 1 | 2 | 3 }
+                                setMiljonarQs(updated)
+                              }}
+                              className={`w-7 h-7 rounded-lg text-xs font-bold shrink-0 transition ${
+                                q.correct === cIdx
+                                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30'
+                                  : 'bg-white/5 text-white/40 hover:bg-white/10'
+                              }`}
+                            >
+                              {['A', 'B', 'C', 'D'][cIdx]}
+                            </button>
+                            <input
+                              type="text"
+                              placeholder={`Valik ${['A', 'B', 'C', 'D'][cIdx]}`}
+                              className={`input-field text-xs py-1.5 flex-1 ${q.correct === cIdx ? 'border-emerald-500/50' : ''}`}
+                              value={choice}
+                              onChange={(e) => {
+                                const updated = [...miljonarQs]
+                                const newChoices = [...updated[idx].choices] as [string, string, string, string]
+                                newChoices[cIdx] = e.target.value
+                                updated[idx] = { ...updated[idx], choices: newChoices }
+                                setMiljonarQs(updated)
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {gameType === 'blitz' && (
           <BlitzPackEditor
             questions={blitzQs}

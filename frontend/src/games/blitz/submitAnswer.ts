@@ -6,12 +6,14 @@ import { mergePlayerAnswer } from './logic'
 export async function submitAnswerWithRetry(opts: {
   sessionId: string
   playerId: string
-  choice: BlitzChoice
+  choice?: BlitzChoice
+  answerData?: BlitzChoice | { choice?: BlitzChoice; choices?: number[]; textAnswer?: string; numericAnswer?: number }
   isLocal?: boolean
   maxAttempts?: number
 }): Promise<{ ok: true; state: BlitzState } | { ok: false; error: string }> {
   const max = opts.maxAttempts ?? 4
   const key = `session_${opts.sessionId}`
+  const payload = opts.answerData !== undefined ? opts.answerData : (opts.choice ?? 0)
 
   for (let attempt = 0; attempt < max; attempt++) {
     try {
@@ -19,7 +21,7 @@ export async function submitAnswerWithRetry(opts: {
         const raw = localStorage.getItem(key)
         if (!raw) return { ok: false, error: 'Sessioon puudub' }
         const server = JSON.parse(raw) as BlitzState
-        const next = mergePlayerAnswer(server, opts.playerId, opts.choice)
+        const next = mergePlayerAnswer(server, opts.playerId, payload)
         localStorage.setItem(key, JSON.stringify(next))
         return { ok: true, state: next }
       }
@@ -32,7 +34,7 @@ export async function submitAnswerWithRetry(opts: {
       if (server.answers?.[opts.playerId]) {
         return { ok: true, state: server } // already in
       }
-      const next = mergePlayerAnswer(server, opts.playerId, opts.choice)
+      const next = mergePlayerAnswer(server, opts.playerId, payload)
       // Preserve any answers that appeared between get and merge
       next.answers = { ...server.answers, ...next.answers }
       await pb.collection('game_sessions').update(opts.sessionId, { state: next })
@@ -45,6 +47,41 @@ export async function submitAnswerWithRetry(opts: {
     }
   }
   return { ok: false, error: 'Ei õnnestunud' }
+}
+
+export async function sendReactionWithRetry(opts: {
+  sessionId: string
+  emoji: string
+  playerName?: string
+  isLocal?: boolean
+}): Promise<void> {
+  const key = `session_${opts.sessionId}`
+  const reaction = {
+    id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    emoji: opts.emoji,
+    playerName: opts.playerName,
+    at: Date.now(),
+  }
+  try {
+    if (opts.isLocal || opts.sessionId.startsWith('local') || localStorage.getItem(key) != null) {
+      const raw = localStorage.getItem(key)
+      if (raw) {
+        const server = JSON.parse(raw) as BlitzState
+        const kept = (server.reactions || []).filter((r) => Date.now() - r.at < 5000)
+        server.reactions = [...kept, reaction].slice(-25)
+        localStorage.setItem(key, JSON.stringify(server))
+      }
+      return
+    }
+    const rec = await pb.collection('game_sessions').getOne<GameSession>(opts.sessionId)
+    const server = rec.state as BlitzState
+    const kept = (server.reactions || []).filter((r) => Date.now() - r.at < 5000)
+    const updated = {
+      ...server,
+      reactions: [...kept, reaction].slice(-25),
+    }
+    await pb.collection('game_sessions').update(opts.sessionId, { state: updated })
+  } catch {}
 }
 
 export async function joinWithRetry(opts: {

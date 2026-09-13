@@ -8,8 +8,10 @@ import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/
 import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
 import BlitzHost from '@/games/blitz/BlitzHost'
+import MiljonarHost from '@/games/miljonar/MiljonarHost'
 import type { BlitzState } from '@/games/blitz/types'
 import type { KinnistuDealState } from '@/games/kinnistu-deal/types'
+import type { MiljonarState } from '@/games/miljonar/types'
 import { GAME_META, type GameType } from '@/lib/types'
 import GameShowFrame from '@/components/GameShowFrame'
 import { useI18n } from '@/i18n/I18nContext'
@@ -134,6 +136,9 @@ export default function PlayGeneric() {
         )}
         {gameType === 'kinnistu_deal' && (
           <KinnistuDealGame state={state as KinnistuDealState} update={update} isHost sessionCode={code} />
+        )}
+        {gameType === 'miljonar' && (
+          <MiljonarHost state={state as MiljonarState} update={update} isHost sessionCode={code} />
         )}
         {gameType === 'tode_voi_tegu' && (
           <TodeVoiTeguGame state={state as TodeVoiTeguState} update={update} isHost sessionCode={code} />

@@ -9,6 +9,7 @@ import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
 import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
 import KinnistuDealTv from '@/games/kinnistu-deal/KinnistuDealTv'
 import BlitzTv from '@/games/blitz/BlitzTv'
+import MiljonarTv from '@/games/miljonar/MiljonarTv'
 import GameShowFrame from '@/components/GameShowFrame'
 import DisplayCornerTools from '@/components/DisplayCornerTools'
 import ConnectionChip from '@/components/ConnectionChip'
@@ -226,7 +227,10 @@ export default function Display() {
       {gt === 'kinnistu_deal' && (
         <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
       )}
-      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && (
+      {gt === 'miljonar' && (
+        <MiljonarTv state={state as any} sessionCode={session.code || state.code} />
+      )}
+      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && gt !== 'miljonar' && (
         <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
           {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
           {gt === 'ma_ei_ole_kunagi' && (

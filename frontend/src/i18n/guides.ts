@@ -41,6 +41,18 @@ Ei ole Hasbro toode — peo versioon eesti kinnistunimedega.`,
 Küsimused telefonis, teleril suur lava. Õige + kiirus = punktid. Üksinda või tiimides.
 
 Host juhib; külalised liituvad lingi/QR-iga. Sobib peole ja kontorisse — kõrge tempo.`,
+    miljonar: `Kes tahab saada miljonäriks — klassikaline teleshow atmosfäär.
+
+15 küsimust kasvava raskusastmega (100 € kuni 1 000 000 €).
+Turvasummad (5. ja 10. tase) tagavad väljakukkumisel võidu.
+
+4 oljenööri:
+• 50:50 — eemaldab kaks valet vastust
+• Rahva hääl — publik hääletab nutitelefonist QR-koodiga
+• Helista sõbrale — 30-sekundiline taimer ja helistamine
+• Küsimuse vahetus — asendab praeguse küsimuse varuküsimusega
+
+Mängija võib igal ajal enne lukustamist mängu pooleli jätta ja võidetud summa kaasa võtta.`,
     tode_voi_tegu: `Tõde või tegu — julged küsimused ja ülesanded.
 
 Mängija valib: vastata ausalt või teha tegu. Sett annab ideid; seltskond hoiab piire.
@@ -92,6 +104,18 @@ Classic party fun for friends who want laughs and a little courage.`,
 Questions on phones; TV is the stage. Correct + speed = points.
 
 Host runs rounds; guests join via link or QR.`,
+    miljonar: `Who Wants to Be a Millionaire — classic game show suspense.
+
+15 levels of increasing difficulty (€100 to €1,000,000).
+Safety net milestones at levels 5 and 10 guarantee prizes.
+
+4 Lifelines:
+• 50:50 — eliminates two incorrect choices
+• Ask the Audience — live smartphone voting via QR code
+• Phone a Friend — 30-second countdown phone lifeline
+• Switch the Question — swaps question with a backup
+
+Players can walk away at any time before locking in an answer and take home their winnings.`,
   },
   ru: {
     kuldvillak: `Классическая викторина в духе «Своей игры».
@@ -136,6 +160,18 @@ Host runs rounds; guests join via link or QR.`,
 Вопросы на телефонах; ТВ — сцена. Верно + скорость = очки.
 
 Ведущий ведёт; гости по ссылке или QR.`,
+    miljonar: `Кто хочет стать миллионером — классическое ТВ-шоу.
+
+15 вопросов с нарастающей сложностью (от 100 € до 1 000 000 €).
+Несгораемые суммы на 5-й и 10-й ступенях гарантируют выигрыш.
+
+4 подсказки:
+• 50:50 — убирает два неверных варианта
+• Помощь зала — зрители голосуют со смартфона по QR-коду
+• Звонок другу — 30-секундный таймер
+• Замена вопроса — заменяет текущий вопрос на запасной
+
+Игрок может забрать заработанные деньги в любой момент до фиксации ответа.`,
   },
 } as const
 
@@ -148,6 +184,7 @@ export type GuideGame =
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
   | 'blitz'
+  | 'miljonar'
 
 export function getGuide(lang: Lang, gameType: string): string {
   const table = guides[lang] || guides.et

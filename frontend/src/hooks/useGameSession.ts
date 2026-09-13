@@ -221,7 +221,7 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
           pb.collection('game_sessions')
             .update(sessionId, { state: withBeat })
             .then((rec) => {
-              setSession(rec as GameSession)
+              setSession(rec as unknown as GameSession)
               markSync('live')
             })
             .catch((err) => {

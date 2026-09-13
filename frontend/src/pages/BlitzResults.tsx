@@ -58,7 +58,8 @@ export default function BlitzResults() {
     }
   }, [code])
 
-  const rows =
+  type ResultRow = { name: string; score: number; avatar?: string; team?: any }
+  const rows: ResultRow[] =
     state?.resultsSnapshot?.rows ||
     (state ? sortedPlayers(state.players || []).map((p) => ({
       name: p.name,

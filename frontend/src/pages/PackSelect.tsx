@@ -136,6 +136,36 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData: { winSets: packData.winSets || 3, startHand: packData.startHand || 5, theme: packData.theme || 'classic' },
       }
     }
+    case 'miljonar': {
+      const qs = Array.isArray(packData.questions) ? packData.questions : []
+      const backupQs = Array.isArray(packData.backupQuestions) ? packData.backupQuestions : []
+      return {
+        phase: 'lobby',
+        contestant: { name: 'Mängija 1' },
+        questions: qs,
+        backupQuestions: backupQs,
+        currentTierIndex: 0,
+        lifelines: {
+          fifty_fifty: true,
+          ask_audience: true,
+          phone_friend: true,
+          switch_question: true,
+        },
+        selectedChoice: null,
+        isLocked: false,
+        eliminatedChoices: [],
+        accumulatedBank: 0,
+        guaranteedBank: 0,
+        musicEnabled: true,
+        sfxEnabled: true,
+        audienceVotes: {},
+        audienceStats: null,
+        phoneTimer: null,
+        contestantHistory: [],
+        code,
+        packData,
+      }
+    }
     default:
       return { packData, code }
   }
@@ -183,6 +213,7 @@ export default function PackSelect() {
     'tode_voi_tegu',
     'kinnistu_deal',
     'blitz',
+    'miljonar',
   ].includes(gameType || '')
   const gameTitle = isValid ? t(('game_' + gameType) as TranslationKey) : ''
   const emoji =
@@ -196,6 +227,7 @@ export default function PackSelect() {
         tode_voi_tegu: '🎲',
         kinnistu_deal: '🏠',
         blitz: '⚡',
+        miljonar: '💰',
       } as Record<string, string>
     )[gameType || ''] || ''
 

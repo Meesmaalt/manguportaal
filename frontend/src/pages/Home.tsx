@@ -7,7 +7,7 @@ import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
 
 /** Featured on homepage — full list is on /dashboard */
-const FEATURED: GameType[] = ['kuldvillak', 'blitz', 'kinnistu_deal']
+const FEATURED: GameType[] = ['kuldvillak', 'miljonar', 'blitz', 'kinnistu_deal', 'roosidesoda', 'sonaseletus']
 
 const EMOJI: Record<GameType, string> = {
   kuldvillak: '🏆',
@@ -18,6 +18,7 @@ const EMOJI: Record<GameType, string> = {
   tode_voi_tegu: '🎲',
   kinnistu_deal: '🏠',
   blitz: '⚡',
+  miljonar: '💰',
 }
 
 export default function Home() {

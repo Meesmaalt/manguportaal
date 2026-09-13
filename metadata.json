@@ -1,0 +1,8 @@
+{
+  "name": "Õhtu Mängud",
+  "description": "Seltskonnamängude portaal: Kes tahab saada miljonäriks, Kuldvillak, Rooside Sõda, Blitz, Kinnistu Deal ja teised peomängud.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

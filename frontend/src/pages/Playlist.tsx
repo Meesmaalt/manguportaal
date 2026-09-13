@@ -13,17 +13,19 @@ import {
 
 const ALL: GameType[] = [
   'kuldvillak',
+  'miljonar',
   'roosidesoda',
+  'blitz',
+  'kinnistu_deal',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
   'tode_voi_tegu',
-  'kinnistu_deal',
-  'blitz',
 ]
 
 const EMOJI: Record<GameType, string> = {
   kuldvillak: '🏆',
+  miljonar: '💰',
   roosidesoda: '🌹',
   sonaseletus: '🗣️',
   ma_ei_ole_kunagi: '🙅',

@@ -1,5 +1,76 @@
 import type { BlitzQuestion } from './types'
 
+export const BLITZ_KAHOOT_SHOWCASE_QUESTIONS: BlitzQuestion[] = [
+  {
+    id: 'kshow-1',
+    type: 'quiz',
+    q: 'Mis on Eesti Vabariigi ametlik pealinn?',
+    choices: ['Tartu', 'Tallinn', 'Pärnu', 'Viljandi'],
+    correct: 1,
+    difficulty: 'easy',
+    timeLimit: 20,
+    hostNote: 'Soojendusküsimus',
+  },
+  {
+    id: 'kshow-2',
+    type: 'true_false',
+    q: 'Tõene või Väär: Eestis elab looduses pruunkarusid üle tuhande isendi?',
+    choices: ['TÕENE', 'VÄÄR', '', ''],
+    correct: 0,
+    difficulty: 'medium',
+    timeLimit: 15,
+    hostNote: 'Eestis on tõepoolest hinnanguliselt 1000–1100 karu!',
+  },
+  {
+    id: 'kshow-3',
+    type: 'slider',
+    q: 'Paku arv: Mis aastal loodi esimene Skype versioon Tallinnas?',
+    choices: ['', '', '', ''],
+    correct: 0,
+    sliderMin: 1995,
+    sliderMax: 2015,
+    sliderStep: 1,
+    sliderTarget: 2003,
+    sliderUnit: 'aastal',
+    difficulty: 'medium',
+    timeLimit: 25,
+    hostNote: 'Skype avaldati augustis 2003!',
+  },
+  {
+    id: 'kshow-4',
+    type: 'multi',
+    q: 'Mitmikvalik: Millised neist on ametlikult Läänemere saared?',
+    choices: ['Saaremaa', 'Hiiumaa', 'Gotland', 'Sitsiilia'],
+    correct: 0,
+    multiCorrect: [0, 1, 2],
+    difficulty: 'medium',
+    timeLimit: 20,
+    hostNote: 'Sitsiilia asub Vahemeres!',
+  },
+  {
+    id: 'kshow-5',
+    type: 'type_answer',
+    q: 'Kirjuta vastus: Mis on Eesti kõrgeima mäe nimi? (Suur ...)',
+    choices: ['Suur Munamägi', '', '', ''],
+    correct: 0,
+    acceptedAnswers: ['Munamägi', 'Suur Munamägi', 'suur munamägi', 'munamagi', 'suur munamagi'],
+    difficulty: 'easy',
+    timeLimit: 25,
+    hostNote: '317,4 meetrit merepinnast!',
+  },
+  {
+    id: 'kshow-6',
+    type: 'quiz',
+    q: 'KULDNE KÜSIMUS (2X): Mis on Maa atmosfääri kõige levinum gaas?',
+    choices: ['Hapnik', 'Lämmastik', 'Süsihappegaas', 'Argoon'],
+    correct: 1,
+    pointsMultiplier: 2,
+    difficulty: 'hard',
+    timeLimit: 20,
+    hostNote: 'Lämmastik moodustab umbes 78%!',
+  },
+]
+
 export const BLITZ_CLASSIC_QUESTIONS: BlitzQuestion[] = [
   { id: 'b1', q: 'Mis on Eesti pealinn?', choices: ['Tartu', 'Tallinn', 'Pärnu', 'Narva'], correct: 1 },
   { id: 'b2', q: 'Mitu mängijat on jalgpalliväljakul ühes meeskonnas?', choices: ['9', '10', '11', '12'], correct: 2 },
@@ -15,7 +86,7 @@ export const BLITZ_CLASSIC_QUESTIONS: BlitzQuestion[] = [
   { id: 'b12', q: 'Milline on õige järjekord?', choices: ['g, kg, mg', 'mg, g, kg', 'kg, mg, g', 'g, mg, kg'], correct: 1 },
   { id: 'b13', q: 'Mis on Eesti interneti domeen?', choices: ['.ee', '.et', '.es', '.eu'], correct: 0 },
   { id: 'b14', q: 'Mitu kontinentit on tavapäraselt loetletud?', choices: ['5', '6', '7', '8'], correct: 2 },
-  { id: 'b15', q: 'Mis värvi on Eesti lipu ülemine triip?', choices: ['Must', 'Valge', 'Sinine', 'Punane'], correct: 2 },
+  { id: 'b15', q: 'Mis värvi on Eesti lipu ülemine triip?', choices: ['Must', 'Valge', 'Sinine', 'Punane'], correct: 2, pointsMultiplier: 2 },
 ]
 
 export const BLITZ_PARTY_QUESTIONS: BlitzQuestion[] = [

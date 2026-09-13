@@ -5,19 +5,27 @@ export type GameStats = {
   lastWinners: { game: string; name?: string; at: number }[]
   sessionStarts: Record<string, number>
   questionsResolved: number
+  sessionsStarted: number
+  lastPlayedAt?: number
 }
 
 function load(): GameStats {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || '{}')
+    const sessionStarts = raw.sessionStarts || {}
+    const sessionsStarted = Object.values(sessionStarts).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0)
+    const lastWinners = raw.lastWinners || []
+    const lastPlayedAt = lastWinners[0]?.at
     return {
       plays: raw.plays || {},
-      lastWinners: raw.lastWinners || [],
-      sessionStarts: raw.sessionStarts || {},
+      lastWinners,
+      sessionStarts,
       questionsResolved: Number(raw.questionsResolved) || 0,
+      sessionsStarted,
+      lastPlayedAt,
     }
   } catch {
-    return { plays: {}, lastWinners: [], sessionStarts: {}, questionsResolved: 0 }
+    return { plays: {}, lastWinners: [], sessionStarts: {}, questionsResolved: 0, sessionsStarted: 0 }
   }
 }
 

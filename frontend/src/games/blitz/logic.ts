@@ -1,5 +1,5 @@
 import type { BlitzAnswer, BlitzChoice, BlitzPlayer, BlitzPowerUp, BlitzQuestion, BlitzState, BlitzTeamId } from './types'
-import { calcPoints, makePlayerId, shuffleQuestions } from './types'
+import { calcPoints, makePlayerId, shuffleQuestions, sortedPlayers } from './types'
 
 export function normalizeBlitzState(s: BlitzState | null | undefined): BlitzState | null {
   if (!s || typeof s !== 'object') return null
@@ -119,10 +119,13 @@ export function openQuestion(s: BlitzState, qIndex?: number): BlitzState {
   if (idx < 0 || idx >= s.questions.length) {
     return { ...s, phase: 'podium', answers: {}, lastRoundPoints: {} }
   }
+  const q = s.questions[idx]
+  const seconds = q?.timeLimit || s.secondsPerQuestion || 20
   return {
     ...s,
     phase: 'question',
     qIndex: idx,
+    secondsPerQuestion: seconds,
     questionStartedAt: Date.now(),
     countdownStartedAt: undefined,
     answers: {},
@@ -135,26 +138,60 @@ export function openQuestion(s: BlitzState, qIndex?: number): BlitzState {
 export function mergePlayerAnswer(
   server: BlitzState,
   playerId: string,
-  choice: BlitzChoice,
+  answerData: BlitzChoice | { choice?: BlitzChoice; choices?: number[]; textAnswer?: string; numericAnswer?: number },
   clientNow?: number
 ): BlitzState {
   if (server.phase !== 'question' || !server.questionStartedAt) return server
   if (server.answers[playerId]) return server
   if (!server.players.some((p) => p.id === playerId)) return server
   const elapsed = Math.max(0, (clientNow || Date.now()) - server.questionStartedAt)
-  const limit = server.secondsPerQuestion * 1000 + 800
+  const q = server.questions[server.qIndex]
+  const limitSec = q?.timeLimit || server.secondsPerQuestion
+  const limit = limitSec * 1000 + 800
   if (elapsed > limit) return server
+
+  const answer: BlitzAnswer =
+    typeof answerData === 'number'
+      ? { choice: answerData as BlitzChoice, at: elapsed }
+      : { ...answerData, at: elapsed }
+
   return {
     ...server,
     answers: {
       ...server.answers,
-      [playerId]: { choice, at: elapsed },
+      [playerId]: answer,
     },
   }
 }
 
-export function submitAnswer(s: BlitzState, playerId: string, choice: BlitzChoice): BlitzState {
-  return mergePlayerAnswer(s, playerId, choice)
+export function submitAnswer(
+  s: BlitzState,
+  playerId: string,
+  answerData: BlitzChoice | { choice?: BlitzChoice; choices?: number[]; textAnswer?: string; numericAnswer?: number }
+): BlitzState {
+  return mergePlayerAnswer(s, playerId, answerData)
+}
+
+export function sendReaction(s: BlitzState, emoji: string, playerName?: string): BlitzState {
+  const reaction = {
+    id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    emoji,
+    playerName,
+    at: Date.now(),
+  }
+  const now = Date.now()
+  const kept = (s.reactions || []).filter((r) => now - r.at < 5000)
+  return {
+    ...s,
+    reactions: [...kept, reaction].slice(-30),
+  }
+}
+
+export function setPlayerAvatar(s: BlitzState, playerId: string, avatar: string): BlitzState {
+  return {
+    ...s,
+    players: s.players.map((p) => (p.id === playerId ? { ...p, avatar } : p)),
+  }
 }
 
 export function reveal(s: BlitzState): BlitzState {
@@ -166,7 +203,9 @@ export function reveal(s: BlitzState): BlitzState {
   if (s.isWarmup) {
     const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
     for (const ans of Object.values(s.answers || {})) {
-      lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
+      if (ans.choice != null) {
+        lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
+      }
     }
     return {
       ...s,
@@ -178,30 +217,104 @@ export function reveal(s: BlitzState): BlitzState {
     }
   }
 
+  // Pre-round rankings for climber calculation
+  const preRanks = new Map<string, number>()
+  sortedPlayers(s.players || []).forEach((p, idx) => preRanks.set(p.id, idx + 1))
+
   const lastRoundPoints: Record<string, number> = {}
   const lastAnswerDist: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 }
   const answers = s.answers || {}
+  const qType = q.type || 'quiz'
+  const isFinalQ = s.qIndex === (s.questions || []).length - 1 && (s.questions || []).length > 0
+  const qMultiplier = (q.pointsMultiplier || 1) * (isFinalQ ? 2 : 1)
+  const qDuration = q.timeLimit || s.secondsPerQuestion
+
   const players = (s.players || []).map((p) => {
     const ans = answers[p.id]
     if (!ans) {
       lastRoundPoints[p.id] = 0
       return { ...p, streak: 0, activeDouble: false, hiddenChoices: undefined }
     }
-    lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
-    const correct = ans.choice === q.correct
-    let pts = calcPoints(correct, ans.at, s.secondsPerQuestion, s.pointsMax)
-    const streak = correct ? (p.streak || 0) + 1 : 0
-    if (correct && streak > 1) {
-      pts += Math.min(200, (streak - 1) * 50)
+
+    if (ans.choice != null) {
+      lastAnswerDist[ans.choice] = (lastAnswerDist[ans.choice] || 0) + 1
+    } else if (ans.choices?.length) {
+      ans.choices.forEach((c) => {
+        lastAnswerDist[c] = (lastAnswerDist[c] || 0) + 1
+      })
     }
-    const isFinalQ = s.qIndex === (s.questions || []).length - 1 && (s.questions || []).length > 0
-    if (correct && isFinalQ) {
-      pts = Math.round(pts * 2)
+
+    let isCorrect = false
+    let accuracyRatio = 0 // 0..1
+
+    if (qType === 'quiz' || qType === 'true_false') {
+      isCorrect = ans.choice === q.correct
+      accuracyRatio = isCorrect ? 1 : 0
+    } else if (qType === 'multi') {
+      const target = q.multiCorrect && q.multiCorrect.length ? q.multiCorrect : [q.correct]
+      const chosen = ans.choices || (ans.choice != null ? [ans.choice] : [])
+      const correctHits = chosen.filter((c) => target.includes(c)).length
+      const wrongHits = chosen.filter((c) => !target.includes(c)).length
+      if (wrongHits === 0 && correctHits === target.length) {
+        isCorrect = true
+        accuracyRatio = 1
+      } else if (wrongHits === 0 && correctHits > 0) {
+        isCorrect = true
+        accuracyRatio = correctHits / target.length
+      } else {
+        isCorrect = false
+        accuracyRatio = 0
+      }
+    } else if (qType === 'type_answer') {
+      const targets = (q.acceptedAnswers && q.acceptedAnswers.length ? q.acceptedAnswers : [q.choices[q.correct]])
+        .map((a) => a.trim().toLowerCase().replace(/\s+/g, ''))
+      const given = (ans.textAnswer || '').trim().toLowerCase().replace(/\s+/g, '')
+      isCorrect = targets.some((t) => t === given)
+      accuracyRatio = isCorrect ? 1 : 0
+    } else if (qType === 'slider') {
+      const target = q.sliderTarget ?? 50
+      const min = q.sliderMin ?? 0
+      const max = q.sliderMax ?? 100
+      const guess = ans.numericAnswer ?? 0
+      const diff = Math.abs(guess - target)
+      const range = Math.max(1, max - min)
+      const errorRatio = diff / range
+      if (errorRatio <= 0.03) {
+        isCorrect = true
+        accuracyRatio = 1
+      } else if (errorRatio <= 0.12) {
+        isCorrect = true
+        accuracyRatio = 0.8
+      } else if (errorRatio <= 0.25) {
+        isCorrect = true
+        accuracyRatio = 0.5
+      } else {
+        isCorrect = false
+        accuracyRatio = 0
+      }
+    } else if (qType === 'poll') {
+      isCorrect = true
+      accuracyRatio = 1
     }
-    if (correct && p.activeDouble) {
-      pts = Math.round(pts * 2)
+
+    let pts = 0
+    if (qType === 'poll') {
+      pts = 500 * (p.activeDouble ? 2 : 1)
+    } else if (isCorrect) {
+      const basePts = calcPoints(true, ans.at, qDuration, s.pointsMax, qMultiplier)
+      pts = Math.round(basePts * accuracyRatio)
+      const streak = (p.streak || 0) + 1
+      if (streak > 1) {
+        pts += Math.min(200, (streak - 1) * 50)
+      }
+      if (p.activeDouble) {
+        pts = Math.round(pts * 2)
+      }
     }
+
+    const streak = qType === 'poll' ? (p.streak || 0) : isCorrect ? (p.streak || 0) + 1 : 0
     lastRoundPoints[p.id] = pts
+
     return {
       ...p,
       score: p.score + pts,
@@ -211,6 +324,22 @@ export function reveal(s: BlitzState): BlitzState {
       hiddenChoices: undefined,
     }
   })
+
+  // Post-round rankings to find highest climber
+  const postRanks = new Map<string, number>()
+  sortedPlayers(players).forEach((p, idx) => postRanks.set(p.id, idx + 1))
+
+  let climber: { playerId: string; name: string; delta: number } | undefined
+  let maxDelta = 0
+  for (const p of players) {
+    const pre = preRanks.get(p.id) || 1
+    const post = postRanks.get(p.id) || 1
+    const delta = pre - post
+    if (delta > maxDelta && delta >= 2) {
+      maxDelta = delta
+      climber = { playerId: p.id, name: p.name, delta }
+    }
+  }
 
   let streakEvent = s.streakEvent
   for (const p of players) {
@@ -223,7 +352,7 @@ export function reveal(s: BlitzState): BlitzState {
   const lastPhotoFinish = (s.players || [])
     .map((p) => {
       const ans = answers[p.id]
-      if (!ans || ans.choice !== q.correct) return null
+      if (!ans || (lastRoundPoints[p.id] || 0) <= 0) return null
       return {
         playerId: p.id,
         name: p.name,
@@ -232,7 +361,7 @@ export function reveal(s: BlitzState): BlitzState {
       }
     })
     .filter(Boolean)
-    .sort((a, b) => (a!.atMs - b!.atMs))
+    .sort((a, b) => a!.atMs - b!.atMs)
     .slice(0, 5) as { playerId: string; name: string; atMs: number; points: number }[]
 
   return {
@@ -243,6 +372,7 @@ export function reveal(s: BlitzState): BlitzState {
     lastAnswerDist,
     lastPhotoFinish,
     streakEvent,
+    climber,
     revealStartedAt: Date.now(),
   }
 }

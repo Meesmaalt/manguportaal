@@ -29,7 +29,8 @@ export default function TvJoinPanel({ code, connection = 'offline', lastSync = 0
 
   async function copy(kind: 'link' | 'code' | 'buzz') {
     try {
-      const text = kind === 'link' ? url : kind === 'buzz' ? buzzUrl : code
+      const text = kind === 'link' ? url : kind === 'buzz' ? buzzUrl : (code || '')
+      if (!text) return
       await navigator.clipboard.writeText(text)
       setCopied(kind)
       setTimeout(() => setCopied(null), 2000)

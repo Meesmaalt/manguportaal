@@ -1,4 +1,5 @@
 import { BLITZ_CLASSIC_QUESTIONS, BLITZ_PARTY_QUESTIONS, BLITZ_WEDDING_QUESTIONS, BLITZ_OFFICE_QUESTIONS, BLITZ_KIDS_QUESTIONS } from '@/games/blitz/classicQuestions'
+import { MILJONAR_KLASSIKA_QUESTIONS, MILJONAR_EESTI_QUESTIONS, MILJONAR_PEO_QUESTIONS } from '@/games/miljonar/miljonarPacks'
 import type { KuldvillakPackData, RoosidesodaPackData } from '@/lib/pocketbase'
 
 export const KULDVILLAK_KLASSIKA: KuldvillakPackData = {
@@ -708,6 +709,45 @@ export const OFFICIAL_PACKS = [
     description: 'Kontorihuumor. Võit: 3 komplekti.',
     game_type: 'kinnistu_deal' as const,
     data: { ...KINNISTU_DEAL_CLASSIC, theme: 'kontor', label: 'Kontor' },
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'miljonar-klassika',
+    name: 'Miljonär – Kuldne Klassika',
+    description: 'Klassikaline 15-astmeline teekond miljonini (100 € kuni 1 000 000 €).',
+    game_type: 'miljonar' as const,
+    data: {
+      name: 'Miljonär – Kuldne Klassika',
+      questions: MILJONAR_KLASSIKA_QUESTIONS.filter((q) => !q.backup),
+      backupQuestions: MILJONAR_KLASSIKA_QUESTIONS.filter((q) => q.backup),
+    },
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'miljonar-eesti',
+    name: 'Miljonär – Eesti Eriversioon',
+    description: 'Kodumaa ajalugu, kultuur, geograafia ja rekordid 15 astmel.',
+    game_type: 'miljonar' as const,
+    data: {
+      name: 'Miljonär – Eesti Eriversioon',
+      questions: MILJONAR_EESTI_QUESTIONS.filter((q) => !q.backup),
+      backupQuestions: MILJONAR_EESTI_QUESTIONS.filter((q) => q.backup),
+    },
+    is_official: true,
+    is_public: true,
+  },
+  {
+    slug: 'miljonar-peo',
+    name: 'Miljonär – Pidu & Meelelahutus',
+    description: 'Popkultuur, filmid, muusika ja seltskonnanipid 15 astmel.',
+    game_type: 'miljonar' as const,
+    data: {
+      name: 'Miljonär – Pidu & Meelelahutus',
+      questions: MILJONAR_PEO_QUESTIONS.filter((q) => !q.backup),
+      backupQuestions: MILJONAR_PEO_QUESTIONS.filter((q) => q.backup),
+    },
     is_official: true,
     is_public: true,
   },

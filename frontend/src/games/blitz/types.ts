@@ -2,11 +2,29 @@ export type BlitzChoice = 0 | 1 | 2 | 3
 
 export type BlitzDifficulty = 'easy' | 'medium' | 'hard'
 
+export type BlitzQuestionType = 'quiz' | 'true_false' | 'multi' | 'type_answer' | 'slider' | 'poll'
+
 export type BlitzQuestion = {
   id: string
   q: string
   choices: [string, string, string, string]
   correct: BlitzChoice
+  /** Question type: default 'quiz' (4 choices). Kahoot types: true_false, multi, type_answer, slider, poll */
+  type?: BlitzQuestionType
+  /** Indices of correct choices for 'multi' (e.g. [0, 2]) */
+  multiCorrect?: number[]
+  /** Accepted text answers for 'type_answer' (case-insensitive) */
+  acceptedAnswers?: string[]
+  /** For 'slider' (numerical guess) */
+  sliderMin?: number
+  sliderMax?: number
+  sliderStep?: number
+  sliderTarget?: number
+  sliderUnit?: string
+  /** 1x (default) or 2x (Golden Question / Double Points) */
+  pointsMultiplier?: number
+  /** Custom time limit in seconds for this question */
+  timeLimit?: number
   /** optional image (https or data URL) */
   imageUrl?: string
   hostNote?: string
@@ -16,6 +34,13 @@ export type BlitzQuestion = {
 export type BlitzTeamId = 'a' | 'b'
 
 export type BlitzPowerUp = 'fifty' | 'double' | 'time'
+
+export type BlitzReaction = {
+  id: string
+  emoji: string
+  playerName?: string
+  at: number
+}
 
 export type BlitzPlayer = {
   id: string
@@ -42,7 +67,13 @@ export type BlitzPlayer = {
 export type BlitzPhase = 'lobby' | 'countdown' | 'question' | 'reveal' | 'midboard' | 'podium' | 'sudden_death'
 
 export type BlitzAnswer = {
-  choice: BlitzChoice
+  choice?: BlitzChoice
+  /** multi-choice indices selected */
+  choices?: number[]
+  /** open text answer */
+  textAnswer?: string
+  /** slider value */
+  numericAnswer?: number
   at: number // ms from question start
 }
 
@@ -85,12 +116,20 @@ export type BlitzState = {
   requireReady?: boolean
   /** last high streak event for TV confetti */
   streakEvent?: { playerId: string; name: string; streak: number; at: number }
+  /** Highest climber / Päeva tõusja */
+  climber?: { playerId: string; name: string; delta: number }
+  /** Floating live reactions on TV */
+  reactions?: BlitzReaction[]
+  resultsSnapshot?: {
+    rows?: { name: string; score: number; avatar?: string; team?: BlitzTeamId }[]
+  }
   packData?: {
     secondsPerQuestion?: number
     pointsMax?: number
     revealSeconds?: number
     shuffleOnStart?: boolean
     teamsEnabled?: boolean
+    preCountdownSeconds?: number
     questions?: BlitzQuestion[]
   }
   hostBeat?: number
@@ -111,13 +150,15 @@ export function calcPoints(
   correct: boolean,
   answeredAtMs: number,
   secondsPerQuestion: number,
-  pointsMax: number
+  pointsMax: number,
+  multiplier = 1
 ): number {
   if (!correct) return 0
   const total = Math.max(1000, secondsPerQuestion * 1000)
   const remaining = Math.max(0, total - answeredAtMs)
   const raw = Math.round(pointsMax * (remaining / total))
-  return Math.max(100, Math.min(pointsMax, raw))
+  const base = Math.max(100, Math.min(pointsMax, raw))
+  return Math.round(base * Math.max(1, multiplier))
 }
 
 export function sortedPlayers(players: BlitzPlayer[]): BlitzPlayer[] {

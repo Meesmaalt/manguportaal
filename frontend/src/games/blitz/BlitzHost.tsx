@@ -28,7 +28,30 @@ import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
 import { appUrl } from '@/lib/config'
 import { playFx } from '@/lib/audio'
-import { Tv, ExternalLink, Play, SkipForward, Eye, Trophy, UserMinus, Copy, Check } from 'lucide-react'
+import {
+  Tv,
+  ExternalLink,
+  Play,
+  SkipForward,
+  Eye,
+  Trophy,
+  UserMinus,
+  Copy,
+  Check,
+  Sparkles,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
+import BlitzPackEditor from './BlitzPackEditor'
+import {
+  BLITZ_KAHOOT_SHOWCASE_QUESTIONS,
+  BLITZ_CLASSIC_QUESTIONS,
+  BLITZ_PARTY_QUESTIONS,
+  BLITZ_WEDDING_QUESTIONS,
+  BLITZ_OFFICE_QUESTIONS,
+  BLITZ_KIDS_QUESTIONS,
+} from './classicQuestions'
 
 type Props = {
   state: BlitzState
@@ -44,6 +67,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
   const [listOpen, setListOpen] = useState(true)
   const [soundOk, setSoundOk] = useState(false)
   const [tvOpened, setTvOpened] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
   const questions = state.questions || []
   const players = state.players || []
   const answers = state.answers || {}
@@ -470,6 +494,101 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               </div>
             )}
 
+            {state.phase === 'lobby' && isHost && (
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Layers size={14} /> Küsimuste valik & AI
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-outline !text-xs !py-1 !px-2 flex items-center gap-1"
+                    onClick={() => setEditorOpen((v) => !v)}
+                  >
+                    <Sparkles size={12} className="text-amber-300" />
+                    {editorOpen ? 'Peida redaktor' : 'Muuda / Genereeri AI-ga'}
+                    {editorOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] text-white/40 self-center mr-1">Valmiskomplektid:</span>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold hover:bg-amber-500/30"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_KAHOOT_SHOWCASE_QUESTIONS })
+                    }}
+                  >
+                    ★ Kahoot Hitid ({BLITZ_KAHOOT_SHOWCASE_QUESTIONS.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2 py-1 rounded-lg bg-white/10 border border-white/15 text-white/70 hover:bg-white/20"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_CLASSIC_QUESTIONS })
+                    }}
+                  >
+                    Klassika ({BLITZ_CLASSIC_QUESTIONS.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2 py-1 rounded-lg bg-white/10 border border-white/15 text-white/70 hover:bg-white/20"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_PARTY_QUESTIONS })
+                    }}
+                  >
+                    Pidu ({BLITZ_PARTY_QUESTIONS.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2 py-1 rounded-lg bg-white/10 border border-white/15 text-white/70 hover:bg-white/20"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_OFFICE_QUESTIONS })
+                    }}
+                  >
+                    Kontor ({BLITZ_OFFICE_QUESTIONS.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2 py-1 rounded-lg bg-white/10 border border-white/15 text-white/70 hover:bg-white/20"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_WEDDING_QUESTIONS })
+                    }}
+                  >
+                    Pulmad ({BLITZ_WEDDING_QUESTIONS.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="text-[11px] px-2 py-1 rounded-lg bg-white/10 border border-white/15 text-white/70 hover:bg-white/20"
+                    onClick={() => {
+                      playFx('click')
+                      update({ questions: BLITZ_KIDS_QUESTIONS })
+                    }}
+                  >
+                    Lapsed ({BLITZ_KIDS_QUESTIONS.length})
+                  </button>
+                </div>
+
+                {editorOpen && (
+                  <div className="mt-3 p-3 bg-black/40 rounded-2xl border border-white/15">
+                    <BlitzPackEditor
+                      questions={state.questions}
+                      secondsPerQuestion={state.secondsPerQuestion}
+                      pointsMax={state.pointsMax}
+                      revealSeconds={state.revealSeconds || 0}
+                      onChange={(next) => update(next)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
               </div>
             )}
           </div>
@@ -595,30 +714,97 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               className="max-h-40 mx-auto mb-3 rounded-xl object-contain border border-white/10"
             />
           )}
-          <p className="text-white text-lg font-semibold mb-3">{q.difficulty ? (
-            <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border mr-2 mb-1 ${
-              q.difficulty === 'easy' ? 'border-emerald-400/50 text-emerald-300' :
-              q.difficulty === 'hard' ? 'border-red-400/50 text-red-300' :
-              'border-amber-400/50 text-amber-200'
-            }`}>{q.difficulty}</span>
-          ) : null}
-          {q.q}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {q.choices.map((c, i) => (
-              <div
-                key={i}
-                className={`rounded-xl border-2 px-3 py-2 text-sm font-medium ${CHOICE_COLORS[i].bg} ${CHOICE_COLORS[i].border} ${
-                  state.phase === 'reveal' && q.correct === i ? 'ring-2 ring-white' : ''
+
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {/* Type badge */}
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-sky-400/40 bg-sky-500/15 text-sky-200">
+              {q.type === 'true_false'
+                ? 'Tõene / Väär'
+                : q.type === 'slider'
+                ? 'Paku arv (Slider)'
+                : q.type === 'type_answer'
+                ? 'Kirjuta vastus'
+                : q.type === 'multi'
+                ? 'Mitmikvalik'
+                : q.type === 'poll'
+                ? 'Küsitlus'
+                : 'Quiz'}
+            </span>
+
+            {/* Golden 2x */}
+            {q.pointsMultiplier === 2 && (
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-400/50 bg-amber-500/20 text-amber-200 animate-pulse">
+                ★ 2X Kuldne küsimus
+              </span>
+            )}
+
+            {/* Difficulty */}
+            {q.difficulty && (
+              <span
+                className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  q.difficulty === 'easy'
+                    ? 'border-emerald-400/50 text-emerald-300'
+                    : q.difficulty === 'hard'
+                    ? 'border-red-400/50 text-red-300'
+                    : 'border-amber-400/50 text-amber-200'
                 }`}
               >
-                <span className="opacity-80 mr-2">{CHOICE_COLORS[i].label}</span>
-                {c}
-                {state.phase === 'reveal' && q.correct === i && (
-                  <span className="ml-2 text-xs font-black">✓</span>
-                )}
-              </div>
-            ))}
+                {q.difficulty}
+              </span>
+            )}
           </div>
+
+          <p className="text-white text-lg font-semibold mb-3">{q.q}</p>
+
+          {/* Type-specific host display */}
+          {q.type === 'slider' && (
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10 mb-2 text-sm">
+              <span className="text-white/60">Õige sihtnumber: </span>
+              <span className="font-bold text-amber-300 font-display text-base">
+                {q.sliderTarget ?? 50} {q.sliderUnit || ''}
+              </span>{' '}
+              <span className="text-xs text-white/40">
+                (vahemik {q.sliderMin ?? 0} kuni {q.sliderMax ?? 100})
+              </span>
+            </div>
+          )}
+
+          {q.type === 'type_answer' && (
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10 mb-2 text-sm">
+              <span className="text-white/60">Aktsepteeritud vastused: </span>
+              <span className="font-bold text-emerald-300">
+                {(q.acceptedAnswers || [q.choices[q.correct]]).join(' · ')}
+              </span>
+            </div>
+          )}
+
+          {/* Choice buttons for standard / true_false / multi */}
+          {q.type !== 'slider' && q.type !== 'type_answer' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {q.choices.map((c, i) => {
+                const isCorrect =
+                  q.type === 'multi'
+                    ? (q.multiCorrect || [q.correct]).includes(i)
+                    : q.correct === i
+
+                return (
+                  <div
+                    key={i}
+                    className={`rounded-xl border-2 px-3 py-2 text-sm font-medium ${CHOICE_COLORS[i].bg} ${CHOICE_COLORS[i].border} ${
+                      state.phase === 'reveal' && isCorrect ? 'ring-2 ring-white' : ''
+                    }`}
+                  >
+                    <span className="opacity-80 mr-2">{CHOICE_COLORS[i].label}</span>
+                    {c}
+                    {state.phase === 'reveal' && isCorrect && (
+                      <span className="ml-2 text-xs font-black text-emerald-300">✓ Õige</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {isHost && q.hostNote && (
             <p className="text-[11px] text-amber-200/70 mt-2">Host: {q.hostNote}</p>
           )}

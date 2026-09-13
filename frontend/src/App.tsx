@@ -15,6 +15,7 @@ import Playlist from '@/pages/Playlist'
 import Buzzer from '@/pages/Buzzer'
 import DealPlayer from '@/pages/DealPlayer'
 import BlitzPlayer from '@/pages/BlitzPlayer'
+import MiljonarPlayer from '@/pages/MiljonarPlayer'
 import SharePack from '@/pages/SharePack'
 import PrintPack from '@/pages/PrintPack'
 import ImportPack from '@/pages/ImportPack'
@@ -78,6 +79,7 @@ export default function App() {
       <Route path="/buzzer/:code" element={<Buzzer />} />
       <Route path="/deal/:code/:token" element={<DealPlayer />} />
       <Route path="/blitz/:code" element={<BlitzPlayer />} />
+      <Route path="/miljonar/:code" element={<MiljonarPlayer />} />
       <Route path="/buzz/:code" element={<Buzzer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

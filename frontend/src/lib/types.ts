@@ -7,6 +7,7 @@ export type GameType =
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
   | 'blitz'
+  | 'miljonar'
 
 export const GAME_META: Record<
   GameType,
@@ -59,5 +60,11 @@ export const GAME_META: Record<
     subtitle: 'Kiire trivia',
     description: 'Küsimused telefonis, teleril show. Õige + kiirus = punktid.',
     emoji: '⚡',
+  },
+  miljonar: {
+    title: 'Kes tahab saada miljonäriks',
+    subtitle: 'Miljonimäng',
+    description: '15 astet, turvasummad, 4 oljenööri ja pinev stuudioatmosfäär.',
+    emoji: '💰',
   },
 }

@@ -180,7 +180,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                     Jäta kaitse vahele
                   </button>
                 )}
-                {phase !== 'turn' && phase !== 'lobby' && (
+                {phase !== 'turn' && (
                   <button type="button" className="btn-outline text-xs text-accent-red/80" onClick={hostCancelPending}>
                     Tühista tegevus
                   </button>

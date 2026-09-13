@@ -15,14 +15,48 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'ai-quiz-server',
+        configureServer(server) {
+          server.middlewares.use('/api/ai/quiz', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.end(JSON.stringify({ error: 'Method not allowed' }))
+              return
+            }
+            let body = ''
+            req.on('data', (chunk) => {
+              body += chunk
+            })
+            req.on('end', async () => {
+              try {
+                const data = body ? JSON.parse(body) : {}
+                const { generateQuizWithGemini } = await import('./src/server/aiQuizHandler')
+                const questions = await generateQuizWithGemini(data)
+                res.setHeader('Content-Type', 'application/json')
+                res.statusCode = 200
+                res.end(JSON.stringify({ ok: true, questions }))
+              } catch (err: any) {
+                res.setHeader('Content-Type', 'application/json')
+                res.statusCode = 500
+                res.end(JSON.stringify({ ok: false, error: err?.message || 'AI genereerimine ebaõnnestus' }))
+              }
+            })
+          })
+        },
+      },
+    ],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
     server: {
-      port: 5173,
+      host: '0.0.0.0',
+      port: 3000,
+      allowedHosts: true,
     },
   }
 })
