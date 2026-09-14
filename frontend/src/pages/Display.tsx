@@ -215,33 +215,44 @@ export default function Display() {
         )}
       </div>
 
-      {state.publicGuide && <PublicGuideOverlay gameType={gt} />}
+      {state.publicGuide && (
+        <PublicGuideOverlay
+          gameType={gt}
+          onClose={() => setState((prev: any) => ({ ...prev, publicGuide: false }))}
+        />
+      )}
       <SessionBgLayer media={state.bgMedia} display />
-      {gt === 'kuldvillak' && (
-        <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
-      )}
-      {gt === 'roosidesoda' && (
-        <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
-      )}
-      {gt === 'blitz' && (
-        <BlitzTv state={state as any} sessionCode={session.code || state.code} />
-      )}
-      {gt === 'kinnistu_deal' && (
-        <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
-      )}
-      {gt === 'miljonar' && (
-        <MiljonarTv state={state as any} sessionCode={session.code || state.code} />
-      )}
-      {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && gt !== 'miljonar' && (
-        <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
-          {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
-          {gt === 'ma_ei_ole_kunagi' && (
-            <MaEiOleKunagiGame state={state} update={noop} isHost={false} />
-          )}
-          {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
-          {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
-        </GameShowFrame>
-      )}
+
+      <div
+        className="game-tv-scale-wrapper w-full min-h-screen"
+        style={{ zoom: 'var(--display-scale, 1)' }}
+      >
+        {gt === 'kuldvillak' && (
+          <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
+        )}
+        {gt === 'roosidesoda' && (
+          <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
+        )}
+        {gt === 'blitz' && (
+          <BlitzTv state={state as any} sessionCode={session.code || state.code} />
+        )}
+        {gt === 'kinnistu_deal' && (
+          <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
+        )}
+        {gt === 'miljonar' && (
+          <MiljonarTv state={state as any} sessionCode={session.code || state.code} />
+        )}
+        {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && gt !== 'miljonar' && (
+          <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
+            {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
+            {gt === 'ma_ei_ole_kunagi' && (
+              <MaEiOleKunagiGame state={state} update={noop} isHost={false} />
+            )}
+            {gt === 'viimane_pusti' && <ViimanePustiGame state={state} update={noop} isHost={false} />}
+            {gt === 'tode_voi_tegu' && <TodeVoiTeguGame state={state} update={noop} isHost={false} />}
+          </GameShowFrame>
+        )}
+      </div>
     </div>
   )
 }

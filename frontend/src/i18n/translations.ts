@@ -139,7 +139,7 @@ export const translations = {
     game_blitz_desc: 'Küsimused telefonis, teleril show. Õige + kiirus = punktid.',
     game_miljonar: 'Kes tahab saada miljonäriks',
     game_miljonar_sub: 'Miljonimäng',
-    game_miljonar_desc: '15 astet, turvasummad, 4 oljenööri ja pinev stuudioatmosfäär.',
+    game_miljonar_desc: '15 astet, turvasummad, 4 õlekõrt (vihjet) ja pinev stuudioatmosfäär.',
 
 
     tvJoinTitle: 'Ava teleris',

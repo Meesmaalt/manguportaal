@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Sparkles, Loader2, Play, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { Sparkles, Loader2, Play, Check, ChevronDown, ChevronUp, Copy, Key } from 'lucide-react'
 import { hasClientGeminiKey } from '@/lib/geminiClient'
+import GeminiApiKeyModal from '@/components/GeminiApiKeyModal'
 
 type Props<T> = {
   isOpen: boolean
@@ -32,8 +33,8 @@ export default function GameAiModal<T>({
   const [generatedData, setGeneratedData] = useState<T | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
-
-  const hasKey = hasClientGeminiKey()
+  const [keyModalOpen, setKeyModalOpen] = useState(false)
+  const [keyAvailable, setKeyAvailable] = useState(() => hasClientGeminiKey())
 
   if (!isOpen) return null
 
@@ -47,7 +48,7 @@ export default function GameAiModal<T>({
       setGeneratedData(data)
     } catch (e: any) {
       console.error(e)
-      setError(e?.message || 'AI genereerimine ebaõnnestus. Kontrolli Gemini API võtit admin lehelt.')
+      setError(e?.message || 'AI genereerimine ebaõnnestus. Kontrolli Gemini API võtit.')
     } finally {
       setLoading(false)
     }
@@ -75,13 +76,27 @@ export default function GameAiModal<T>({
               {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white/40 hover:text-white text-sm px-2 py-1"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setKeyModalOpen(true)}
+              className={`text-[11px] px-2.5 py-1 rounded-lg border flex items-center gap-1 transition ${
+                keyAvailable
+                  ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50'
+                  : 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/60'
+              }`}
+            >
+              <Key size={12} />
+              <span>{keyAvailable ? 'API võti olemas' : 'Sisesta API võti'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-white/40 hover:text-white text-sm px-2 py-1"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Input & Topics Section */}
@@ -157,10 +172,17 @@ export default function GameAiModal<T>({
             </div>
           )}
 
-          {!hasKey && (
-            <p className="text-[11px] text-amber-300/80">
-              💡 Vihje: Kui soovid kohest ühe-kliki genereerimist, sisesta tasuta Gemini API võti <strong>Admin</strong> lehelt.
-            </p>
+          {!keyAvailable && (
+            <div className="text-[11px] text-amber-300/85 flex items-center gap-2">
+              <span>💡 Pole veel API võtit?</span>
+              <button
+                type="button"
+                onClick={() => setKeyModalOpen(true)}
+                className="text-accent-cyan underline hover:text-white font-medium"
+              >
+                Sisesta tasuta Google AI Studio võti siin
+              </button>
+            </div>
           )}
 
           {error && <p className="text-accent-red text-xs">{error}</p>}
@@ -205,6 +227,12 @@ export default function GameAiModal<T>({
           )}
         </div>
       </div>
+
+      <GeminiApiKeyModal
+        isOpen={keyModalOpen}
+        onClose={() => setKeyModalOpen(false)}
+        onSaved={() => setKeyAvailable(hasClientGeminiKey())}
+      />
     </div>
   )
 }

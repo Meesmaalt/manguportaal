@@ -12,11 +12,13 @@ export async function generateMiljonarQuizWithAi(topic: string): Promise<{
   isAi: boolean
 }> {
   const chosenTopic = topic || 'Üldteadmised, meelelahutus ja Eesti'
+  const seed = Math.floor(Math.random() * 1000000)
 
   // 1. Try direct Gemini API from browser if client key is configured
   if (hasClientGeminiKey()) {
     try {
-      const prompt = `Loo telesaate "Kes tahab saada miljonäriks?" formaadis täpselt 15 küsimust + 2 varuküsimust eesti keeles teemal: "${chosenTopic}".
+      const prompt = `Loo telesaate "Kes tahab saada miljonäriks?" formaadis täpselt 15 täiesti uut ja originaalset küsimust + 2 varuküsimust eesti keeles teemal: "${chosenTopic}".
+Unikaalsuse kontrollkood: ${seed}. Küsimused peavad olema huvitavad, mitmekülgsed ja faktiliselt täpsed!
 Küsimused PEAVAD olema rangelt kasvavas raskusastmes (15 astet: 1-5 lihtsad soojendused, 6-10 keskmised ja faktilised, 11-14 rasked nuputamised, 15 tõeline elitaarne miljoniküsimus).
 
 Rahasummad ja astmed:
@@ -52,10 +54,9 @@ Vasta AINULT kehtiva JSON massiivina (ilma markdown märkideta):
     "hostNote": "Miks see on õige ja saatejuhi kommentaar",
     "funFact": "Lõbus lisafakt",
     "difficulty": "easy"
-  },
-  ...
+  }
 ]`
-      const rawText = await callGeminiDirectly(prompt)
+      const rawText = await callGeminiDirectly(prompt, { temperature: 0.9 })
       let cleaned = rawText.trim()
       if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '').trim()
       if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```/, '').replace(/```$/, '').trim()
@@ -66,7 +67,7 @@ Vasta AINULT kehtiva JSON massiivina (ilma markdown märkideta):
 
         rawList.forEach((q, idx) => {
           const item: MiljonarQuestion = {
-            id: q.id || `m-${Date.now()}-${idx}`,
+            id: q.id || `m-${Date.now()}-${idx}-${seed}`,
             tier: q.tier || idx + 1,
             prize: q.prize || [100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000, 1000000][Math.min(idx, 14)],
             q: String(q.q || `Küsimus ${idx + 1}`),
@@ -95,8 +96,9 @@ Vasta AINULT kehtiva JSON massiivina (ilma markdown märkideta):
           }
         }
       }
-    } catch (err) {
-      console.warn('Direct Gemini API call failed, falling back to server or presets:', err)
+    } catch (err: any) {
+      console.warn('Direct Gemini API call failed in Miljonär:', err)
+      throw new Error(`AI genereerimine ebaõnnestus: ${err?.message || 'Kontrolli API võtit'}`)
     }
   }
 

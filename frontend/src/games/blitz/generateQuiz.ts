@@ -195,12 +195,15 @@ export const FALLBACK_PACKS: Record<string, BlitzQuestion[]> = {
 }
 
 export async function requestAiQuiz(params: QuizGenerateParams): Promise<{ questions: BlitzQuestion[]; isAi: boolean }> {
+  const seed = Math.floor(Math.random() * 1000000)
+
   // 1. Direct Gemini API call if key is set
   if (hasClientGeminiKey()) {
     try {
-      const count = Math.max(3, Math.min(20, params.count || 5))
+      const count = Math.max(3, Math.min(20, params.count || 6))
       const diffLabel = params.difficulty === 'easy' ? 'lihtne' : params.difficulty === 'hard' ? 'keeruline / nuputamisega' : 'keskmine'
-      const prompt = `Loo täpselt ${count} kvaliteetset ja lõbusat seltskonnaviktoriini küsimust Kahooti stiilis eesti keeles teemal: "${params.topic || 'Üldteadmised ja meelelahutus'}".
+      const prompt = `Loo täpselt ${count} täiesti uut, unikaalset ja lõbusat seltskonnaviktoriini küsimust Kahooti stiilis eesti keeles teemal: "${params.topic || 'Üldteadmised ja meelelahutus'}".
+Unikaalsuse kood: ${seed}. Küsimused peavad olema värsked, mitte kunagi varem loodud!
 Raskusaste: ${diffLabel}.
 
 Küsimuste tüübid võivad sisaldada:
@@ -222,7 +225,7 @@ Vasta AINULT kehtiva JSON massiivina ilma koodiplokkideta:
     "difficulty": "${params.difficulty || 'medium'}"
   }
 ]`
-      const raw = await callGeminiDirectly(prompt)
+      const raw = await callGeminiDirectly(prompt, { temperature: 0.92 })
       let cleaned = raw.trim()
       if (cleaned.startsWith('```json')) cleaned = cleaned.replace(/^```json/, '').replace(/```$/, '').trim()
       if (cleaned.startsWith('```')) cleaned = cleaned.replace(/^```/, '').replace(/```$/, '').trim()
@@ -230,8 +233,9 @@ Vasta AINULT kehtiva JSON massiivina ilma koodiplokkideta:
       if (Array.isArray(parsed) && parsed.length > 0) {
         return { questions: parsed, isAi: true }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Direct Gemini call in Blitz failed:', e)
+      throw new Error(`AI genereerimine ebaõnnestus: ${e?.message || 'Kontrolli API võtit'}`)
     }
   }
 
@@ -250,16 +254,7 @@ Vasta AINULT kehtiva JSON massiivina ilma koodiplokkideta:
     }
   } catch {}
 
-  // Fallback to built-in generator matching topic keywords
-  const lower = (params.topic || '').toLowerCase()
-  let chosenKey = 'estonia'
-  if (lower.includes('film') || lower.includes('pop') || lower.includes('muusika') || lower.includes('kuulsus')) {
-    chosenKey = 'pop'
-  } else if (lower.includes('pidu') || lower.includes('seltskond') || lower.includes('lõbus') || lower.includes('nali')) {
-    chosenKey = 'party'
-  }
-  const fallbackList = FALLBACK_PACKS[chosenKey] || FALLBACK_PACKS.estonia
-  return { questions: fallbackList.slice(0, params.count || 5), isAi: false }
+  throw new Error('Gemini API võti puudub. Sisesta oma tasuta Google AI Studio võti ekraani ülaosas.')
 }
 
 export async function generateBlitzQuiz(params: {

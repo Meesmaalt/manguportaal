@@ -64,16 +64,44 @@ export default function GameHelpModal({
   )
 }
 
-export function PublicGuideOverlay({ gameType }: { gameType: string }) {
+export function PublicGuideOverlay({ gameType, onClose }: { gameType: string; onClose?: () => void }) {
   const { t, lang } = useI18n()
+  const guideText = getGuide(lang, gameType)
+
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 md:p-16 bg-black/92">
-      <div className="max-w-4xl w-full">
-        <div className="text-gold text-sm md:text-base uppercase tracking-[0.35em] font-bold mb-6 text-center">
-          {t('helpTitle')}
+    <div
+      className="fixed inset-0 z-[75] flex items-center justify-center p-4 sm:p-8 md:p-14 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="card-panel max-w-4xl w-full max-h-[88vh] overflow-y-auto p-6 sm:p-10 md:p-12 border-gold/70 bg-[#060e22]/95 shadow-2xl relative shadow-gold/20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-gold/20 pb-5 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-3.5 h-3.5 rounded-full bg-gold animate-ping" />
+            <div>
+              <div className="text-gold text-xs sm:text-sm uppercase tracking-[0.28em] font-bold">
+                {t('helpTitle')}
+              </div>
+              <div className="text-white/60 text-xs mt-0.5">
+                Saatejuht tutvustab reegleid ekraanil
+              </div>
+            </div>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-white/50 hover:text-white text-xs px-2.5 py-1 rounded border border-white/20 hover:border-white/50"
+            >
+              ✕ Sulge
+            </button>
+          )}
         </div>
-        <div className="text-lg md:text-2xl lg:text-3xl text-white/95 leading-relaxed whitespace-pre-wrap font-sans text-center md:text-left">
-          {getGuide(lang, gameType)}
+
+        <div className="text-base sm:text-lg md:text-xl text-white/95 leading-relaxed whitespace-pre-wrap font-sans">
+          {guideText}
         </div>
       </div>
     </div>

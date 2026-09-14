@@ -64,7 +64,7 @@ export const GAME_META: Record<
   miljonar: {
     title: 'Kes tahab saada miljonäriks',
     subtitle: 'Miljonimäng',
-    description: '15 astet, turvasummad, 4 oljenööri ja pinev stuudioatmosfäär.',
+    description: '15 astet, turvasummad, 4 õlekõrt (vihjet) ja pinev stuudioatmosfäär.',
     emoji: '💰',
   },
 }

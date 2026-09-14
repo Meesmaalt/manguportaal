@@ -27,10 +27,13 @@ export function hasClientGeminiKey(): boolean {
 /**
  * Call Gemini API directly from the client browser via REST endpoint.
  */
-export async function callGeminiDirectly(prompt: string, apiKeyOverride?: string): Promise<string> {
-  const apiKey = apiKeyOverride || getClientGeminiKey()
+export async function callGeminiDirectly(
+  prompt: string,
+  options?: { apiKeyOverride?: string; temperature?: number }
+): Promise<string> {
+  const apiKey = options?.apiKeyOverride || getClientGeminiKey()
   if (!apiKey) {
-    throw new Error('Gemini API võti puudub.')
+    throw new Error('Gemini API võti puudub. Sisesta oma tasuta Google AI Studio võti.')
   }
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(apiKey)}`
@@ -48,7 +51,7 @@ export async function callGeminiDirectly(prompt: string, apiKeyOverride?: string
       ],
       generationConfig: {
         responseMimeType: 'application/json',
-        temperature: 0.7,
+        temperature: options?.temperature ?? 0.88,
       },
     }),
   })

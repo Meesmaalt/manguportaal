@@ -46,7 +46,7 @@ Host juhib; külalised liituvad lingi/QR-iga. Sobib peole ja kontorisse — kõr
 15 küsimust kasvava raskusastmega (100 € kuni 1 000 000 €).
 Turvasummad (5. ja 10. tase) tagavad väljakukkumisel võidu.
 
-4 oljenööri:
+4 õlekõrt (vihjet):
 • 50:50 — eemaldab kaks valet vastust
 • Rahva hääl — publik hääletab nutitelefonist QR-koodiga
 • Helista sõbrale — 30-sekundiline taimer ja helistamine
@@ -188,6 +188,7 @@ export type GuideGame =
 
 export function getGuide(lang: Lang, gameType: string): string {
   const table = guides[lang] || guides.et
-  const key = (gameType in table ? gameType : 'kuldvillak') as GuideGame
+  const clean = (gameType || '').trim().toLowerCase().replace(/-/g, '_')
+  const key = (clean in table ? clean : 'kuldvillak') as GuideGame
   return table[key] || guides.et.kuldvillak
 }

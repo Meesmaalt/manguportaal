@@ -13,13 +13,28 @@ export function useDisplayScale(initial = 1) {
   })
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, String(scale)) } catch {}
+    try {
+      localStorage.setItem(KEY, String(scale))
+      document.documentElement.style.setProperty('--display-scale', String(scale))
+      window.dispatchEvent(new CustomEvent('ohtu-display-scale-change', { detail: { scale } }))
+    } catch {}
+  }, [scale])
+
+  useEffect(() => {
+    const onScaleChange = (e: any) => {
+      if (e.detail?.scale && e.detail.scale !== scale) {
+        setScale(e.detail.scale)
+      }
+    }
+    window.addEventListener('ohtu-display-scale-change', onScaleChange)
+    return () => window.removeEventListener('ohtu-display-scale-change', onScaleChange)
   }, [scale])
 
   return {
     scale,
-    smaller: () => setScale((s: number) => Math.max(0.7, +(s - 0.1).toFixed(2))),
+    smaller: () => setScale((s: number) => Math.max(0.6, +(s - 0.1).toFixed(2))),
     reset: () => setScale(1),
-    larger: () => setScale((s: number) => Math.min(2.2, +(s + 0.1).toFixed(2))),
+    larger: () => setScale((s: number) => Math.min(2.5, +(s + 0.1).toFixed(2))),
   }
 }
+

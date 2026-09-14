@@ -298,21 +298,24 @@ export default function MiljonarHost({ state, update, sessionCode }: Props) {
   }
 
   // 3. LIFELINE: Helista sõbrale (Phone a friend)
-  function handlePhoneFriend() {
+  function handlePhoneFriend(mode: 'call' | 'advice' = 'call') {
     if (!lifelines.phone_friend || !currentQ) return
     miljonarAudio.playPhoneRing()
 
-    const correctLetter = ['A', 'B', 'C', 'D'][currentQ.correct]
-    const adviceComments = [
-      `Tere! Minu meelest on see kindlasti ${correctLetter}. Mäletan seda kooliajast!`,
-      `Hei! Ma pole 100% kindel, aga 80% tõenäosusega valiksin ${correctLetter}.`,
-      `Tere sõber! Kuulsin küsimust... kaldun üsna tugevalt variandi ${correctLetter} poole!`,
-    ]
-    const advice = {
-      friendName: 'Sõber Peeter',
-      suggestedChoice: currentQ.correct,
-      confidence: currentTierIndex < 10 ? 85 : 60,
-      comment: adviceComments[Math.floor(Math.random() * adviceComments.length)],
+    let advice = undefined
+    if (mode === 'advice') {
+      const correctLetter = ['A', 'B', 'C', 'D'][currentQ.correct]
+      const adviceComments = [
+        `Tere! Minu meelest on see kindlasti ${correctLetter}. Olen selles üsna kindel!`,
+        `Hei! Ma pole 100% kindel, aga 80% tõenäosusega valiksin variandi ${correctLetter}.`,
+        `Tere sõber! Kuulsin küsimust... kaldun tugevalt vastuse ${correctLetter} poole!`,
+      ]
+      advice = {
+        friendName: 'Virtuaalne sõber',
+        suggestedChoice: currentQ.correct,
+        confidence: currentTierIndex < 10 ? 85 : 65,
+        comment: adviceComments[Math.floor(Math.random() * adviceComments.length)],
+      }
     }
 
     setPhoneSeconds(30)
@@ -678,7 +681,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
           {/* LIFELINES CONTROL CARD */}
           <div className="card-panel p-4 border-white/10 bg-slate-900/60">
             <h3 className="text-xs uppercase tracking-widest text-white/50 font-bold mb-3 font-display">
-              Oljenöörid (Õlekõrred)
+              Õlekõrred (Abivahendid)
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {/* 50:50 */}
@@ -712,19 +715,30 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
               </button>
 
               {/* Helista sõbrale */}
-              <button
-                type="button"
-                onClick={handlePhoneFriend}
-                disabled={!lifelines.phone_friend || phase !== 'question'}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs transition ${
-                  lifelines.phone_friend
-                    ? 'border-cyan-400/60 bg-blue-950/60 text-cyan-300 hover:bg-blue-900/60'
-                    : 'border-white/10 bg-black/40 text-white/30 line-through'
-                }`}
-              >
-                <Phone size={18} />
-                <span>{lifelines.phone_friend ? 'Helista sõbrale' : 'Kasutatud'}</span>
-              </button>
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => handlePhoneFriend('call')}
+                  disabled={!lifelines.phone_friend || phase !== 'question'}
+                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 text-xs transition flex-1 ${
+                    lifelines.phone_friend
+                      ? 'border-cyan-400/60 bg-blue-950/60 text-cyan-300 hover:bg-blue-900/60'
+                      : 'border-white/10 bg-black/40 text-white/30 line-through'
+                  }`}
+                >
+                  <Phone size={16} />
+                  <span>{lifelines.phone_friend ? 'Päris kõne (30s)' : 'Kasutatud'}</span>
+                </button>
+                {lifelines.phone_friend && phase === 'question' && (
+                  <button
+                    type="button"
+                    onClick={() => handlePhoneFriend('advice')}
+                    className="text-[10px] text-amber-300/80 hover:text-amber-200 underline text-center"
+                  >
+                    Või arvuti/AI soovitus
+                  </button>
+                )}
+              </div>
 
               {/* Vaheta küsimus */}
               <button
