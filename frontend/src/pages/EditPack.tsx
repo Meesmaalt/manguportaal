@@ -3,14 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2 } from 'lucide-react'
+import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2, Languages } from 'lucide-react'
 import { appUrl } from '@/lib/config'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
 import type { BlitzQuestion } from '@/games/blitz/types'
 
 type Mode = 'visual' | 'json'
 
-type CatQ = { points: number; q: string; a: string; hostNote?: string }
+type CatQ = { points: number; q: string; a: string; hostNote?: string; imageUrl?: string }
 type Cat = { name: string; questions: CatQ[] }
 
 export default function EditPack() {
@@ -209,6 +209,36 @@ export default function EditPack() {
     }
   }
 
+  const [translating, setTranslating] = useState(false)
+
+  async function handleAITranslate() {
+    if (!confirm('Kas soovid tõlkida paki inglise keelde? Tõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud või kopeeritud.')) return
+    setTranslating(true)
+    setError('')
+    try {
+      const data = mode === 'json' ? JSON.parse(jsonText) : buildDataFromVisual()
+      
+      const res = await fetch('/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: 'English' })
+      })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.error)
+      
+      const translatedData = json.translatedData
+      
+      setJsonText(JSON.stringify(translatedData, null, 2))
+      if (pack) hydrateVisual(pack.game_type, translatedData)
+      
+      alert('Tõlge lisatud! Vaata tulemus üle ja vajuta all "Salvesta muudatused".')
+    } catch (e: any) {
+      setError(e.message || 'Tõlkimine ebaõnnestus')
+    } finally {
+      setTranslating(false)
+    }
+  }
+
   if (!isLoggedIn) {
     return (
       <div className="text-center py-16">
@@ -332,16 +362,69 @@ export default function EditPack() {
                         }}
                       />
                     </div>
-                    <input
-                      className="input-field text-xs mt-1 text-amber-100/90"
-                      placeholder="Hosti märkus"
-                      value={q.hostNote || ''}
-                      onChange={(e) => {
-                        const next = [...categories]
-                        next[cIdx].questions[qIdx] = { ...q, hostNote: e.target.value }
-                        setCategories(next)
-                      }}
-                    />
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      <input
+                        className="input-field text-xs text-amber-100/90 flex-1 min-w-[150px]"
+                        placeholder="Hosti märkus"
+                        value={q.hostNote || ''}
+                        onChange={(e) => {
+                          const next = [...categories]
+                          next[cIdx].questions[qIdx] = { ...q, hostNote: e.target.value }
+                          setCategories(next)
+                        }}
+                      />
+                      <input
+                        className="input-field text-xs flex-1 min-w-[150px]"
+                        placeholder="Pildi URL või laadi fail"
+                        value={q.imageUrl || ''}
+                        onChange={(e) => {
+                          const next = [...categories]
+                          next[cIdx].questions[qIdx] = { ...q, imageUrl: e.target.value || undefined }
+                          setCategories(next)
+                        }}
+                      />
+                      <label className="btn-outline text-[10px] cursor-pointer !py-1 px-3 flex items-center justify-center whitespace-nowrap">
+                        Lisa fail
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (!f) return
+                            if (f.size > 400_000) {
+                              alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või URL-i.')
+                              return
+                            }
+                            const reader = new FileReader()
+                            reader.onload = () => {
+                              const next = [...categories]
+                              next[cIdx].questions[qIdx] = { ...q, imageUrl: String(reader.result || '') }
+                              setCategories(next)
+                            }
+                            reader.readAsDataURL(f)
+                          }}
+                        />
+                      </label>
+                      {q.imageUrl && (
+                        <button
+                          type="button"
+                          className="btn-outline text-[10px] text-accent-red !py-1 px-3 whitespace-nowrap"
+                          onClick={() => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, imageUrl: undefined }
+                            setCategories(next)
+                          }}
+                        >
+                          Eemalda pilt
+                        </button>
+                      )}
+                    </div>
+                    {q.imageUrl && (
+                      <div className="mt-2 pl-[56px]">
+                        <img src={q.imageUrl} alt="" className="max-h-24 rounded border border-white/10 object-contain bg-black/20" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -411,17 +494,26 @@ export default function EditPack() {
         )}
 
         {pack && (
-        <div className="mb-3">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="btn-outline text-xs inline-flex items-center gap-1"
+            className="btn-outline text-xs inline-flex items-center gap-1.5"
             onClick={() => {
               const url = appUrl(`/pack/${pack.id}`)
               navigator.clipboard.writeText(url).catch(() => {})
               alert('Jagamislink kopeeritud:\n' + url)
             }}
           >
-            <Share2 size={12} /> Kopeeri jagamislink
+            <Share2 size={14} /> Kopeeri jagamislink
+          </button>
+          
+          <button
+            type="button"
+            className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400"
+            onClick={handleAITranslate}
+            disabled={translating}
+          >
+            <Languages size={14} /> {translating ? 'Tõlgin...' : 'AI Tõlgi (paralleelkeel)'}
           </button>
         </div>
       )}

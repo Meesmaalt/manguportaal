@@ -45,6 +45,32 @@ export default defineConfig(({ mode }) => {
               }
             })
           })
+
+          server.middlewares.use('/api/ai/translate', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.end(JSON.stringify({ error: 'Method not allowed' }))
+              return
+            }
+            let body = ''
+            req.on('data', (chunk) => {
+              body += chunk
+            })
+            req.on('end', async () => {
+              try {
+                const data = body ? JSON.parse(body) : {}
+                const { translatePackWithGemini } = await import('./src/server/aiTranslateHandler')
+                const translatedData = await translatePackWithGemini(data)
+                res.setHeader('Content-Type', 'application/json')
+                res.statusCode = 200
+                res.end(JSON.stringify({ ok: true, translatedData }))
+              } catch (err: any) {
+                res.setHeader('Content-Type', 'application/json')
+                res.statusCode = 500
+                res.end(JSON.stringify({ ok: false, error: err?.message || 'AI tõlkimine ebaõnnestus' }))
+              }
+            })
+          })
         },
       },
     ],

@@ -62,6 +62,7 @@ export type KuldvillakQuestion = {
   q: string
   a: string
   hostNote?: string
+  imageUrl?: string
 }
 
 export type KuldvillakFinalJeopardy = {

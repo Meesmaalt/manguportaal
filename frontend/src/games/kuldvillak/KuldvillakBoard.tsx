@@ -99,6 +99,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         a: q.a,
         points: q.points,
         hostNote: q.hostNote,
+        imageUrl: q.imageUrl,
       },
       showAnswer: false,
       buzz: null,
@@ -620,6 +621,16 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             <div className="font-display text-3xl text-gold mb-6 font-black">
               {currentQuestion.points} PUNKTI
             </div>
+
+            {currentQuestion.imageUrl && (
+              <div className="mb-6 flex justify-center">
+                <img 
+                  src={currentQuestion.imageUrl} 
+                  alt="" 
+                  className="max-h-[30vh] md:max-h-[40vh] object-contain rounded-xl border border-white/20 shadow-2xl shadow-black/50 bg-black/40"
+                />
+              </div>
+            )}
 
             <p className="text-xl md:text-2xl text-white leading-relaxed mb-6 font-semibold">
               {currentQuestion.q}

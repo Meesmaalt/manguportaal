@@ -18,6 +18,7 @@ export type KuldvillakState = {
     a: string
     points: number
     hostNote?: string
+    imageUrl?: string
   } | null
   showAnswer: boolean
   packData: KuldvillakPackData

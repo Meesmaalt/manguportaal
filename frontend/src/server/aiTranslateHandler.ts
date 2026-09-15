@@ -1,0 +1,40 @@
+import { GoogleGenAI } from '@google/genai'
+
+export type AiTranslateRequest = {
+  packData: any
+  gameType: string
+  targetLanguage: string
+}
+
+export async function translatePackWithGemini(reqData: AiTranslateRequest) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest')
+  }
+  const ai = new GoogleGenAI({ apiKey })
+
+  const prompt = `Translate the user-facing text fields in the provided JSON game pack data into a bilingual format.
+Original language is likely Estonian. The target language to add is: ${reqData.targetLanguage}.
+For every text field that contains a question, answer, category name, or choice, append the ${reqData.targetLanguage} translation after a space, a slash, and a space (' / ').
+For example: "Mis on Eesti pealinn?" becomes "Mis on Eesti pealinn? / What is the capital of Estonia?"
+If a value is a number, boolean, ID, URL, or image URL, DO NOT modify it.
+CRITICAL: You MUST return exactly the same JSON structure, array lengths, and keys. Only modify the string values.
+
+JSON Data:
+${JSON.stringify(reqData.packData, null, 2)}
+`
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.8-flash',
+    contents: prompt,
+    config: {
+      temperature: 0.2,
+      responseMimeType: 'application/json',
+    },
+  })
+
+  const text = response.text || '{}'
+  const translatedData = JSON.parse(text)
+
+  return translatedData
+}
