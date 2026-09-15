@@ -210,11 +210,10 @@ export default function EditPack() {
   }
 
   const [translating, setTranslating] = useState(false)
+  const [translateModalOpen, setTranslateModalOpen] = useState(false)
+  const [targetLang, setTargetLang] = useState('Inglise')
 
-  async function handleAITranslate() {
-    const targetLang = prompt('Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome")\n\nTõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud või kopeeritud.', 'Inglise')
-    if (!targetLang) return
-    
+  async function handleAITranslate(lang: string) {
     setTranslating(true)
     setError('')
     try {
@@ -223,7 +222,7 @@ export default function EditPack() {
       const res = await fetch('/api/ai/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: targetLang })
+        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: lang })
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
@@ -511,8 +510,8 @@ export default function EditPack() {
           
           <button
             type="button"
-            className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400"
-            onClick={handleAITranslate}
+            className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setTranslateModalOpen(true)}
             disabled={translating}
           >
             <Languages size={14} /> {translating ? 'Tõlgin...' : 'AI Tõlgi (paralleelkeel)'}
@@ -524,6 +523,46 @@ export default function EditPack() {
           <Save size={16} /> {saving ? '…' : t('savePack')}
         </button>
       </div>
+
+      {translateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="card-panel max-w-sm w-full p-6 border-purple-500/30 shadow-2xl shadow-purple-500/10">
+            <h3 className="font-display text-xl text-purple-300 mb-2">Tõlgi pakk</h3>
+            <p className="text-white/60 text-sm mb-4 leading-relaxed">
+              Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome").<br />
+              <span className="opacity-70 text-xs">Tõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud.</span>
+            </p>
+            <input
+              className="input-field mb-6 w-full font-bold"
+              value={targetLang}
+              onChange={(e) => setTargetLang(e.target.value)}
+              placeholder="Sisesta keel..."
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn-outline text-sm"
+                onClick={() => setTranslateModalOpen(false)}
+              >
+                Tühista
+              </button>
+              <button
+                type="button"
+                className="btn-gold text-sm !bg-purple-600/20 !border-purple-500/50 !text-purple-200 hover:!bg-purple-600/40"
+                onClick={() => {
+                  setTranslateModalOpen(false)
+                  if (targetLang.trim()) {
+                    handleAITranslate(targetLang.trim())
+                  }
+                }}
+              >
+                Tõlgi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

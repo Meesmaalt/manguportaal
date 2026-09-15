@@ -1,17 +1,18 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
+import { generateQuizWithGemini } from './src/server/aiQuizHandler.ts'
+import { translatePackWithGemini } from './src/server/aiTranslateHandler.ts'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  // ALAMTEE: peab olema absoluutne kaldkriipsudega, nt "/mangud/"
-  // "./" EI TOHI kasutada – rikub /ekraan/XYZ deep-linkid
+
   let base = env.VITE_BASE_PATH || '/'
   if (base !== './' && base !== '/') {
     if (!base.startsWith('/')) base = '/' + base
     if (!base.endsWith('/')) base = base + '/'
   }
-  if (base === './') base = '/' // safety
+  if (base === './') base = '/'
 
   return {
     base,
@@ -27,13 +28,10 @@ export default defineConfig(({ mode }) => {
               return
             }
             let body = ''
-            req.on('data', (chunk) => {
-              body += chunk
-            })
+            req.on('data', (chunk) => { body += chunk })
             req.on('end', async () => {
               try {
                 const data = body ? JSON.parse(body) : {}
-                const { generateQuizWithGemini } = await import('./src/server/aiQuizHandler')
                 const questions = await generateQuizWithGemini(data)
                 res.setHeader('Content-Type', 'application/json')
                 res.statusCode = 200
@@ -53,13 +51,10 @@ export default defineConfig(({ mode }) => {
               return
             }
             let body = ''
-            req.on('data', (chunk) => {
-              body += chunk
-            })
+            req.on('data', (chunk) => { body += chunk })
             req.on('end', async () => {
               try {
                 const data = body ? JSON.parse(body) : {}
-                const { translatePackWithGemini } = await import('./src/server/aiTranslateHandler')
                 const translatedData = await translatePackWithGemini(data)
                 res.setHeader('Content-Type', 'application/json')
                 res.statusCode = 200
@@ -72,7 +67,7 @@ export default defineConfig(({ mode }) => {
             })
           })
         },
-      },
+      }
     ],
     resolve: {
       alias: {

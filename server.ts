@@ -30,13 +30,24 @@ app.post('/api/ai/translate', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'dist')));
+const isProd = process.env.NODE_ENV === 'production';
 
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+if (!isProd) {
+  const { createServer } = await import('vite');
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'spa',
+    root: path.join(__dirname, 'frontend'),
+  });
+  app.use(vite.middlewares);
+} else {
+  app.use(express.static(path.join(__dirname, 'dist')));
+  app.use((req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+}
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
