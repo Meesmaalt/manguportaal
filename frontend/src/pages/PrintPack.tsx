@@ -161,7 +161,7 @@ export default function PrintPack() {
       )}
 
       <p style={{ marginTop: '2rem', fontSize: '0.75rem', color: '#888' }}>
-        Õhtu Mängud · hostile · {new Date().toLocaleDateString()}
+        Seltskonnamängud · hostile · {new Date().toLocaleDateString()}
       </p>
     </div>
   )

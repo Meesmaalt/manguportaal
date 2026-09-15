@@ -91,8 +91,14 @@ export type RoosidesodaRound = {
   answers: RoosidesodaAnswer[]
 }
 
+export type RoosidesodaFinalQuestion = {
+  question: string
+  answers: RoosidesodaAnswer[]
+}
+
 export type RoosidesodaPackData = {
   rounds: RoosidesodaRound[]
+  finalRound?: RoosidesodaFinalQuestion[]
 }
 
 export type GameSession = {

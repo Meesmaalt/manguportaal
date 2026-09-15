@@ -9,7 +9,6 @@
  * - Viimane püsti (Stand-up party statements)
  * - Tõde või tegu (Truth or Dare cards)
  */
-
 import { callGeminiDirectly, hasClientGeminiKey } from './geminiClient'
 
 function cleanJson(raw: string): string {
@@ -24,86 +23,78 @@ function cleanJson(raw: string): string {
  */
 export async function generateKuldvillakAi(topic: string) {
   const chosenTopic = topic || 'Üldteadmised, filmid, Eesti ja meelelahutus'
-  const prompt = `Loo telesaate "Kuldvillak" (Jeopardy) stiilis täismäng eesti keeles teemal: "${chosenTopic}".
-Koosta täpselt 5 teemakategooriat, millest igaühes on täpselt 5 küsimust punktidega 100, 200, 300, 400, 500 (kasvavas raskusastmes).
-Lisaks koosta 1 Finaalküsimus (finalJeopardy).
+  const seed = Math.floor(Math.random() * 1000000)
+  const prompt = `Loo telesaate "Kuldvillak" (Jeopardy) stiilis mälumängu pakett eesti keeles teemal: "${chosenTopic}".
+Unikaalsuse kood: ${seed}. Mõtle välja täiesti unikaalsed kategooriad ja küsimused!
+
+Paketis peab olema TÄPSELT 5 kategooriat.
+Igas kategoorias peab olema TÄPSELT 5 küsimust kasvava raskusastmega (punktid 100, 200, 300, 400, 500).
+Lisaks 1 Finaalküsimus ("finalJeopardy").
 
 Vasta AINULT kehtiva JSON objektina:
 {
   "categories": [
     {
-      "name": "Kategooria nimi",
+      "name": "KATEGOORIA NIMI 1",
       "questions": [
-        { "points": 100, "q": "Küsimuse tekst (100)", "a": "Õige vastus", "hostNote": "Lühike lisainfo saatejuhile" },
-        { "points": 200, "q": "Küsimuse tekst (200)", "a": "Õige vastus", "hostNote": "" },
-        { "points": 300, "q": "Küsimuse tekst (300)", "a": "Õige vastus", "hostNote": "" },
-        { "points": 400, "q": "Küsimuse tekst (400)", "a": "Õige vastus", "hostNote": "" },
-        { "points": 500, "q": "Küsimuse tekst (500)", "a": "Õige vastus", "hostNote": "" }
+        { "points": 100, "q": "Lihtne vihje...", "a": "Mis on vastus?" },
+        { "points": 200, "q": "Veidi raskem...", "a": "Kes on ...?" },
+        { "points": 300, "q": "Keskmine...", "a": "Mida tähendab ...?" },
+        { "points": 400, "q": "Keeruline...", "a": "Kus asub ...?" },
+        { "points": 500, "q": "Väga raske...", "a": "Millal toimus ...?" }
       ]
-    }
+    },
+    ... (veel 4 kategooriat)
   ],
   "finalJeopardy": {
-    "q": "Põnev finaalküsimus",
-    "a": "Finaali vastus",
-    "hostNote": "Selgitus saatejuhile"
+    "q": "Väga raske ja otsustav finaalküsimus...",
+    "a": "Mis või kes on see?",
+    "hostNote": "Saatejuhile väike vihje või huvitav fakt selle kohta"
   }
 }`
-
-  const raw = await callGeminiDirectly(prompt)
+  const raw = await callGeminiDirectly(prompt, { temperature: 0.9 })
   const parsed = JSON.parse(cleanJson(raw))
-  if (!parsed.categories || !Array.isArray(parsed.categories)) {
-    throw new Error('Kuldvillaku vastus ei sisalda kategooriaid.')
+  if (!parsed.categories || parsed.categories.length < 5) {
+    throw new Error('Kuldvillaku vastus ei sisalda 5 kategooriat.')
   }
   return parsed
 }
 
 /**
- * Generate Rooside Sõda (Family Feud) pack (4 survey rounds)
+ * Generate Rooside Sõda (Family Feud) pack (5 survey rounds + Final)
  */
 export async function generateRoosidesodaAi(topic: string) {
   const chosenTopic = topic || 'Igapäevaelu, Eesti kombed, suhted ja seltskond'
-  const prompt = `Loo telesaate "Rooside Sõda" (Family Feud) stiilis 4-vooruline mäng eesti keeles teemal või suunal: "${chosenTopic}".
-Küsitluse tulemused 100 eestlase seas.
-Igas voorus on 1 küsimus ja 5-6 kõige populaarsemat vastust koos punktidega (punktide summa voorus peaks olema ~85-100).
-Voorud 1 (x1 punktid), Voor 2 (x1 punktid), Voor 3 (x2 topeltpunktid), Voor 4 (x3 kolmekordsed punktid).
+  const seed = Math.floor(Math.random() * 1000000)
+  const prompt = `Loo telesaate "Rooside Sõda" (Family Feud) stiilis 5-vooruline põhimäng ja Suur Finaal (5 kiirküsimust) eesti keeles teemal: "${chosenTopic}".
+Unikaalsuse kood: ${seed}. Mõtle välja täiesti uued ja originaalsed küsitlused 100 inimese seas!
 
-Vasta AINULT kehtiva JSON objektina:
+PÕHIMÄNG:
+5 vooru. Igas voorus 1 küsimus ja 5-6 kõige populaarsemat vastust (summa ~80-100).
+Voor 1 (1x punktid), Voor 2 (1x), Voor 3 (2x), Voor 4 (3x), Voor 5 (4x).
+
+SUUR FINAAL (Fast Money):
+Täpselt 5 kiirküsimust, millele saab vastata ühe-kahe sõnaga.
+Igal küsimusel pakkuda 3-5 kõige populaarsemat vastust (punktide summa ~90-100 iga küsimuse kohta).
+
+Vasta AINULT kehtiva JSON objektina, ilma Markdownita:
 {
   "rounds": [
     {
       "title": "VOOR 1",
       "multiplier": 1,
-      "question": "Nimetage midagi, mida inimesed teevad hommikul esimese asjana",
-      "answers": [
-        { "text": "Joovad kohvi", "points": 34 },
-        { "text": "Pesevad hambaid", "points": 25 },
-        { "text": "Vaatavad telefoni", "points": 18 },
-        { "text": "Käivad duši all", "points": 12 },
-        { "text": "Venitavad / ärkavad", "points": 6 }
-      ]
-    },
+      "question": "Nimetage...",
+      "answers": [ { "text": "Vastus 1", "points": 34 } ]
+    }
+  ],
+  "finalRound": [
     {
-      "title": "VOOR 2",
-      "multiplier": 1,
-      "question": "Küsimus 2...",
-      "answers": [...]
-    },
-    {
-      "title": "VOOR 3 (TOPELT)",
-      "multiplier": 2,
-      "question": "Küsimus 3...",
-      "answers": [...]
-    },
-    {
-      "title": "FINAALVOOR (KOLMEKORDNE)",
-      "multiplier": 3,
-      "question": "Küsimus 4...",
-      "answers": [...]
+      "question": "Kiirküsimus 1...",
+      "answers": [ { "text": "Parim vastus", "points": 45 }, { "text": "Teine vastus", "points": 20 } ]
     }
   ]
 }`
-
-  const raw = await callGeminiDirectly(prompt)
+  const raw = await callGeminiDirectly(prompt, { temperature: 0.9 })
   const parsed = JSON.parse(cleanJson(raw))
   if (!parsed.rounds || !Array.isArray(parsed.rounds)) {
     throw new Error('Rooside sõja vastus ei sisalda voorusid.')
@@ -117,10 +108,8 @@ Vasta AINULT kehtiva JSON objektina:
 export async function generateSonaseletusAi(topic: string, count = 40) {
   const prompt = `Loo täpselt ${count} põnevat, seltskondlikku ja mitmekesist eesti keelset sõna või fraasi Sõnaseletuse (Aliase) mängu jaoks teemal: "${topic || 'Eesti elu, meelelahutus, argipäev ja huumor'}".
 Iga sõna peaks olema seletatav, sisaldades nii lihtsaid esemeid kui ka tuntud tegelasi või naljakaid situatsioone.
-
 Vasta AINULT JSON massiivina (stringide massiiv):
 ["Sõna 1", "Sõna 2", "Sõna 3", ...]`
-
   const raw = await callGeminiDirectly(prompt)
   const parsed = JSON.parse(cleanJson(raw))
   if (!Array.isArray(parsed)) throw new Error('Vastus ei ole massiiv.')
@@ -132,10 +121,8 @@ Vasta AINULT JSON massiivina (stringide massiiv):
  */
 export async function generateMaEiOleKunagiAi(topic: string, count = 30) {
   const prompt = `Loo täpselt ${count} lõbusat, vürtsikat või humoorikat "Ma ei ole kunagi..." väidet eesti keeles peo- ja seltskonnamängu jaoks teemal/suunal: "${topic || 'Peod, reisimine, piinlikud lood ja igapäevaelu'}".
-
 Vasta AINULT JSON massiivina (stringide massiiv):
 ["Ma ei ole kunagi valetanud oma vanuse kohta", "Ma ei ole kunagi magama jäänud kinos", ...]`
-
   const raw = await callGeminiDirectly(prompt)
   const parsed = JSON.parse(cleanJson(raw))
   if (!Array.isArray(parsed)) throw new Error('Vastus ei ole massiiv.')
@@ -148,10 +135,8 @@ Vasta AINULT JSON massiivina (stringide massiiv):
 export async function generateViimanePustiAi(topic: string, count = 30) {
   const prompt = `Loo täpselt ${count} seltskondlikku ja kaasahaaravat väidet mängule "Viimane püsti / Istu maha kui..." eesti keeles teemal: "${topic || 'Igapäevaelu, harjumused, reisimine ja kogemused'}".
 Iga lause peaks algama sobivalt või olema selge tingimus (nt "Istu maha, kui oled täna hommikul kohvi joonud", "Istu maha, kui sul on koduloom").
-
 Vasta AINULT JSON massiivina (stringide massiiv):
 ["Istu maha, kui sul on seljas midagi sinist", "Istu maha, kui oled käinud sel aastal välismaal", ...]`
-
   const raw = await callGeminiDirectly(prompt)
   const parsed = JSON.parse(cleanJson(raw))
   if (!Array.isArray(parsed)) throw new Error('Vastus ei ole massiiv.')
@@ -163,7 +148,6 @@ Vasta AINULT JSON massiivina (stringide massiiv):
  */
 export async function generateTodeVoiTeguAi(topic: string, count = 20) {
   const prompt = `Loo seltskonnamängule "Tõde või tegu" ${count} head küsimust (tõed) ja ${count} lõbusat ülesannet (teod) eesti keeles teemal/stiilis: "${topic || 'Sõprade õhtu, lõbus ja seltskondlik ilma ohtlike tegudeta'}".
-
 Vasta AINULT kehtiva JSON objektina:
 {
   "truths": [
@@ -175,7 +159,6 @@ Vasta AINULT kehtiva JSON objektina:
     ...
   ]
 }`
-
   const raw = await callGeminiDirectly(prompt)
   const parsed = JSON.parse(cleanJson(raw))
   if (!parsed.truths || !parsed.dares) throw new Error('Vastus ei sisalda tõdesid ja tegusid.')

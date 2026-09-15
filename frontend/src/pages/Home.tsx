@@ -1,24 +1,34 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { Sparkles, Tv, Layers, Play, User, Info } from 'lucide-react'
+import { Sparkles, Play } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import type { TranslationKey } from '@/i18n/translations'
+import QuickJoinCard from '@/components/QuickJoinCard'
 
-/** Featured on homepage — full list is on /dashboard */
-const FEATURED: GameType[] = ['kuldvillak', 'miljonar', 'blitz', 'kinnistu_deal', 'roosidesoda', 'sonaseletus']
+const GAMES: GameType[] = [
+  'kuldvillak',
+  'miljonar',
+  'roosidesoda',
+  'blitz',
+  'kinnistu_deal',
+  'sonaseletus',
+  'ma_ei_ole_kunagi',
+  'viimane_pusti',
+  'tode_voi_tegu',
+]
 
 const EMOJI: Record<GameType, string> = {
   kuldvillak: '🏆',
+  miljonar: '💰',
   roosidesoda: '🌹',
+  blitz: '⚡',
+  kinnistu_deal: '🏠',
   sonaseletus: '🗣️',
   ma_ei_ole_kunagi: '🙅',
   viimane_pusti: '🧍',
   tode_voi_tegu: '🎲',
-  kinnistu_deal: '🏠',
-  blitz: '⚡',
-  miljonar: '💰',
 }
 
 export default function Home() {
@@ -26,112 +36,114 @@ export default function Home() {
   const { t } = useI18n()
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 md:py-16 ohtu-page-enter">
+    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 ohtu-page-enter">
+      {/* Hero Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12"
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="text-center mb-10 relative"
       >
-        <h1 className="font-display text-5xl md:text-7xl font-black text-gold tracking-wide mb-4 drop-shadow-[0_0_30px_rgba(223,179,66,0.4)]">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-gold/30 bg-gold/[0.07] text-gold text-xs font-semibold uppercase tracking-widest mb-4 shadow-sm backdrop-blur-md">
+          <Sparkles size={13} className="text-gold animate-pulse" />
+          <span>Mänguõhtud & peomängud</span>
+        </div>
+
+        <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-black text-gold tracking-tight mb-3 drop-shadow-[0_0_35px_rgba(223,179,66,0.3)]">
           {t('homeTitle')}
         </h1>
-        <p className="text-xl text-white/70 max-w-2xl mx-auto">{t('homeSubtitle')}</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/dashboard" className="btn-gold text-lg px-8 py-3 flex items-center gap-2">
-            <Play size={20} /> {t('homePlay')}
-          </Link>
-          <Link to="/gallery" className="btn-outline text-lg px-6 py-3">
+        <p className="text-base sm:text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-light leading-relaxed">
+          {t('homeSubtitle')}
+        </p>
+
+        <div className="mt-7 flex flex-wrap justify-center items-center gap-3">
+          <a
+            href="#mangud"
+            className="btn-gold text-sm sm:text-base px-6 py-2.5 flex items-center gap-2 font-bold shadow-[0_4px_20px_rgba(223,179,66,0.3)] hover:shadow-[0_6px_25px_rgba(223,179,66,0.45)] active:scale-95 transition-all"
+          >
+            <Play size={17} className="fill-bg" /> {t('homePlay')}
+          </a>
+          <Link
+            to="/gallery"
+            className="btn-outline text-sm sm:text-base px-5 py-2.5 text-white/80 hover:text-gold border-white/20 hover:border-gold/60 backdrop-blur-sm transition-all"
+          >
             {t('galleryTitle')}
           </Link>
           {!isLoggedIn && (
-            <Link to="/login" className="btn-outline text-lg px-6 py-3">
+            <Link
+              to="/login"
+              className="btn-outline text-sm sm:text-base px-5 py-2.5 text-white/70 hover:text-white border-white/10 hover:border-white/30 backdrop-blur-sm transition-all"
+            >
               {t('homeAccount')}
             </Link>
           )}
         </div>
       </motion.div>
 
-      {/* Steps — informational, not buttons */}
-      <div className="grid sm:grid-cols-3 gap-3 mb-10 max-w-3xl mx-auto">
-        {[t('homeStep1'), t('homeStep2'), t('homeStep3')].map((step, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-white/70"
-          >
-            <span className="text-gold font-display font-bold text-lg block mb-1">{i + 1}</span>
-            {step.replace(/^\d+\.\s*/, '')}
+      {/* Quick Join Card (Players and TV) */}
+      <div className="mb-14 max-w-xl mx-auto">
+        <QuickJoinCard />
+      </div>
+
+      {/* Direct Games Grid */}
+      <div id="mangud" className="scroll-mt-24">
+        <div className="flex items-center justify-between mb-5 border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+            <h2 className="font-display text-2xl text-gold font-bold tracking-wide">
+              {t('homeGamesFeatured')}
+            </h2>
           </div>
-        ))}
+          <span className="text-white/40 text-xs hidden sm:inline">{t('homeGamesFeaturedHint')}</span>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-12">
+          {GAMES.map((key) => {
+            const titleKey = `game_${key}` as TranslationKey
+            const subKey = `game_${key}_sub` as TranslationKey
+            const descKey = `game_${key}_desc` as TranslationKey
+            return (
+              <Link
+                key={key}
+                to={`/play/${key}`}
+                className="group relative rounded-2xl bg-[#081528]/80 border border-white/[0.08] hover:border-gold/60 p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_35px_-8px_rgba(223,179,66,0.18)] flex flex-col justify-between overflow-hidden"
+              >
+                {/* Subtle top card glow on hover */}
+                <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold/0 group-hover:via-gold/70 to-transparent transition-all duration-500" />
+
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] group-hover:border-gold/30 flex items-center justify-center text-2xl mb-3.5 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                    {EMOJI[key]}
+                  </div>
+                  <p className="text-gold/60 text-[10px] uppercase tracking-widest font-bold mb-1">{t(subKey)}</p>
+                  <h3 className="font-display text-xl text-gold group-hover:text-gold-hover font-bold mb-1.5 transition-colors">
+                    {t(titleKey)}
+                  </h3>
+                  <p className="text-white/60 text-sm leading-relaxed">{t(descKey)}</p>
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                  <span className="text-gold/90 font-bold group-hover:text-gold transition-colors">{t('homePlayCta')}</span>
+                  <span className="text-white/30 group-hover:text-gold group-hover:translate-x-1 transition-all">→</span>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Feature notes — clearly not clickable */}
-      <div className="grid md:grid-cols-3 gap-4 mb-14">
-        {[
-          { icon: <User className="text-gold/80" size={22} />, title: t('homeFeatureGuest'), text: t('homeFeatureGuestText') },
-          { icon: <Tv className="text-gold/80" size={22} />, title: t('homeFeatureTv'), text: t('homeFeatureTvText') },
-          { icon: <Layers className="text-gold/80" size={22} />, title: t('homeFeaturePacks'), text: t('homeFeaturePacksText') },
-        ].map((f, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-dashed border-white/15 bg-transparent p-5 text-center"
-          >
-            <div className="flex justify-center mb-2 opacity-90">{f.icon}</div>
-            <h3 className="font-display text-base text-gold/90 mb-1">{f.title}</h3>
-            <p className="text-white/50 text-sm leading-relaxed">{f.text}</p>
-          </div>
-        ))}
-      </div>
-
-      <h2
-        id="mangud"
-        className="font-display text-2xl text-gold text-center mb-2 flex items-center justify-center gap-2 scroll-mt-24"
-      >
-        <Sparkles size={22} /> {t('homeGamesFeatured')}
-      </h2>
-      <p className="text-center text-white/40 text-sm mb-6">{t('homeGamesFeaturedHint')}</p>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {FEATURED.map((key) => {
-          const titleKey = `game_${key}` as TranslationKey
-          const subKey = `game_${key}_sub` as TranslationKey
-          const descKey = `game_${key}_desc` as TranslationKey
-          return (
-            <Link
-              key={key}
-              to={`/play/${key}`}
-              className="card-panel p-5 hover:border-gold/50 transition group cursor-pointer"
-            >
-              <span className="text-2xl">{EMOJI[key]}</span>
-              <p className="text-gold/60 text-xs uppercase tracking-widest mt-1">{t(subKey)}</p>
-              <h3 className="font-display text-xl text-gold group-hover:text-gold-hover">{t(titleKey)}</h3>
-              <p className="text-white/55 text-sm mt-1">{t(descKey)}</p>
-              <span className="inline-block mt-3 text-gold text-sm font-bold">{t('homePlayCta')}</span>
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="text-center mb-12">
-        <Link to="/dashboard" className="btn-outline text-sm px-5 py-2 inline-flex items-center gap-2">
-          {t('homeAllGames')} →
-        </Link>
-      </div>
-
-      <p className="text-center text-white/40 text-sm flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Info size={12} className="text-white/30" />
+      {/* Clean, subtle footer info */}
+      <div className="pt-6 border-t border-white/[0.08] text-center text-white/40 text-xs flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
         <span>{t('homeGuestTruth')}</span>
-      </p>
-
-      <p className="text-center text-white/35 text-sm mt-6">
-        <Link to="/playlist" className="hover:text-gold/80 underline-offset-2 hover:underline">
+        <span>·</span>
+        <Link to="/playlist" className="hover:text-gold transition underline-offset-2 hover:underline">
           {t('navPlaylist')}
         </Link>
-        <span className="mx-2">·</span>
-        {t('playlistHint')}{' '}
-        <Link to="/dashboard" className="text-gold/70 hover:text-gold">
-          {t('playlistGames')}
+        <span>·</span>
+        <Link to="/dashboard" className="text-gold/70 hover:text-gold transition">
+          {t('navGames')}
         </Link>
-      </p>
+      </div>
     </div>
   )
 }

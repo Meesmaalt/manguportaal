@@ -1,7 +1,19 @@
 import { assetUrl } from '@/lib/config'
 import { getSoundUrl } from '@/lib/gameSounds'
 
-let masterGain = 1 // 0..2 (200%)
+const VOL_KEY = 'ohtu_master_volume'
+function loadStoredVolume(): number {
+  try {
+    const raw = localStorage.getItem(VOL_KEY)
+    if (raw !== null) {
+      const parsed = parseFloat(raw)
+      if (!isNaN(parsed)) return Math.max(0, Math.min(2, parsed))
+    }
+  } catch {}
+  return 1
+}
+
+let masterGain = loadStoredVolume() // 0..2 (200%)
 let audioCtx: AudioContext | null = null
 const nodes = new Map<HTMLAudioElement, MediaElementAudioSourceNode>()
 
@@ -35,6 +47,9 @@ function connect(el: HTMLAudioElement) {
 
 export function setMasterVolume(v: number) {
   masterGain = Math.max(0, Math.min(2, v))
+  try {
+    localStorage.setItem(VOL_KEY, String(masterGain))
+  } catch {}
   nodes.forEach((_, el) => {
     if ((el as any).__gainNode) {
       ;(el as any).__gainNode.gain.value = masterGain
@@ -101,6 +116,8 @@ export type FxType =
   | 'join'
   | 'buzz'
   | 'timer_urgent'
+  | 'sad_trombone'
+  | 'applause'
 
 /** Prefer uploaded file (fx_* or game-specific), else WebAudio synth. */
 export function playFx(type: FxType, opts?: { prefer?: string }) {
@@ -134,8 +151,38 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       join: [523, 659],
       buzz: [880, 660],
       timer_urgent: [740, 740, 740],
+      sad_trombone: [293.66, 277.18, 261.63, 246.94], // D4, Db4, C4, B3
     }
-    const duration: Record<string, number> = {
+    
+    if (type === 'applause') {
+      const bufferSize = ctx.sampleRate * 2 // 2 seconds
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1
+      }
+      
+      const noise = ctx.createBufferSource()
+      noise.buffer = buffer
+      
+      const bandpass = ctx.createBiquadFilter()
+      bandpass.type = 'bandpass'
+      bandpass.frequency.value = 1000
+      
+      const g = ctx.createGain()
+      g.gain.setValueAtTime(0.0001, now)
+      g.gain.exponentialRampToValueAtTime(0.3 * masterGain, now + 0.2)
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 2)
+      
+      noise.connect(bandpass)
+      bandpass.connect(g)
+      g.connect(ctx.destination)
+      noise.start(now)
+      noise.stop(now + 2)
+      return
+    }
+
+const duration: Record<string, number> = {
       click: 0.06,
       tick: 0.07,
       reveal: 0.12,
@@ -147,14 +194,15 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       join: 0.12,
       buzz: 0.15,
       timer_urgent: 0.08,
+      sad_trombone: 0.3,
     }
     ;(notes[type] || [440]).forEach((freq, i) => {
       const o = ctx.createOscillator()
       const g = ctx.createGain()
-      o.type = type === 'wrong' || type === 'buzz' ? 'sawtooth' : 'sine'
+      o.type = type === 'wrong' || type === 'buzz' || type === 'sad_trombone' ? 'sawtooth' : 'sine'
       o.frequency.value = freq
       const gap =
-        type === 'victory' ? 0.09 : type === 'drumroll' ? 0.04 : type === 'jingle' ? 0.1 : 0.045
+        type === 'victory' ? 0.09 : type === 'drumroll' ? 0.04 : type === 'sad_trombone' ? 0.4 : type === 'jingle' ? 0.1 : 0.045
       const t0 = now + i * gap
       g.gain.setValueAtTime(0.0001, t0)
       g.gain.exponentialRampToValueAtTime(0.12 * masterGain, t0 + 0.008)
@@ -162,7 +210,7 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       o.connect(g)
       g.connect(ctx.destination)
       o.start(t0)
-      o.stop(t0 + 0.25)
+      o.stop(t0 + (duration[type] || 0.1) + 0.1)
     })
   } catch {
     /* ignore */

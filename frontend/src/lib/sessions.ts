@@ -242,3 +242,34 @@ export async function createOwnedPack(input: {
     throw new Error(formatPbError(e))
   }
 }
+
+
+export async function submitPlayerInput(opts: {
+  sessionId: string
+  isLocal: boolean
+  name: string
+  value: string
+}): Promise<{ ok: boolean }> {
+  const payload = { name: opts.name.trim(), value: opts.value, at: Date.now() }
+  try {
+    if (opts.isLocal) {
+      const key = `session_${opts.sessionId}`
+      const raw = localStorage.getItem(key)
+      if (!raw) return { ok: false }
+      const data = JSON.parse(raw)
+      if (!data.playerInputs) data.playerInputs = {}
+      data.playerInputs[payload.name] = payload
+      localStorage.setItem(key, JSON.stringify(data))
+      return { ok: true }
+    }
+    // Simple fetch-update
+    const rec = await pb.collection('game_sessions').getOne(opts.sessionId)
+    const st = { ...(rec.state as Record<string, unknown>) }
+    if (!st.playerInputs) st.playerInputs = {}
+    ;(st.playerInputs as Record<string, any>)[payload.name] = payload
+    await pb.collection('game_sessions').update(opts.sessionId, { state: st })
+    return { ok: true }
+  } catch {
+    return { ok: false }
+  }
+}

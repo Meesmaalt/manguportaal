@@ -6,8 +6,10 @@ import { playSound, sounds, createBgm } from '@/lib/audio'
 import TvJoinPanel from '@/components/TvJoinPanel'
 import GameToolbar from '@/components/GameToolbar'
 import GameShowFrame from '@/components/GameShowFrame'
+import RoosidesodaFastMoney from './RoosidesodaFastMoney'
 import type { ConnectionStatus } from '@/hooks/useGameSession'
 import { useI18n } from '@/i18n/I18nContext'
+import SmartBuzzerPanel from '@/components/SmartBuzzerPanel'
 import { playFx } from '@/lib/audio'
 import GameAiModal from '@/components/GameAiModal'
 import { generateRoosidesodaAi } from '@/lib/aiGameGenerators'
@@ -108,17 +110,27 @@ export default function RoosidesodaHost({
   }
 
   function reveal(idx: number) {
-    if (!isHost || !round || revealed.includes(idx)) return
+    if (!isHost || !round) return
     const pts = round.answers[idx].points * round.multiplier
-    sfx(sounds.roosCorrect)
-    try {
-      playFx('correct')
-    } catch {}
-    update((prev) => ({
-      ...prev,
-      revealed: [...prev.revealed, idx],
-      bank: prev.bank + pts,
-    }))
+    
+    if (revealed.includes(idx)) {
+      // Undo reveal
+      update((prev) => ({
+        ...prev,
+        revealed: prev.revealed.filter(i => i !== idx),
+        bank: Math.max(0, prev.bank - pts),
+      }))
+    } else {
+      sfx(sounds.roosCorrect)
+      try {
+        playFx('correct')
+      } catch {}
+      update((prev) => ({
+        ...prev,
+        revealed: [...prev.revealed, idx],
+        bank: prev.bank + pts,
+      }))
+    }
   }
 
   function addStrike() {
@@ -132,6 +144,11 @@ export default function RoosidesodaHost({
     if (next >= 3) {
       setTimeout(() => update({ bank: 0, strikes: 0 }), 1500)
     }
+  }
+
+  function removeStrike() {
+    if (!isHost || strikes <= 0) return
+    update({ strikes: strikes - 1 })
   }
 
   function awardBank() {
@@ -215,7 +232,16 @@ export default function RoosidesodaHost({
       ? teams.reduce((a, b) => (a.score >= b.score ? a : b))
       : null
 
+  if (state.finalPhase && state.finalPhase !== 'none') {
+    return (
+      <GameShowFrame display={!isHost} title={t('game_roosidesoda').toUpperCase()} hasSessionBg={!!(state as any).bgMedia?.dataUrl}>
+        <RoosidesodaFastMoney state={state} update={update} isHost={isHost} />
+      </GameShowFrame>
+    )
+  }
+
   return (
+
     <GameShowFrame display={!isHost} title={t('game_roosidesoda').toUpperCase()} hasSessionBg={!!(state as any).bgMedia?.dataUrl}>
       {isHost && (
         <GameToolbar
@@ -305,7 +331,7 @@ export default function RoosidesodaHost({
                   <button
                     key={idx}
                     type="button"
-                    disabled={!isHost || isRevealed}
+                    disabled={!isHost}
                     onClick={() => reveal(idx)}
                     className={`
                       flex items-center justify-between px-5 py-4 rounded-xl border-2 text-left transition-all min-h-[68px]
@@ -326,7 +352,14 @@ export default function RoosidesodaHost({
                       )}
                     </span>
                     <span className="font-display font-black text-gold text-2xl tabular-nums">
-                      {isRevealed ? ans.points * round.multiplier : ''}
+                      {isRevealed ? (
+    <div className="flex items-center gap-3 group">
+      {isHost && <span className="text-[10px] text-white/30 uppercase tracking-widest font-sans font-normal opacity-0 group-hover:opacity-100 transition-opacity">(peida)</span>}
+      <span>{ans.points * round.multiplier}</span>
+    </div>
+  ) : (
+    ''
+  )}
                     </span>
                   </button>
                 )
@@ -350,13 +383,25 @@ export default function RoosidesodaHost({
 
             {isHost && (
               <div className="flex flex-wrap justify-center gap-2 mb-8">
-                <button
-                  type="button"
-                  onClick={addStrike}
-                  className="btn-outline border-accent-red text-accent-red hover:bg-accent-red hover:text-white"
-                >
-                  {t('strike')} ✕
-                </button>
+                <div className="flex rounded-xl overflow-hidden shadow-sm">
+                  <button
+                    type="button"
+                    onClick={addStrike}
+                    className="bg-accent-red/10 border-2 border-accent-red/50 text-accent-red hover:bg-accent-red hover:text-white px-4 py-2 font-bold uppercase tracking-wider transition-colors"
+                  >
+                    {t('strike')} ✕
+                  </button>
+                  {strikes > 0 && (
+                    <button
+                      type="button"
+                      onClick={removeStrike}
+                      title="Eemalda strike (Undo)"
+                      className="bg-accent-red/10 border-2 border-l-0 border-accent-red/50 text-accent-red hover:bg-accent-red hover:text-white px-3 py-2 transition-colors"
+                    >
+                      <span className="font-bold">-1</span>
+                    </button>
+                  )}
+                </div>
                 <button type="button" onClick={awardBank} className="btn-gold flex items-center gap-2">
                   <Banknote size={16} /> {t('awardBank')} ({teams[activeTeam]?.name})
                 </button>
@@ -369,6 +414,15 @@ export default function RoosidesodaHost({
                 <button type="button" onClick={nextRound} className="btn-outline flex items-center gap-1">
                   {t('round')} ► <SkipForward size={14} />
                 </button>
+                {currentRoundIdx === rounds.length - 1 && packData.finalRound && (
+                  <button 
+                    type="button" 
+                    onClick={() => update({ finalPhase: 'intro' })} 
+                    className="btn-gold flex items-center gap-1 ml-4"
+                  >
+                    SUUR FINAAL <SkipForward size={14} />
+                  </button>
+                )}
               </div>
             )}
 
@@ -440,7 +494,7 @@ export default function RoosidesodaHost({
         generateFn={generateRoosidesodaAi}
         onApply={(data) => {
           update({
-            packData: { rounds: data.rounds },
+            packData: { rounds: data.rounds, finalRound: data.finalRound },
             currentRoundIdx: 0,
             revealed: [],
             strikes: 0,

@@ -58,6 +58,7 @@ export default function CreatePack() {
   ])
 
   // Rooside Sõda
+  const [finalRound, setFinalRound] = useState<any>(null)
   const [rounds, setRounds] = useState([
     {
       title: 'VOOR 1',
@@ -199,7 +200,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
               : undefined,
         }
       case 'roosidesoda':
-        return { rounds }
+        return { rounds, finalRound }
       case 'sonaseletus':
         return {
           words: wordsText
@@ -452,6 +453,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                 const res = await generateRoosidesodaAi(topic)
                 if (res.rounds && res.rounds.length) {
                   setRounds(res.rounds)
+                  if (res.finalRound) setFinalRound(res.finalRound)
                   if (!name) setName(`Rooside Sõda: ${topic}`)
                 }
               }}
@@ -481,6 +483,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                     <option value={1}>1×</option>
                     <option value={2}>2×</option>
                     <option value={3}>3×</option>
+                    <option value={4}>4×</option>
                   </select>
                 </div>
                 <input

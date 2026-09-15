@@ -21,6 +21,8 @@ import { applyTheme, getStoredTheme, type ThemeId } from '@/lib/themes'
 import { PublicGuideOverlay } from '@/components/GameHelpModal'
 import { SessionBgLayer } from '@/components/ThemeStudio'
 import type { TranslationKey } from '@/i18n/translations'
+import QuickJoinCard from '@/components/QuickJoinCard'
+import { Tv, Info, X } from 'lucide-react'
 
 export default function Display() {
   const { code: codeParam } = useParams<{ code: string }>()
@@ -149,30 +151,20 @@ export default function Display() {
     return () => clearInterval(id)
   }, [state])
 
-  function joinWithCode(e: React.FormEvent) {
-    e.preventDefault()
-    const c = codeInput.trim().toUpperCase()
-    if (c.length >= 4) navigate(`/ekraan/${c}`)
-  }
+  const [showTvHint, setShowTvHint] = useState(true)
+
+  useEffect(() => {
+    if (!code) return
+    const timer = setTimeout(() => setShowTvHint(false), 7000)
+    return () => clearTimeout(timer)
+  }, [code])
 
   if (!code) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4 gap-6">
-        <h1 className="font-display text-4xl text-gold font-black">{t('tvJoinTitle')}</h1>
-        <p className="text-white/60 text-center max-w-md">{t('tvEnterCodeHint')}</p>
-        <form onSubmit={joinWithCode} className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-          <input
-            className="input-field text-center font-display text-2xl tracking-[0.25em] uppercase"
-            placeholder="ABC123"
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            maxLength={10}
-            autoFocus
-          />
-          <button type="submit" className="btn-gold">
-            {t('tvConnect')}
-          </button>
-        </form>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4 py-12">
+        <div className="w-full max-w-md">
+          <QuickJoinCard defaultTab="tv" />
+        </div>
       </div>
     )
   }
@@ -206,6 +198,31 @@ export default function Display() {
   return (
     <div className="relative">
       <DisplayCornerTools />
+      
+      {/* Auto-fading TV connection & fullscreen reminder */}
+      {showTvHint && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] bg-black/85 backdrop-blur-md border border-gold/40 text-white rounded-full px-4 py-2 shadow-2xl flex items-center gap-3 text-xs sm:text-sm transition-opacity">
+          <div className="flex items-center gap-2 text-gold">
+            <Tv size={16} />
+            <span className="font-bold uppercase tracking-wider">Suur ekraan</span>
+          </div>
+          <span className="text-white/40">|</span>
+          <span className="text-white/80">
+            Mängukood: <strong className="text-gold font-mono tracking-widest">{session.code || code}</strong>
+          </span>
+          <span className="text-white/40 hidden sm:inline">|</span>
+          <span className="text-white/60 text-xs hidden sm:inline">Vajuta <kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20 text-gold font-mono text-[11px]">F11</kbd> täisekraaniks</span>
+          <button
+            type="button"
+            onClick={() => setShowTvHint(false)}
+            className="text-white/40 hover:text-white ml-1 p-0.5 rounded-full hover:bg-white/10"
+            aria-label="Sulge teavitus"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="fixed top-3 right-3 z-[60] flex flex-col items-end gap-2">
         <ConnectionChip connection={connection} onRetry={() => window.location.reload()} />
         {hostStale && (

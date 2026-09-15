@@ -7,7 +7,7 @@ import { trackSessionStart } from '@/lib/stats'
 import { packTitle, packDescription } from '@/lib/packI18n'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Play, Plus, User, Trash2 } from 'lucide-react'
+import { ArrowLeft, Play, Plus, User, Trash2, MoreHorizontal, Download, Copy, Printer } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { GameType } from '@/lib/types'
 import { useI18n } from '@/i18n/I18nContext'
@@ -203,6 +203,13 @@ export default function PackSelect() {
   const [starting, setStarting] = useState<string | null>(null)
   const [startError, setStartError] = useState('')
   const [packFilter, setPackFilter] = useState<'all' | 'official' | 'mine'>('all')
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const close = () => setOpenMenuId(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [])
 
   const isValid = [
     'kuldvillak',
@@ -392,14 +399,14 @@ export default function PackSelect() {
       )}
       {isLoggedIn && <div className="mb-6" />}
 
-      {packs.length > 0 && (
+      {packs.length > 1 && (isLoggedIn && packs.some((p) => p.owner === user?.id)) && (
         <div className="mb-5">
           <div className="flex flex-wrap gap-2">
             {(
               [
                 ['all', t('packFilterAll')],
                 ['official', t('packFilterOfficial')],
-                ...(isLoggedIn ? ([['mine', t('packFilterMine')]] as const) : []),
+                ['mine', t('packFilterMine')],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -416,7 +423,6 @@ export default function PackSelect() {
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-white/35 mt-1.5">{t('packFilterHint')}</p>
         </div>
       )}
 
@@ -480,65 +486,91 @@ export default function PackSelect() {
                 </div>
                 <p className="text-white/50 text-sm">{packDescription(pack, lang)}</p>
               </div>
-              <div className="flex gap-2 shrink-0 flex-wrap justify-end">
-                <button
-                  type="button"
-                  className="btn-outline text-xs !py-2 !px-3"
-                  onClick={() =>
-                    downloadJson(
-                      `${pack.game_type}-${pack.name.slice(0, 40).replace(/\s+/g, '-')}.json`,
-                      packExportPayload(pack)
-                    )
-                  }
-                >
-                  {t('exportPack')}
-                </button>
-                {isLoggedIn && (
-                  <button
-                    type="button"
-                    className="btn-outline text-xs !py-2 !px-3"
-                    disabled={!!starting}
-                    onClick={() => duplicatePack(pack)}
-                  >
-                    {t('duplicatePack')}
-                  </button>
-                )}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                 {isLoggedIn && user && pack.owner === user.id && !pack.id.startsWith('local-') && !pack.is_official && (
-                  <>
-                    <Link
-                      to={`/packs/${pack.id}/edit`}
-                      className="btn-outline text-xs !py-2 !px-3"
-                    >
-                      {t('editPack')}
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn-outline text-xs !py-2 !px-3 border-accent-red/50 text-accent-red"
-                      disabled={!!starting}
-                      onClick={() => deletePack(pack)}
-                    >
-                      <Trash2 size={12} className="inline mr-1" />
-                      {t('deletePack')}
-                    </button>
-                  </>
-                )}
-                {pack.game_type === 'kuldvillak' && (
                   <Link
-                    to={`/print?name=${encodeURIComponent(pack.name)}${!pack.id.startsWith('local-') ? `&id=${pack.id}` : ''}`}
-                    className="btn-outline text-xs !py-2 !px-3"
+                    to={`/packs/${pack.id}/edit`}
+                    className="btn-outline text-xs !py-2 !px-3 hover:text-gold"
                   >
-                    {t('printPdf')}
+                    {t('editPack')}
                   </Link>
                 )}
                 <button
                   type="button"
                   onClick={() => startSession(pack)}
                   disabled={!!starting}
-                  className="btn-gold flex items-center gap-2"
+                  className="btn-gold flex items-center gap-2 font-bold !py-2 px-4 shadow-md active:scale-95 transition"
                 >
                   <Play size={16} />
                   {starting === pack.id ? t('packStarting') : t('packPlay')}
                 </button>
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenMenuId(openMenuId === pack.id ? null : pack.id)}
+                    className="btn-outline text-xs !py-2 !px-2.5 text-white/60 hover:text-gold"
+                    title="Rohkem valikuid"
+                    aria-label="Rohkem valikuid"
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {openMenuId === pack.id && (
+                    <div className="absolute right-0 top-full mt-1.5 z-40 bg-bg/95 border border-gold/30 rounded-xl shadow-2xl p-1.5 min-w-[170px] flex flex-col gap-1 backdrop-blur-md">
+                      <button
+                        type="button"
+                        className="text-left px-3 py-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white text-xs flex items-center gap-2 transition"
+                        onClick={() => {
+                          setOpenMenuId(null)
+                          downloadJson(
+                            `${pack.game_type}-${pack.name.slice(0, 40).replace(/\s+/g, '-')}.json`,
+                            packExportPayload(pack)
+                          )
+                        }}
+                      >
+                        <Download size={14} className="text-gold/80" />
+                        {t('exportPack')}
+                      </button>
+                      {isLoggedIn && (
+                        <button
+                          type="button"
+                          className="text-left px-3 py-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white text-xs flex items-center gap-2 transition"
+                          disabled={!!starting}
+                          onClick={() => {
+                            setOpenMenuId(null)
+                            duplicatePack(pack)
+                          }}
+                        >
+                          <Copy size={14} className="text-gold/80" />
+                          {t('duplicatePack')}
+                        </button>
+                      )}
+                      {pack.game_type === 'kuldvillak' && (
+                        <Link
+                          to={`/print?name=${encodeURIComponent(pack.name)}${!pack.id.startsWith('local-') ? `&id=${pack.id}` : ''}`}
+                          className="text-left px-3 py-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white text-xs flex items-center gap-2 transition"
+                          onClick={() => setOpenMenuId(null)}
+                        >
+                          <Printer size={14} className="text-gold/80" />
+                          {t('printPdf')}
+                        </Link>
+                      )}
+                      {isLoggedIn && user && pack.owner === user.id && !pack.id.startsWith('local-') && !pack.is_official && (
+                        <button
+                          type="button"
+                          className="text-left px-3 py-1.5 rounded-lg hover:bg-accent-red/20 text-accent-red text-xs flex items-center gap-2 transition border-t border-white/5 pt-1.5"
+                          disabled={!!starting}
+                          onClick={() => {
+                            setOpenMenuId(null)
+                            deletePack(pack)
+                          }}
+                        >
+                          <Trash2 size={14} />
+                          {t('deletePack')}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

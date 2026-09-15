@@ -11,6 +11,7 @@ import GameToolbar from '@/components/GameToolbar'
 import { useI18n } from '@/i18n/I18nContext'
 import { appUrl } from '@/lib/config'
 import BuzzQrOverlay from '@/components/BuzzQrOverlay'
+import SmartBuzzerPanel from '@/components/SmartBuzzerPanel'
 import HostSheet from '@/components/HostSheet'
 import GameAiModal from '@/components/GameAiModal'
 import { generateKuldvillakAi } from '@/lib/aiGameGenerators'
@@ -77,7 +78,15 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   function openCard(col: number, row: number) {
     if (!isHost) return
     const cardId = `${col}-${row}`
-    if (disabledCards.includes(cardId)) return
+    if (disabledCards.includes(cardId)) {
+      if (confirm('Kas soovid selle kaardi tagasi lauale panna? (Undo)')) {
+        update((prev) => ({
+          ...prev,
+          disabledCards: prev.disabledCards.filter(id => id !== cardId)
+        }))
+      }
+      return
+    }
     const cat = categories[col]
     const q = cat.questions[row]
     playFx('reveal', { prefer: 'kuldvillak_open' })
@@ -282,6 +291,11 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       )}
 
       {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} onRetry={onRetry} />}
+      {isHost && (
+        <div className="flex justify-center mb-4">
+          <SmartBuzzerPanel state={state} update={update} />
+        </div>
+      )}
       {isHost && sessionCode && (
         <p className="text-center text-white/45 text-xs mb-3">
           {t('buzzLink')}:{' '}
@@ -335,7 +349,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               return (
                 <button
                   key={cardId}
-                  disabled={disabled || !isHost}
+                  disabled={!isHost}
                   onClick={() => openCard(col, row)}
                   className={`
                     game-card min-h-[72px] md:min-h-[96px] rounded-xl font-display font-black
@@ -544,13 +558,42 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       )}
 
       {finished && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/80 backdrop-blur-lg">
-          <div className="winner-stage text-center max-w-xl w-full">
-            <div className="text-gold text-sm uppercase tracking-[.35em] font-bold mb-4">{t('gameOver')}</div>
-            <div className="text-6xl mb-5">🏆</div>
-            <h2 className="font-display text-5xl md:text-7xl font-black text-gold mb-3">{leader?.name || t('winner')}</h2>
-            <p className="text-white/65 text-lg mb-7">{t('winningScore')} <strong className="text-white">{leader?.score ?? 0}</strong> {t('points')}</p>
-            {isHost && <button type="button" onClick={resetGame} className="btn-gold">{t('playAgain')}</button>}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-1000">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Simple CSS-based confetti effect for outro without external libs */}
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div 
+                key={i}
+                className="absolute w-3 h-8 rounded-full"
+                style={{
+                  top: `${Math.random() * -20}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: ['#dfb342', '#10b981', '#3b82f6', '#f43f5e', '#a855f7'][Math.floor(Math.random() * 5)],
+                  animation: `fall ${Math.random() * 3 + 2}s linear infinite`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  opacity: Math.random() * 0.5 + 0.5,
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              />
+            ))}
+            <style dangerouslySetInnerHTML={{ __html: "@keyframes fall { 0% { transform: translateY(-100px) rotate(0deg); } 100% { transform: translateY(120vh) rotate(360deg); } }" }} />
+          </div>
+          <div className="winner-stage text-center max-w-2xl w-full relative z-10 p-12 rounded-3xl bg-gradient-to-b from-blue-950/80 to-[#030917]/90 border border-gold/30 shadow-[0_0_80px_rgba(223,179,66,0.2)]">
+            <div className="text-gold/80 text-lg uppercase tracking-[.45em] font-bold mb-4 animate-in slide-in-from-bottom-4 duration-700">{t('gameOver')}</div>
+            <div className="text-7xl md:text-9xl mb-8 animate-bounce delay-300 drop-shadow-[0_0_30px_rgba(223,179,66,0.6)]">🏆</div>
+            <h2 className="font-display text-6xl md:text-8xl font-black text-white mb-4 drop-shadow-xl animate-in zoom-in duration-500 delay-500">
+              {leader?.name || t('winner')}
+            </h2>
+            <p className="text-gold/80 text-xl md:text-2xl mb-10 font-bold uppercase tracking-widest animate-in fade-in duration-700 delay-700">
+              {t('winningScore')} <strong className="text-gold text-3xl">{leader?.score ?? 0}</strong> {t('points')}
+            </p>
+            {isHost && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in duration-1000 delay-1000">
+                <button type="button" onClick={resetGame} className="btn-gold text-lg px-8 py-3 rounded-full shadow-[0_0_20px_rgba(223,179,66,0.4)]">
+                  {t('playAgain')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

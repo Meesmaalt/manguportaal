@@ -55,7 +55,7 @@
 - Stronger session background on TV
 - DB-only public packs + seed from admin
 
-# Õhtu Mängud
+# Seltskonnamängud
 
 ## Party checklist (15 minutes)
 
