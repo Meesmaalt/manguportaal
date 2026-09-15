@@ -212,7 +212,9 @@ export default function EditPack() {
   const [translating, setTranslating] = useState(false)
 
   async function handleAITranslate() {
-    if (!confirm('Kas soovid tõlkida paki inglise keelde? Tõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud või kopeeritud.')) return
+    const targetLang = prompt('Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome")\n\nTõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud või kopeeritud.', 'Inglise')
+    if (!targetLang) return
+    
     setTranslating(true)
     setError('')
     try {
@@ -221,7 +223,7 @@ export default function EditPack() {
       const res = await fetch('/api/ai/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: 'English' })
+        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: targetLang })
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
