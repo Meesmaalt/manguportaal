@@ -237,8 +237,10 @@ export default function EditPack() {
       if (pack) hydrateVisual(pack.game_type, translatedData)
       
       alert('Tõlge lisatud! Vaata tulemus üle ja vajuta all "Salvesta muudatused".')
+      setTranslateModalOpen(false)
     } catch (e: any) {
       setError(e.message || 'Tõlkimine ebaõnnestus')
+      setTranslateModalOpen(false)
     } finally {
       setTranslating(false)
     }

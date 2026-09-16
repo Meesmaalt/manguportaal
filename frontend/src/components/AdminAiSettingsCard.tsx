@@ -4,7 +4,7 @@ import { appUrl } from '@/lib/config'
 
 export default function AdminAiSettingsCard() {
   const [apiKey, setApiKey] = useState('')
-  const [model, setModel] = useState('gemini-3.8-flash')
+  const [model, setModel] = useState('gemini-2.5-flash')
   const [saved, setSaved] = useState(false)
   const [hasKey, setHasKey] = useState(false)
 
@@ -45,7 +45,7 @@ export default function AdminAiSettingsCard() {
       await fetch(appUrl('/api/ai/key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: '', model: 'gemini-3.8-flash' })
+        body: JSON.stringify({ key: '', model: 'gemini-2.5-flash' })
       })
       setApiKey('')
       setHasKey(false)
@@ -121,14 +121,11 @@ export default function AdminAiSettingsCard() {
             onChange={(e) => setModel(e.target.value)}
           />
           <datalist id="gemini-models">
-            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Vaikimisi - kiire)</option>
-            <option value="gemini-3.8-pro">Gemini 3.8 Pro (Võimsam)</option>
-            <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
-            <option value="gemini-3.7-pro">Gemini 3.7 Pro</option>
-            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
-            <option value="gemini-3.6-pro">Gemini 3.6 Pro</option>
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Uusim, kiire)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Võimekas)</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stabiilne)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
           </datalist>
         </div>
         <div className="bg-blue-950/30 border border-blue-900/40 rounded-xl p-3 text-xs text-blue-200/80 space-y-1.5">

@@ -27,7 +27,7 @@ export function getGlobalModel(): string {
   } catch (e) {
     console.error('Error reading settings file', e);
   }
-  return process.env.GEMINI_MODEL || 'gemini-3.8-flash'; // defaulting to what was currently used in handlers
+  return process.env.GEMINI_MODEL || 'gemini-2.5-flash'; // defaulting to what was currently used in handlers
 }
 
 export function setGlobalSettings(key: string, model: string): void {

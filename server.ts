@@ -47,7 +47,7 @@ apiRouter.get('/api/ai/key', (req, res) => {
 });
 
 apiRouter.post('/api/ai/key', (req, res) => {
-  setGlobalSettings(req.body.key || '', req.body.model || 'gemini-3.8-flash');
+  setGlobalSettings(req.body.key || '', req.body.model || 'gemini-2.5-flash');
   res.json({ ok: true });
 });
 

@@ -112,14 +112,22 @@ Vasta AINULT kehtiva JSON massiivina, ilma markdown jutumärkideta ega koodiplok
 ]
 Igal küsimusel peab choices massiivis olema alati 4 elementi (true_false puhul 2 esimest on Tõene ja Väär, ülejäänud tühjad sõned).`
 
-  const response = await ai.models.generateContent({
-    model: getGlobalModel(),
-    contents: prompt,
-    config: {
-      temperature: 0.7,
-      responseMimeType: 'application/json',
-    },
-  })
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: getGlobalModel() || 'gemini-2.5-flash',
+      contents: prompt,
+      config: { temperature: 0.7, responseMimeType: 'application/json' },
+    });
+  } catch (err: any) {
+    console.log("Model failed, falling back to gemini-1.5-flash. Error:", err?.message);
+    // Fallback to stable 1.5 flash
+    response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: prompt,
+      config: { temperature: 0.7, responseMimeType: 'application/json' },
+    });
+  }
 
   const text = response.text || '[]'
   const questions = JSON.parse(text)
