@@ -1,7 +1,7 @@
 import { confettiBurst } from '@/lib/confettiBurst'
 import { useEffect, useRef, useState } from 'react'
 import type { KuldvillakState } from './types'
-import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon, Sparkles } from 'lucide-react'
+import { X, Eye, EyeOff, Plus, Minus, Trophy, Volume2, VolumeX, Eye as EyeIcon, Sparkles, BookOpen } from 'lucide-react'
 import { createBgm, sounds, playFx } from '@/lib/audio'
 import GameShowFrame from '@/components/GameShowFrame'
 import { trackQuestionResolved } from '@/lib/stats'
@@ -200,84 +200,44 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       {isHost && (
         <GameToolbar
           onReset={resetGame}
-          extra={
+          gameActions={
             <>
               <button
                 type="button"
-                onClick={toggleMusic}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
+                onClick={() => setSheetOpen(true)}
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 hover:text-gold"
+                title="Ava küsimuste ja vastuste spikker"
               >
-                {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {musicOn ? t('toolbarMusicOn') : t('toolbarMusic')}
+                <BookOpen size={14} className="text-gold" />
+                <span>{t('hostSheet')}</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => update({ hostPeek: !hostPeek })}
-                className={`btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 ${
-                  hostPeek ? 'bg-gold text-bg border-gold' : ''
+                className={`btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 transition ${
+                  hostPeek ? 'bg-gold text-bg border-gold font-bold shadow-md' : 'text-white/80 hover:text-white'
                 }`}
+                title="Kuva õiged vastused otse mängulaual"
               >
-                <EyeIcon size={14} />
-                {hostPeek ? t('toolbarHideAnswers') : t('toolbarShowAnswers')}
+                {hostPeek ? <EyeOff size={14} /> : <EyeIcon size={14} />}
+                <span>{hostPeek ? t('toolbarHideAnswers') : t('toolbarShowAnswers')}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(true)}
-                className="btn-outline text-xs !py-1.5 !px-3"
-              >
-                {t('hostSheet')}
-              </button>
+
               <button
                 type="button"
                 onClick={() => setAiModalOpen(true)}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold transition"
+                title="Loo või täienda küsimusi tehisintellektiga"
               >
                 <Sparkles size={13} />
-                Loo AI-ga
+                <span>Loo AI-ga</span>
               </button>
-              <button
-                type="button"
-                className="btn-outline text-xs !py-1.5 !px-3"
-                onClick={() =>
-                  update((prev) => ({
-                    ...prev,
-                    teams: [...prev.teams, { name: `Meeskond ${prev.teams.length + 1}`, score: 0 }],
-                  }))
-                }
-              >
-                {t('toolbarAddTeam')}
-              </button>
-              <button
-                type="button"
-                className="btn-outline text-xs !py-1.5 !px-3"
-                onClick={() =>
-                  update((prev) => ({
-                    ...prev,
-                    teams: prev.teams.length > 1 ? prev.teams.slice(0, -1) : prev.teams,
-                  }))
-                }
-              >
-                {t('toolbarRemoveTeam')}
-              </button>
-              <button
-                type="button"
-                className={`btn-outline text-xs !py-1.5 !px-3 ${buzzEnabled ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan' : ''}`}
-                onClick={() => update({ buzzEnabled: !buzzEnabled, buzz: null })}
-              >
-                {buzzEnabled ? t('buzzOn') : t('buzzOff')}
-              </button>
-              <button
-                type="button"
-                className={`btn-outline text-xs !py-1.5 !px-3 ${showBuzzQr ? 'bg-gold/20 border-gold text-gold' : ''}`}
-                onClick={() => update({ showBuzzQr: !showBuzzQr })}
-                disabled={!buzzEnabled}
-              >
-                {showBuzzQr ? t('buzzQrOn') : t('buzzQrOff')}
-              </button>
+
               {packData?.finalJeopardy && finalPhase === 'none' && (
                 <button
                   type="button"
-                  className="btn-outline text-xs !py-1.5 !px-3 border-gold text-gold"
+                  className="btn-outline text-xs !py-1.5 !px-3 border-gold text-gold hover:bg-gold hover:text-bg font-bold"
                   onClick={() =>
                     update({
                       finalPhase: 'wager',
@@ -287,44 +247,49 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                     })
                   }
                 >
-                  {t('finalJeopardy')}
+                  🏆 {t('finalJeopardy')}
                 </button>
               )}
             </>
           }
+          teamsControl={{
+            teams,
+            onAddTeam: () =>
+              update((prev) => ({
+                ...prev,
+                teams: [...prev.teams, { name: `Meeskond ${prev.teams.length + 1}`, score: 0 }],
+              })),
+            onRemoveTeam: () =>
+              update((prev) => ({
+                ...prev,
+                teams: prev.teams.length > 1 ? prev.teams.slice(0, -1) : prev.teams,
+              })),
+            onAdjustScore: (idx, delta) => adjustScore(idx, delta),
+            onRenameTeam: (idx, name) => renameTeam(idx, name),
+          }}
+          buzzerControl={{
+            sessionCode,
+            buzzEnabled,
+            onToggleBuzz: () => update({ buzzEnabled: !buzzEnabled, buzz: null }),
+            showBuzzQr,
+            onToggleBuzzQr: () => update({ showBuzzQr: !showBuzzQr }),
+            connection,
+            lastSync,
+            onRetry,
+            buzz,
+            onClearBuzz: () => update({ buzz: null }),
+            customBuzzerContent: <SmartBuzzerPanel state={state} update={update} />,
+          }}
+          audioControl={{
+            musicOn,
+            onToggleMusic: toggleMusic,
+            musicLabel: t('toolbarMusic'),
+          }}
         />
       )}
 
-      {isHost && <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} onRetry={onRetry} />}
-      {isHost && (
-        <div className="flex justify-center mb-4">
-          <SmartBuzzerPanel state={state} update={update} />
-        </div>
-      )}
-      {isHost && sessionCode && (
-        <p className="text-center text-white/45 text-xs mb-3">
-          {t('buzzLink')}:{' '}
-          <a className="text-accent-cyan underline" href={appUrl(`/buzzer/${sessionCode}`)} target="_blank" rel="noreferrer">
-            {appUrl(`/buzzer/${sessionCode}`)}
-          </a>
-        </p>
-      )}
       {showBuzzQr && sessionCode && buzzEnabled && (
         <BuzzQrOverlay code={sessionCode} compact />
-      )}
-      {buzz && (
-        <div className="mb-4 text-center animate-pulse">
-          <div className="inline-block bg-accent-cyan/20 border-2 border-accent-cyan text-accent-cyan font-display font-black text-2xl md:text-4xl px-6 py-3 rounded-2xl">
-            🔔 {buzz.name}
-          </div>
-          {isHost && (
-            <div className="mt-2">
-              <button type="button" className="btn-outline text-xs" onClick={() => update({ buzz: null })}>
-                {t('buzzClear')}
-              </button>
-            </div>
-          )}
-        </div>
       )}
 
       <div id="game-scale-root">

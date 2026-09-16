@@ -5,6 +5,15 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.32.0',
+    items: [
+      'Struktureeritud ja kontekstipõhine mängujuhi (Host) juhtpaneel (Kuldvillak, Rooside sõda jt mängud)',
+      'Eraldatud ja organiseeritud kategooriad: Mängutegevused, Tiimide haldus, TV & Buzzer, Helipult ning Seaded',
+      'Kompaktne aktiivse buzzeri teavitusriba koos ühe-klõpsu tühjendusega',
+      'Puhtam ja ülevaatlikum mängulaud ilma vertikaalselt kuhjuvate juhtpaneelideta',
+    ],
+  },
+  {
     v: '3.31.0',
     items: [
       'Täiustatud ja struktureeritud administraatori juhtpaneel (kontekstipõhised vahekaardid: Mängupakid, AI, Helid, Süsteem)',

@@ -246,39 +246,45 @@ export default function RoosidesodaHost({
       {isHost && (
         <GameToolbar
           onReset={resetGame}
-          extra={
-            <>
-              <button
-                type="button"
-                onClick={toggleMusic}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
-              >
-                {musicOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {musicOn ? t('toolbarBgmOn') : t('toolbarBgm')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSfxOn((v) => !v)}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5"
-              >
-                {sfxOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                {sfxOn ? t('toolbarSfxOn') : t('toolbarSfx')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAiModalOpen(true)}
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold"
-              >
-                <Sparkles size={13} />
-                Loo AI-ga
-              </button>
-            </>
+          gameActions={
+            <button
+              type="button"
+              onClick={() => setAiModalOpen(true)}
+              className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black font-semibold transition"
+              title="Loo või täienda küsimusi tehisintellektiga"
+            >
+              <Sparkles size={13} />
+              <span>Loo AI-ga</span>
+            </button>
           }
+          teamsControl={{
+            teams,
+            onAddTeam: () =>
+              update((prev) => ({
+                ...prev,
+                teams: [...prev.teams, { name: `Meeskond ${prev.teams.length + 1}`, score: 0 }],
+              })),
+            onRemoveTeam: () =>
+              update((prev) => ({
+                ...prev,
+                teams: prev.teams.length > 1 ? prev.teams.slice(0, -1) : prev.teams,
+              })),
+            onAdjustScore: (idx, delta) => adjustScore(idx, delta),
+          }}
+          buzzerControl={{
+            sessionCode,
+            connection,
+            lastSync,
+            onRetry,
+          }}
+          audioControl={{
+            musicOn,
+            onToggleMusic: toggleMusic,
+            sfxOn,
+            onToggleSfx: () => setSfxOn((v) => !v),
+            musicLabel: t('toolbarBgm'),
+          }}
         />
-      )}
-
-      {isHost && (
-        <TvJoinPanel code={sessionCode} connection={connection} lastSync={lastSync} onRetry={onRetry} />
       )}
 
       <div id="game-scale-root" className="relative">
