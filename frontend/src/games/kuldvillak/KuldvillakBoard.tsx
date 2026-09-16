@@ -15,6 +15,7 @@ import SmartBuzzerPanel from '@/components/SmartBuzzerPanel'
 import HostSheet from '@/components/HostSheet'
 import GameAiModal from '@/components/GameAiModal'
 import { generateKuldvillakAi } from '@/lib/aiGameGenerators'
+import BilingualText from '@/components/BilingualText'
 
 type Props = {
   state: KuldvillakState
@@ -95,8 +96,11 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         col,
         row,
         category: cat.name,
+        category_tr: cat.name_tr,
         q: q.q,
+        q_tr: q.q_tr,
         a: q.a,
+        a_tr: q.a_tr,
         points: q.points,
         hostNote: q.hostNote,
         imageUrl: q.imageUrl,
@@ -335,9 +339,9 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
           {categories.map((cat, col) => (
             <div
               key={col}
-              className="bg-gradient-to-b from-[#1e3a8a] to-[#0a192f] border-2 border-gold rounded-xl py-3 px-1 text-center font-display text-gold text-sm md:text-base font-black shadow-lg min-h-[52px] flex items-center justify-center leading-tight opacity-100"
+              className="bg-gradient-to-b from-[#1e3a8a] to-[#0a192f] border-2 border-gold rounded-xl py-2 px-1 text-center font-display text-gold text-sm md:text-base font-black shadow-lg min-h-[52px] flex items-center justify-center leading-tight opacity-100"
             >
-              {cat.name}
+              <BilingualText text={cat.name} translation={cat.name_tr} layout="board" primaryClassName="text-gold" />
             </div>
           ))}
 
@@ -367,7 +371,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   </span>
                   {showPeek && (
                     <span className="absolute inset-x-1 bottom-1 text-[0.55rem] md:text-[0.65rem] leading-tight text-accent-green font-sans font-bold opacity-90 line-clamp-2">
-                      {q.a}
+                      <BilingualText text={q.a} translation={q.a_tr} layout="inline" />
                     </span>
                   )}
                 </button>
@@ -481,9 +485,15 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             <div className="text-gold text-xs uppercase tracking-[0.3em] font-bold mb-3 text-center">
               {t('finalJeopardy')}
             </div>
-            <p className="text-xl md:text-3xl text-white font-semibold text-center leading-relaxed mb-6">
-              {fj.q}
-            </p>
+            <div className="mb-6 text-center">
+              <BilingualText
+                text={fj.q}
+                translation={fj.q_tr}
+                layout="block"
+                primaryClassName="text-xl md:text-3xl text-white font-semibold leading-relaxed"
+                translationClassName="text-base md:text-xl text-accent-cyan/90 font-medium"
+              />
+            </div>
             {isHost && fj.hostNote && (
               <div className="mb-4 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
                 <span className="font-bold text-xs text-amber-400/80 uppercase">Host · </span>
@@ -496,8 +506,13 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               </button>
             )}
             {(finalPhase === 'reveal' || (!isHost && false)) && isHost && (
-              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3 mb-6 text-accent-green font-bold text-center">
-                {fj.a}
+              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3 mb-6">
+                <BilingualText
+                  text={fj.a}
+                  translation={fj.a_tr}
+                  layout="answer"
+                  primaryClassName="text-lg text-accent-green font-bold text-center"
+                />
               </div>
             )}
             {isHost && finalPhase === 'reveal' && (
@@ -550,8 +565,13 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               <p className="text-center text-white/50">{t('finalThink')}</p>
             )}
             {!isHost && finalPhase === 'reveal' && (
-              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3 text-accent-green font-bold text-center">
-                {fj.a}
+              <div className="bg-accent-green/15 border border-accent-green/40 rounded-xl px-4 py-3">
+                <BilingualText
+                  text={fj.a}
+                  translation={fj.a_tr}
+                  layout="answer"
+                  primaryClassName="text-lg text-accent-green font-bold text-center"
+                />
               </div>
             )}
           </div>
@@ -616,7 +636,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             </button>
 
             <div className="text-accent-cyan text-sm font-semibold uppercase tracking-[0.2em] mb-1">
-              {currentQuestion.category}
+              <BilingualText text={currentQuestion.category} translation={currentQuestion.category_tr} layout="inline" />
             </div>
             <div className="font-display text-3xl text-gold mb-6 font-black">
               {currentQuestion.points} PUNKTI
@@ -632,9 +652,15 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
               </div>
             )}
 
-            <p className="text-xl md:text-2xl text-white leading-relaxed mb-6 font-semibold">
-              {currentQuestion.q}
-            </p>
+            <div className="mb-6">
+              <BilingualText
+                text={currentQuestion.q}
+                translation={currentQuestion.q_tr}
+                layout="block"
+                primaryClassName="text-xl md:text-2xl text-white leading-relaxed font-semibold"
+                translationClassName="text-base md:text-xl text-accent-cyan/90 font-medium"
+              />
+            </div>
 
             {isHost && currentQuestion.hostNote && (
               <div className="mb-6 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
@@ -646,11 +672,16 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             {isHost && (
               <>
                 {/* Host always sees the answer; TV only after reveal */}
-                <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4 mb-4 text-lg text-accent-green font-bold">
-                  <div className="text-[10px] uppercase tracking-wider text-accent-green/70 font-sans font-bold mb-1">
+                <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4 mb-4 text-accent-green">
+                  <div className="text-[10px] uppercase tracking-wider text-accent-green/70 font-sans font-bold mb-1.5">
                     {t('hostAnswerOnly')}
                   </div>
-                  {currentQuestion.a}
+                  <BilingualText
+                    text={currentQuestion.a}
+                    translation={currentQuestion.a_tr}
+                    layout="answer"
+                    primaryClassName="text-lg text-accent-green font-bold"
+                  />
                 </div>
 
                 <button
@@ -680,8 +711,16 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
             )}
 
             {!isHost && showAnswer && (
-              <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4 text-lg text-accent-green font-bold text-center">
-                Vastus: {currentQuestion.a}
+              <div className="bg-accent-green/15 border-2 border-accent-green/50 rounded-xl px-5 py-4">
+                <div className="text-[10px] uppercase tracking-wider text-accent-green/70 font-sans font-bold text-center mb-1">
+                  Vastus
+                </div>
+                <BilingualText
+                  text={currentQuestion.a}
+                  translation={currentQuestion.a_tr}
+                  layout="answer"
+                  primaryClassName="text-lg md:text-xl text-accent-green font-bold text-center"
+                />
               </div>
             )}
           </div>

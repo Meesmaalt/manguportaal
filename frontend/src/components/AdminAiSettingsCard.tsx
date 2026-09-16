@@ -6,6 +6,8 @@ type FetchedModel = {
   name: string
   displayName?: string
   description?: string
+  tier?: 'flash' | 'pro' | 'other'
+  recommended?: boolean
   supportedActions?: string[]
 }
 
@@ -200,25 +202,46 @@ export default function AdminAiSettingsCard() {
           )}
 
           {availableModels.length > 0 && (
-            <div className="mt-2">
-              <p className="text-[11px] text-white/50 mb-1.5">
-                API tagastas {availableModels.length} mudelit. Klõpsa kiireks valikuks:
-              </p>
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1 bg-black/20 rounded-lg border border-white/5">
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-white/60">
+                <span>Leitud {availableModels.length} teksti- ja mänguloomeks sobivat mudelit (filtreeritud)</span>
+                <span className="text-gold font-semibold">Valitud: {model}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-2 bg-black/30 rounded-xl border border-white/10">
                 {availableModels.map((m) => {
                   const isSelected = model === m.name
+                  const isFlash = m.tier === 'flash'
+                  const isPro = m.tier === 'pro'
                   return (
                     <button
                       key={m.name}
                       type="button"
                       onClick={() => setModel(m.name)}
-                      className={`text-[11px] px-2 py-0.5 rounded font-mono transition border ${
+                      className={`text-left p-2 rounded-lg font-mono text-xs transition border flex items-center justify-between gap-2 ${
                         isSelected
-                          ? 'bg-gold/25 border-gold text-gold font-bold shadow-sm'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                          ? 'bg-gold/20 border-gold text-gold font-bold shadow-sm'
+                          : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
                     >
-                      {m.name}
+                      <div className="truncate">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate">{m.name}</span>
+                          {m.recommended && (
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                              Soovitatud
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-sans uppercase shrink-0 font-semibold ${
+                        isFlash
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : isPro
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      }`}>
+                        {isFlash ? '⚡ Flash' : isPro ? '🧠 Pro' : 'Muu'}
+                      </span>
                     </button>
                   )
                 })}

@@ -14,8 +14,11 @@ export type KuldvillakState = {
     col: number
     row: number
     category: string
+    category_tr?: string
     q: string
+    q_tr?: string
     a: string
+    a_tr?: string
     points: number
     hostNote?: string
     imageUrl?: string

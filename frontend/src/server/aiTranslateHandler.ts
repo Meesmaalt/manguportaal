@@ -15,12 +15,24 @@ export async function translatePackWithGemini(reqData: AiTranslateRequest) {
   }
   const ai = new GoogleGenAI({ apiKey })
 
-  const prompt = `Translate the user-facing text fields in the provided JSON game pack data into a bilingual format.
-Original language is likely Estonian. The target language to add is: ${reqData.targetLanguage}.
-For every text field that contains a question, answer, category name, or choice, append the ${reqData.targetLanguage} translation after a space, a slash, and a space (' / ').
-For example: "Mis on Eesti pealinn?" becomes "Mis on Eesti pealinn? / What is the capital of Estonia?"
-If a value is a number, boolean, ID, URL, or image URL, DO NOT modify it.
-CRITICAL: You MUST return exactly the same JSON structure, array lengths, and keys. Only modify the string values.
+  const prompt = `Translate the user-facing text fields in the provided JSON game pack data to the target language: ${reqData.targetLanguage}.
+Original language is likely Estonian.
+
+Rules:
+1. For Kuldvillak pack data:
+   - For each category, keep 'name' as original, and add 'name_tr' with the ${reqData.targetLanguage} translation.
+   - For each question in questions array:
+     - keep 'q' as original, and add 'q_tr' with the ${reqData.targetLanguage} translated question.
+     - keep 'a' as original, and add 'a_tr' with the ${reqData.targetLanguage} translated answer.
+     - preserve 'points', 'hostNote', 'imageUrl' as is.
+   - For 'finalJeopardy' (if present):
+     - keep 'q' and 'a', add 'q_tr' and 'a_tr'.
+2. For Blitz pack data:
+   - For each question: keep 'q', add 'q_tr'; keep 'choices', add 'choices_tr' (translated array of choices).
+3. For line-based strings (e.g. words, statements, truths, dares):
+   - format each item as: "Original text / ${reqData.targetLanguage} translation"
+4. If an original field already contains a slash ' / ', treat the left part as original and right part as translation.
+5. Return strictly the complete JSON structure with the new translation fields added.
 
 JSON Data:
 ${JSON.stringify(reqData.packData, null, 2)}

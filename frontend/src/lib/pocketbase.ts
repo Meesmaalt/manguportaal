@@ -61,6 +61,8 @@ export type KuldvillakQuestion = {
   points: number
   q: string
   a: string
+  q_tr?: string
+  a_tr?: string
   hostNote?: string
   imageUrl?: string
 }
@@ -68,6 +70,8 @@ export type KuldvillakQuestion = {
 export type KuldvillakFinalJeopardy = {
   q: string
   a: string
+  q_tr?: string
+  a_tr?: string
   hostNote?: string
   maxWager?: number
 }
@@ -75,6 +79,7 @@ export type KuldvillakFinalJeopardy = {
 export type KuldvillakPackData = {
   categories: {
     name: string
+    name_tr?: string
     questions: KuldvillakQuestion[]
   }[]
   finalJeopardy?: KuldvillakFinalJeopardy

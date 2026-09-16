@@ -3,15 +3,16 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2, Languages } from 'lucide-react'
+import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2, Languages, Globe } from 'lucide-react'
 import { appUrl } from '@/lib/config'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
 import type { BlitzQuestion } from '@/games/blitz/types'
+import { splitBilingualText } from '@/components/BilingualText'
 
 type Mode = 'visual' | 'json'
 
-type CatQ = { points: number; q: string; a: string; hostNote?: string; imageUrl?: string }
-type Cat = { name: string; questions: CatQ[] }
+type CatQ = { points: number; q: string; a: string; q_tr?: string; a_tr?: string; hostNote?: string; imageUrl?: string }
+type Cat = { name: string; name_tr?: string; questions: CatQ[] }
 
 export default function EditPack() {
   const { id } = useParams<{ id: string }>()
@@ -25,7 +26,9 @@ export default function EditPack() {
   const [jsonText, setJsonText] = useState('')
   const [categories, setCategories] = useState<Cat[]>([])
   const [finalQ, setFinalQ] = useState('')
+  const [finalQ_tr, setFinalQ_tr] = useState('')
   const [finalA, setFinalA] = useState('')
+  const [finalA_tr, setFinalA_tr] = useState('')
   const [finalNote, setFinalNote] = useState('')
   const [linesText, setLinesText] = useState('')
   const [blitzQs, setBlitzQs] = useState<BlitzQuestion[]>([])
@@ -53,18 +56,33 @@ export default function EditPack() {
     if (gameType === 'kuldvillak') {
       const d = data as KuldvillakPackData
       setCategories(
-        (d.categories || []).map((c) => ({
-          name: c.name,
-          questions: (c.questions || []).map((q) => ({
-            points: q.points,
-            q: q.q,
-            a: q.a,
-            hostNote: q.hostNote || '',
-          })),
-        }))
+        (d.categories || []).map((c) => {
+          const catSplit = splitBilingualText(c.name, c.name_tr)
+          return {
+            name: catSplit.primary,
+            name_tr: catSplit.secondary || '',
+            questions: (c.questions || []).map((q) => {
+              const qSplit = splitBilingualText(q.q, q.q_tr)
+              const aSplit = splitBilingualText(q.a, q.a_tr)
+              return {
+                points: q.points,
+                q: qSplit.primary,
+                q_tr: qSplit.secondary || '',
+                a: aSplit.primary,
+                a_tr: aSplit.secondary || '',
+                hostNote: q.hostNote || '',
+                imageUrl: q.imageUrl,
+              }
+            }),
+          }
+        })
       )
-      setFinalQ(d.finalJeopardy?.q || '')
-      setFinalA(d.finalJeopardy?.a || '')
+      const fjQ = splitBilingualText(d.finalJeopardy?.q, d.finalJeopardy?.q_tr)
+      const fjA = splitBilingualText(d.finalJeopardy?.a, d.finalJeopardy?.a_tr)
+      setFinalQ(fjQ.primary)
+      setFinalQ_tr(fjQ.secondary || '')
+      setFinalA(fjA.primary)
+      setFinalA_tr(fjA.secondary || '')
       setFinalNote(d.finalJeopardy?.hostNote || '')
       return
     }
@@ -98,11 +116,15 @@ export default function EditPack() {
       return {
         categories: categories.map((c) => ({
           name: c.name,
+          ...(c.name_tr?.trim() ? { name_tr: c.name_tr.trim() } : {}),
           questions: c.questions.map((q) => ({
             points: q.points,
             q: q.q,
             a: q.a,
+            ...(q.q_tr?.trim() ? { q_tr: q.q_tr.trim() } : {}),
+            ...(q.a_tr?.trim() ? { a_tr: q.a_tr.trim() } : {}),
             ...(q.hostNote?.trim() ? { hostNote: q.hostNote.trim() } : {}),
+            ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
           })),
         })),
         ...(finalQ.trim() || finalA.trim()
@@ -110,6 +132,8 @@ export default function EditPack() {
               finalJeopardy: {
                 q: finalQ,
                 a: finalA,
+                ...(finalQ_tr.trim() ? { q_tr: finalQ_tr.trim() } : {}),
+                ...(finalA_tr.trim() ? { a_tr: finalA_tr.trim() } : {}),
                 ...(finalNote.trim() ? { hostNote: finalNote.trim() } : {}),
               },
             }
@@ -323,117 +347,174 @@ export default function EditPack() {
         {mode === 'visual' && isKuld && (
           <div className="space-y-4">
             {categories.map((cat, cIdx) => (
-              <div key={cIdx} className="card-panel p-4">
-                <div className="flex gap-2 mb-3">
-                  <input
-                    className="input-field font-display text-gold"
-                    value={cat.name}
-                    onChange={(e) => {
-                      const next = [...categories]
-                      next[cIdx] = { ...next[cIdx], name: e.target.value }
-                      setCategories(next)
-                    }}
-                  />
-                  {categories.length > 1 && (
-                    <button
-                      type="button"
-                      className="text-accent-red p-2"
-                      onClick={() => setCategories(categories.filter((_, i) => i !== cIdx))}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-                {cat.questions.map((q, qIdx) => (
-                  <div key={qIdx} className="mb-3">
-                    <div className="grid grid-cols-[48px_1fr_1fr] gap-2">
-                      <div className="text-gold font-bold text-sm flex items-center">{q.points}p</div>
-                      <input
-                        className="input-field text-sm"
-                        placeholder="Küsimus"
-                        value={q.q}
-                        onChange={(e) => {
-                          const next = [...categories]
-                          next[cIdx].questions[qIdx] = { ...q, q: e.target.value }
-                          setCategories(next)
-                        }}
-                      />
-                      <input
-                        className="input-field text-sm"
-                        placeholder="Vastus"
-                        value={q.a}
-                        onChange={(e) => {
-                          const next = [...categories]
-                          next[cIdx].questions[qIdx] = { ...q, a: e.target.value }
-                          setCategories(next)
-                        }}
-                      />
-                    </div>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      <input
-                        className="input-field text-xs text-amber-100/90 flex-1 min-w-[150px]"
-                        placeholder="Hosti märkus"
-                        value={q.hostNote || ''}
-                        onChange={(e) => {
-                          const next = [...categories]
-                          next[cIdx].questions[qIdx] = { ...q, hostNote: e.target.value }
-                          setCategories(next)
-                        }}
-                      />
-                      <input
-                        className="input-field text-xs flex-1 min-w-[150px]"
-                        placeholder="Pildi URL või laadi fail"
-                        value={q.imageUrl || ''}
-                        onChange={(e) => {
-                          const next = [...categories]
-                          next[cIdx].questions[qIdx] = { ...q, imageUrl: e.target.value || undefined }
-                          setCategories(next)
-                        }}
-                      />
-                      <label className="btn-outline text-[10px] cursor-pointer !py-1 px-3 flex items-center justify-center whitespace-nowrap">
-                        Lisa fail
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0]
-                            if (!f) return
-                            if (f.size > 400_000) {
-                              alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või URL-i.')
-                              return
-                            }
-                            const reader = new FileReader()
-                            reader.onload = () => {
-                              const next = [...categories]
-                              next[cIdx].questions[qIdx] = { ...q, imageUrl: String(reader.result || '') }
-                              setCategories(next)
-                            }
-                            reader.readAsDataURL(f)
-                          }}
-                        />
+              <div key={cIdx} className="card-panel p-4 border-gold/30">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                  <div>
+                    <label className="text-[11px] text-gold/80 block mb-1 font-semibold">Kategooria nimi</label>
+                    <input
+                      className="input-field font-display text-gold"
+                      placeholder="nt. Geograafia"
+                      value={cat.name}
+                      onChange={(e) => {
+                        const next = [...categories]
+                        next[cIdx] = { ...next[cIdx], name: e.target.value }
+                        setCategories(next)
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-[11px] text-white/50 block mb-1 flex items-center gap-1 font-semibold">
+                        <Globe size={12} className="text-accent-cyan" /> Kategooria tõlge (valikuline)
                       </label>
-                      {q.imageUrl && (
-                        <button
-                          type="button"
-                          className="btn-outline text-[10px] text-accent-red !py-1 px-3 whitespace-nowrap"
-                          onClick={() => {
-                            const next = [...categories]
-                            next[cIdx].questions[qIdx] = { ...q, imageUrl: undefined }
-                            setCategories(next)
-                          }}
-                        >
-                          Eemalda pilt
-                        </button>
-                      )}
+                      <input
+                        className="input-field font-display text-white/90 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-gold"
+                        placeholder="nt. Geography"
+                        value={cat.name_tr || ''}
+                        onChange={(e) => {
+                          const next = [...categories]
+                          next[cIdx] = { ...next[cIdx], name_tr: e.target.value }
+                          setCategories(next)
+                        }}
+                      />
                     </div>
-                    {q.imageUrl && (
-                      <div className="mt-2 pl-[56px]">
-                        <img src={q.imageUrl} alt="" className="max-h-24 rounded border border-white/10 object-contain bg-black/20" />
-                      </div>
+                    {categories.length > 1 && (
+                      <button
+                        type="button"
+                        className="text-accent-red p-2 hover:bg-accent-red/10 rounded-lg transition"
+                        title="Kustuta kategooria"
+                        onClick={() => setCategories(categories.filter((_, i) => i !== cIdx))}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     )}
                   </div>
-                ))}
+                </div>
+
+                <div className="space-y-3">
+                  {cat.questions.map((q, qIdx) => (
+                    <div key={qIdx} className="p-3 rounded-xl bg-black/25 border border-white/5 space-y-2">
+                      {/* 1. Põhikeele lahtrid */}
+                      <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
+                        <div className="text-gold font-bold text-xs text-center py-2 rounded-lg bg-gold/10 border border-gold/20">
+                          {q.points}p
+                        </div>
+                        <input
+                          className="input-field text-sm"
+                          placeholder="Küsimus (põhikeel)"
+                          value={q.q}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, q: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                        <input
+                          className="input-field text-sm"
+                          placeholder="Vastus (põhikeel)"
+                          value={q.a}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, a: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                      </div>
+
+                      {/* 2. Tõlgitud lahtrid eraldi kordinaatides */}
+                      <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
+                        <div className="text-[10px] text-accent-cyan/80 font-bold uppercase tracking-wider text-center flex items-center justify-center gap-0.5">
+                          <Globe size={11} /> TR
+                        </div>
+                        <input
+                          className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                          placeholder="🌐 Tõlgitud küsimus (nt inglise k.)"
+                          value={q.q_tr || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, q_tr: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                        <input
+                          className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                          placeholder="🌐 Tõlgitud vastus (nt inglise k.)"
+                          value={q.a_tr || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, a_tr: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                      </div>
+
+                      {/* 3. Märkus ja pilt */}
+                      <div className="flex gap-2 pt-1 flex-wrap items-center">
+                        <input
+                          className="input-field text-xs text-amber-100/90 flex-1 min-w-[140px]"
+                          placeholder="Hosti märkus (ainult mängujuhile)"
+                          value={q.hostNote || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, hostNote: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                        <input
+                          className="input-field text-xs flex-1 min-w-[140px]"
+                          placeholder="Pildi URL või laadi fail"
+                          value={q.imageUrl || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...q, imageUrl: e.target.value || undefined }
+                            setCategories(next)
+                          }}
+                        />
+                        <label className="btn-outline text-[10px] cursor-pointer !py-1 px-3 flex items-center justify-center whitespace-nowrap">
+                          Lisa fail
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (!f) return
+                              if (f.size > 400_000) {
+                                alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või URL-i.')
+                                return
+                              }
+                              const reader = new FileReader()
+                              reader.onload = () => {
+                                const next = [...categories]
+                                next[cIdx].questions[qIdx] = { ...q, imageUrl: String(reader.result || '') }
+                                setCategories(next)
+                              }
+                              reader.readAsDataURL(f)
+                            }}
+                          />
+                        </label>
+                        {q.imageUrl && (
+                          <button
+                            type="button"
+                            className="btn-outline text-[10px] text-accent-red !py-1 px-3 whitespace-nowrap"
+                            onClick={() => {
+                              const next = [...categories]
+                              next[cIdx].questions[qIdx] = { ...q, imageUrl: undefined }
+                              setCategories(next)
+                            }}
+                          >
+                            Eemalda pilt
+                          </button>
+                        )}
+                      </div>
+                      {q.imageUrl && (
+                        <div className="pt-1">
+                          <img src={q.imageUrl} alt="" className="max-h-24 rounded border border-white/10 object-contain bg-black/20" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
             <button
@@ -456,11 +537,38 @@ export default function EditPack() {
             >
               <Plus size={16} /> {t('addCategory')}
             </button>
-            <div className="card-panel p-4 space-y-2 border-gold/30">
-              <div className="font-display text-gold text-sm">Final Jeopardy</div>
-              <input className="input-field text-sm" placeholder="Küsimus" value={finalQ} onChange={(e) => setFinalQ(e.target.value)} />
-              <input className="input-field text-sm" placeholder="Vastus" value={finalA} onChange={(e) => setFinalA(e.target.value)} />
-              <input className="input-field text-xs" placeholder="Hosti märkus" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+            <div className="card-panel p-4 space-y-3 border-gold/40">
+              <div className="font-display text-gold text-sm font-bold flex items-center gap-2">
+                🏆 Final Jeopardy
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-gold/70 block mb-1">Finaali küsimus</label>
+                  <input className="input-field text-sm" placeholder="Küsimus" value={finalQ} onChange={(e) => setFinalQ(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/50 block mb-1 flex items-center gap-1">
+                    <Globe size={11} className="text-accent-cyan" /> Finaali küsimuse tõlge
+                  </label>
+                  <input className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan" placeholder="🌐 Tõlgitud küsimus" value={finalQ_tr} onChange={(e) => setFinalQ_tr(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-gold/70 block mb-1">Finaali vastus</label>
+                  <input className="input-field text-sm" placeholder="Vastus" value={finalA} onChange={(e) => setFinalA(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/50 block mb-1 flex items-center gap-1">
+                    <Globe size={11} className="text-accent-cyan" /> Finaali vastuse tõlge
+                  </label>
+                  <input className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan" placeholder="🌐 Tõlgitud vastus" value={finalA_tr} onChange={(e) => setFinalA_tr(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-amber-200/70 block mb-1">Hosti märkus</label>
+                <input className="input-field text-xs" placeholder="Hosti märkus" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+              </div>
             </div>
           </div>
         )}

@@ -48,12 +48,21 @@ export default function CreatePack() {
 
   // Kuldvillak
   const [finalQ, setFinalQ] = useState('')
+  const [finalQ_tr, setFinalQ_tr] = useState('')
   const [finalA, setFinalA] = useState('')
+  const [finalA_tr, setFinalA_tr] = useState('')
   const [finalNote, setFinalNote] = useState('')
-  const [categories, setCategories] = useState([
+  const [categories, setCategories] = useState<
+    {
+      name: string
+      name_tr?: string
+      questions: { points: number; q: string; q_tr?: string; a: string; a_tr?: string; hostNote?: string }[]
+    }[]
+  >([
     {
       name: 'Kategooria 1',
-      questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '', hostNote: '' })),
+      name_tr: '',
+      questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', q_tr: '', a: '', a_tr: '', hostNote: '' })),
     },
   ])
 
@@ -193,10 +202,27 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
         }
       case 'kuldvillak':
         return {
-          categories,
+          categories: categories.map((c) => ({
+            name: c.name,
+            ...(c.name_tr?.trim() ? { name_tr: c.name_tr.trim() } : {}),
+            questions: c.questions.map((q) => ({
+              points: q.points,
+              q: q.q,
+              a: q.a,
+              ...(q.q_tr?.trim() ? { q_tr: q.q_tr.trim() } : {}),
+              ...(q.a_tr?.trim() ? { a_tr: q.a_tr.trim() } : {}),
+              ...(q.hostNote?.trim() ? { hostNote: q.hostNote.trim() } : {}),
+            })),
+          })),
           finalJeopardy:
             finalQ.trim() || finalA.trim()
-              ? { q: finalQ, a: finalA, hostNote: finalNote || undefined }
+              ? {
+                  q: finalQ,
+                  a: finalA,
+                  ...(finalQ_tr.trim() ? { q_tr: finalQ_tr.trim() } : {}),
+                  ...(finalA_tr.trim() ? { a_tr: finalA_tr.trim() } : {}),
+                  ...(finalNote.trim() ? { hostNote: finalNote.trim() } : {}),
+                }
               : undefined,
         }
       case 'roosidesoda':
@@ -357,64 +383,120 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
             />
 
             {categories.map((cat, cIdx) => (
-              <div key={cIdx} className="card-panel p-4">
-                <div className="flex gap-2 mb-3">
-                  <input
-                    className="input-field font-display text-gold"
-                    value={cat.name}
-                    onChange={(e) => {
-                      const next = [...categories]
-                      next[cIdx].name = e.target.value
-                      setCategories(next)
-                    }}
-                  />
-                  {categories.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setCategories(categories.filter((_, i) => i !== cIdx))}
-                      className="text-accent-red p-2"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-                {cat.questions.map((q, qIdx) => (
-                  <div key={qIdx} className="grid grid-cols-[50px_1fr_1fr] gap-2 mb-1">
-                    <div className="text-gold font-bold text-sm flex items-center">{q.points}p</div>
+              <div key={cIdx} className="card-panel p-4 border-gold/30">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                  <div>
+                    <label className="text-[11px] text-gold/80 block mb-1 font-semibold">Kategooria nimi</label>
                     <input
-                      className="input-field text-sm"
-                      placeholder="Küsimus"
-                      value={q.q}
+                      className="input-field font-display text-gold"
+                      placeholder="nt. Geograafia"
+                      value={cat.name}
                       onChange={(e) => {
                         const next = [...categories]
-                        next[cIdx].questions[qIdx].q = e.target.value
+                        next[cIdx] = { ...next[cIdx], name: e.target.value }
                         setCategories(next)
                       }}
                     />
-                    <input
-                      className="input-field text-sm"
-                      placeholder="Vastus"
-                      value={q.a}
-                      onChange={(e) => {
-                        const next = [...categories]
-                        next[cIdx].questions[qIdx].a = e.target.value
-                        setCategories(next)
-                      }}
-                    />
-                    <div className="col-span-3 mb-2">
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-[11px] text-white/50 block mb-1 font-semibold">
+                        🌐 Kategooria tõlge (valikuline)
+                      </label>
                       <input
-                        className="input-field text-xs text-amber-100/90"
-                        placeholder="Hosti märkus (ainult adminile)"
-                        value={q.hostNote || ''}
+                        className="input-field font-display text-white/90 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-gold"
+                        placeholder="nt. Geography"
+                        value={cat.name_tr || ''}
                         onChange={(e) => {
                           const next = [...categories]
-                          next[cIdx].questions[qIdx].hostNote = e.target.value
+                          next[cIdx] = { ...next[cIdx], name_tr: e.target.value }
                           setCategories(next)
                         }}
                       />
                     </div>
+                    {categories.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setCategories(categories.filter((_, i) => i !== cIdx))}
+                        className="text-accent-red p-2 hover:bg-accent-red/10 rounded-lg transition"
+                        title="Kustuta kategooria"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
-                ))}
+                </div>
+
+                <div className="space-y-3">
+                  {cat.questions.map((q, qIdx) => (
+                    <div key={qIdx} className="p-3 rounded-xl bg-black/25 border border-white/5 space-y-2">
+                      <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
+                        <div className="text-gold font-bold text-xs text-center py-2 rounded-lg bg-gold/10 border border-gold/20">
+                          {q.points}p
+                        </div>
+                        <input
+                          className="input-field text-sm"
+                          placeholder="Küsimus (põhikeel)"
+                          value={q.q}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], q: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                        <input
+                          className="input-field text-sm"
+                          placeholder="Vastus (põhikeel)"
+                          value={q.a}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], a: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
+                        <div className="text-[10px] text-accent-cyan/80 font-bold uppercase tracking-wider text-center">
+                          🌐 TR
+                        </div>
+                        <input
+                          className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                          placeholder="🌐 Tõlgitud küsimus (nt inglise k.)"
+                          value={q.q_tr || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], q_tr: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                        <input
+                          className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                          placeholder="🌐 Tõlgitud vastus (nt inglise k.)"
+                          value={q.a_tr || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], a_tr: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                      </div>
+
+                      <div className="pt-1">
+                        <input
+                          className="input-field text-xs text-amber-100/90"
+                          placeholder="Hosti märkus (ainult mängujuhile)"
+                          value={q.hostNote || ''}
+                          onChange={(e) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], hostNote: e.target.value }
+                            setCategories(next)
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
             <button
@@ -424,7 +506,8 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                   ...categories,
                   {
                     name: `Kategooria ${categories.length + 1}`,
-                    questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', a: '', hostNote: '' })),
+                    name_tr: '',
+                    questions: [100, 200, 300, 400, 500].map((p) => ({ points: p, q: '', q_tr: '', a: '', a_tr: '', hostNote: '' })),
                   },
                 ])
               }
@@ -432,11 +515,32 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
             >
               <Plus size={16} /> Lisa kategooria
             </button>
-            <div className="card-panel p-4 border-gold/30 space-y-2">
-              <div className="font-display text-gold text-sm">Final Jeopardy (valikuline)</div>
-              <input className="input-field text-sm" placeholder="Final küsimus" value={finalQ} onChange={(e) => setFinalQ(e.target.value)} />
-              <input className="input-field text-sm" placeholder="Final vastus" value={finalA} onChange={(e) => setFinalA(e.target.value)} />
-              <input className="input-field text-xs" placeholder="Final hosti märkus" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+            <div className="card-panel p-4 border-gold/30 space-y-3">
+              <div className="font-display text-gold text-sm font-bold">🏆 Final Jeopardy (valikuline)</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-gold/70 block mb-1">Final küsimus</label>
+                  <input className="input-field text-sm" placeholder="Küsimus" value={finalQ} onChange={(e) => setFinalQ(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/50 block mb-1">🌐 Final küsimuse tõlge</label>
+                  <input className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20" placeholder="Tõlgitud küsimus" value={finalQ_tr} onChange={(e) => setFinalQ_tr(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-gold/70 block mb-1">Final vastus</label>
+                  <input className="input-field text-sm" placeholder="Õige vastus" value={finalA} onChange={(e) => setFinalA(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/50 block mb-1">🌐 Final vastuse tõlge</label>
+                  <input className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20" placeholder="Tõlgitud vastus" value={finalA_tr} onChange={(e) => setFinalA_tr(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-amber-200/70 block mb-1">Hosti märkus</label>
+                <input className="input-field text-xs" placeholder="Final hosti märkus" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+              </div>
             </div>
           </div>
         )}
