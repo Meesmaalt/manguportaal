@@ -27,8 +27,6 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-      args:
-        VITE_BASE_PATH: "/mangud/"
     container_name: ohtu-web
     restart: unless-stopped
     ports:

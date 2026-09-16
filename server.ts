@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { generateQuizWithGemini } from './frontend/src/server/aiQuizHandler.ts';
@@ -10,23 +11,36 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+const basePath = process.env.BASE_PATH || '/';
+const envBasePath = basePath === '/' ? '' : basePath.replace(/\/$/, '');
+const pbUrlEnv = process.env.PB_PUBLIC_URL || (envBasePath ? `${envBasePath}/pb` : '/pb');
+
 // Proxy Pocketbase requests before body parsing (important for realtime / SSE)
 const pbProxy = createProxyMiddleware({
   target: 'http://pocketbase:8090',
   changeOrigin: true,
   ws: true,
-  pathRewrite: {
-    '^/mangud/pb': '', // if mounted at /mangud/pb
-    '^/pb': ''         // if mounted at /pb
+  pathRewrite: (path, req) => {
+    if (envBasePath && path.startsWith(`${envBasePath}/pb`)) {
+      return path.replace(`${envBasePath}/pb`, '');
+    }
+    if (path.startsWith('/pb')) {
+      return path.replace('/pb', '');
+    }
+    return path;
   }
 });
 
 app.use('/pb', pbProxy);
-app.use('/mangud/pb', pbProxy);
+if (envBasePath) {
+  app.use(`${envBasePath}/pb`, pbProxy);
+}
 
 app.use(express.json({ limit: '10mb' }));
 
-app.post('/api/ai/quiz', async (req, res) => {
+const apiRouter = express.Router();
+
+apiRouter.post('/api/ai/quiz', async (req, res) => {
   try {
     const questions = await generateQuizWithGemini(req.body);
     res.json({ ok: true, questions });
@@ -36,7 +50,7 @@ app.post('/api/ai/quiz', async (req, res) => {
   }
 });
 
-app.post('/api/ai/translate', async (req, res) => {
+apiRouter.post('/api/ai/translate', async (req, res) => {
   try {
     const translatedData = await translatePackWithGemini(req.body);
     res.json({ ok: true, translatedData });
@@ -46,19 +60,38 @@ app.post('/api/ai/translate', async (req, res) => {
   }
 });
 
-const basePath = process.env.BASE_PATH || '/';
+app.use(apiRouter);
+if (envBasePath) {
+  app.use(envBasePath, apiRouter);
+}
+
+// Dynamic env.js endpoint
+app.get(['/env.js', `${envBasePath}/env.js`].filter(Boolean), (req, res) => {
+  const envJs = `
+window.__APP_CONFIG__ = {
+  basePath: "${envBasePath}",
+  pbUrl: "${pbUrlEnv}"
+};
+window.__BASE_PATH__ = "${envBasePath}";
+window.__PB_URL__ = "${pbUrlEnv}";
+console.info("[ohtu] Dynamic config loaded: basePath=${envBasePath || '/'} pbUrl=${pbUrlEnv}");
+  `;
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.send(envJs);
+});
 
 const staticOptions = {
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html') || filePath.endsWith('env.js')) {
+    if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     }
   }
 };
 
 // Serve static files from the basePath (e.g. /mangud)
-if (basePath !== '/' && basePath !== '') {
-  app.use(basePath, express.static(path.join(__dirname, 'dist'), staticOptions));
+if (envBasePath) {
+  app.use(envBasePath, express.static(path.join(__dirname, 'dist'), staticOptions));
 }
 // Also serve static files from root, so /env.js can be found even if basePath is /mangud
 app.use(express.static(path.join(__dirname, 'dist'), staticOptions));
@@ -69,11 +102,29 @@ app.use((req, res) => {
     res.status(404).send('Not found');
     return;
   }
+  
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  
+  let html = fs.readFileSync(path.join(__dirname, 'dist', 'index.html'), 'utf-8');
+  
+  // Dynamically inject the correct basePath into asset paths if it's not root
+  if (envBasePath) {
+    const prefix = envBasePath + '/';
+    // Replace src="/xyz" or href="/xyz" with src="/mangud/xyz"
+    // Also ignore cases where it already has the prefix (for safety)
+    html = html.replace(/(href|src)="\/([^"]*)"/g, (match, attr, p1) => {
+      // If it already starts with our envBasePath (e.g., /mangud/...), leave it alone
+      if (('/' + p1).startsWith(prefix)) {
+        return `${attr}="/${p1}"`;
+      }
+      return `${attr}="${prefix}${p1}"`;
+    });
+  }
+  
+  res.send(html);
 });
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  console.log(`Server listening on port ${port}, basePath: ${basePath}`);
 });

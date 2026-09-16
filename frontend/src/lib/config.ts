@@ -73,6 +73,12 @@ export function appUrl(path: string): string {
 export function assetUrl(rel: string): string {
   const { basePath } = getConfig()
   const r = rel.replace(/^\//, '')
-  const base = import.meta.env.BASE_URL || (basePath ? basePath + '/' : '/')
+  let base = import.meta.env.BASE_URL
+  // If Vite baked in the root default '/', override it with dynamic basePath if present
+  if (base === '/') {
+    base = basePath ? basePath + '/' : '/'
+  } else if (!base.endsWith('/')) {
+    base += '/'
+  }
   return base + r
 }
