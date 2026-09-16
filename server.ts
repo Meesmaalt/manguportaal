@@ -38,7 +38,18 @@ if (envBasePath) {
 
 app.use(express.json({ limit: '10mb' }));
 
+import { getGlobalApiKey, setGlobalApiKey } from './aiSettings.ts';
+
 const apiRouter = express.Router();
+
+apiRouter.get('/api/ai/key', (req, res) => {
+  res.json({ ok: true, key: getGlobalApiKey() });
+});
+
+apiRouter.post('/api/ai/key', (req, res) => {
+  setGlobalApiKey(req.body.key || '');
+  res.json({ ok: true });
+});
 
 apiRouter.post('/api/ai/quiz', async (req, res) => {
   try {

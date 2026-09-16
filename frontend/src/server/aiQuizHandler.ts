@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
+import { getGlobalApiKey } from '../../../aiSettings.ts'
 
 export type AiQuizRequest = {
   topic: string
@@ -7,12 +8,13 @@ export type AiQuizRequest = {
   language?: string
   types?: string[]
   gameType?: 'blitz' | 'miljonar' | string
+  apiKey?: string
 }
 
 export async function generateQuizWithGemini(reqData: AiQuizRequest) {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = reqData.apiKey || getGlobalApiKey()
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest')
+    throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest ega ka kliendi seadetest')
   }
 
   const ai = new GoogleGenAI({ apiKey })

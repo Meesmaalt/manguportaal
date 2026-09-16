@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, Copy, Check, Key } from 'lucide-react'
-import { hasClientGeminiKey } from '@/lib/geminiClient'
-import GeminiApiKeyModal from '@/components/GeminiApiKeyModal'
 
 type Props = {
   title?: string
@@ -24,8 +22,6 @@ export default function AiGeneratorBar({
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [err, setErr] = useState('')
-  const [keyModalOpen, setKeyModalOpen] = useState(false)
-  const [keyAvailable, setKeyAvailable] = useState(() => hasClientGeminiKey())
 
   async function handleRun(customTopic?: string) {
     const t = (customTopic ?? topic).trim()
@@ -57,7 +53,6 @@ export default function AiGeneratorBar({
           <Sparkles size={16} className="text-cyan-400" />
           <span>{title}</span>
         </div>
-
         <div className="flex items-center gap-2">
           {presetTopics.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -78,20 +73,6 @@ export default function AiGeneratorBar({
               ))}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={() => setKeyModalOpen(true)}
-            className={`text-[11px] px-2.5 py-1 rounded-lg border flex items-center gap-1 transition ${
-              keyAvailable
-                ? 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50'
-                : 'border-amber-500/40 bg-amber-950/50 text-amber-300 hover:bg-amber-900/60'
-            }`}
-            title="Halda tasuta Gemini API võtit"
-          >
-            <Key size={12} />
-            <span>{keyAvailable ? 'API võti olemas' : 'Sisesta API võti'}</span>
-          </button>
         </div>
       </div>
 
@@ -110,7 +91,6 @@ export default function AiGeneratorBar({
             }
           }}
         />
-
         <button
           type="button"
           onClick={() => handleRun()}
@@ -148,26 +128,7 @@ export default function AiGeneratorBar({
         )}
       </div>
 
-      {!keyAvailable && (
-        <div className="text-[11px] text-amber-300/85 flex items-center gap-2">
-          <span>💡 Soovid ühe-kliki genereerimist?</span>
-          <button
-            type="button"
-            onClick={() => setKeyModalOpen(true)}
-            className="text-accent-cyan underline hover:text-white font-medium"
-          >
-            Sisesta tasuta Google AI Studio võti siin
-          </button>
-        </div>
-      )}
-
       {err && <p className="text-accent-red text-xs">{err}</p>}
-
-      <GeminiApiKeyModal
-        isOpen={keyModalOpen}
-        onClose={() => setKeyModalOpen(false)}
-        onSaved={() => setKeyAvailable(hasClientGeminiKey())}
-      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Sparkles, Key, Check, ExternalLink, ShieldCheck, Trash2 } from 'lucide-react'
-import { getClientGeminiKey, setClientGeminiKey, hasClientGeminiKey } from '@/lib/geminiClient'
+import { appUrl } from '@/lib/config'
 
 export default function AdminAiSettingsCard() {
   const [apiKey, setApiKey] = useState('')
@@ -8,25 +8,44 @@ export default function AdminAiSettingsCard() {
   const [hasKey, setHasKey] = useState(false)
 
   useEffect(() => {
-    const k = getClientGeminiKey()
-    setApiKey(k)
-    setHasKey(Boolean(k))
+    fetch(appUrl('/api/ai/key'))
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.key) {
+          setApiKey(data.key)
+          setHasKey(true)
+        }
+      })
+      .catch(() => {})
   }, [])
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    setClientGeminiKey(apiKey.trim())
-    setHasKey(Boolean(apiKey.trim()))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    const val = apiKey.trim()
+    try {
+      await fetch(appUrl('/api/ai/key'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: val })
+      })
+      setHasKey(Boolean(val))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch {}
   }
 
-  function handleClear() {
-    setApiKey('')
-    setClientGeminiKey('')
-    setHasKey(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  async function handleClear() {
+    try {
+      await fetch(appUrl('/api/ai/key'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: '' })
+      })
+      setApiKey('')
+      setHasKey(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch {}
   }
 
   return (

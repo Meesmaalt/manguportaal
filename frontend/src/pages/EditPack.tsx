@@ -222,7 +222,11 @@ export default function EditPack() {
       const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: lang })
+        body: JSON.stringify({ 
+          packData: data, 
+          gameType: pack?.game_type, 
+          targetLanguage: lang
+        })
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)

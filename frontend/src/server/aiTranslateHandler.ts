@@ -1,15 +1,17 @@
 import { GoogleGenAI } from '@google/genai'
+import { getGlobalApiKey } from '../../../aiSettings.ts'
 
 export type AiTranslateRequest = {
   packData: any
   gameType: string
   targetLanguage: string
+  apiKey?: string
 }
 
 export async function translatePackWithGemini(reqData: AiTranslateRequest) {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = reqData.apiKey || getGlobalApiKey()
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest')
+    throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest ega ka kliendi seadetest')
   }
   const ai = new GoogleGenAI({ apiKey })
 
