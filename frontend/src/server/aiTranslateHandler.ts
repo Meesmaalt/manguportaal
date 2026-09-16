@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { getGlobalApiKey } from '../../../aiSettings.ts'
+import { getGlobalApiKey, getGlobalModel } from '../../../aiSettings.ts'
 
 export type AiTranslateRequest = {
   packData: any
@@ -27,7 +27,7 @@ ${JSON.stringify(reqData.packData, null, 2)}
 `
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash',
+    model: getGlobalModel(),
     contents: prompt,
     config: {
       temperature: 0.2,

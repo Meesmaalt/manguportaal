@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { getGlobalApiKey } from '../../../aiSettings.ts'
+import { getGlobalApiKey, getGlobalModel } from '../../../aiSettings.ts'
 
 export type AiQuizRequest = {
   topic: string
@@ -63,7 +63,7 @@ Vasta AINULT kehtiva JSON massiivina:
 Tagasta kokku 17 elementi (15 astet + 2 backup: true).`
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: getGlobalModel(),
       contents: prompt,
       config: {
         temperature: 0.7,
@@ -113,7 +113,7 @@ Vasta AINULT kehtiva JSON massiivina, ilma markdown jutumärkideta ega koodiplok
 Igal küsimusel peab choices massiivis olema alati 4 elementi (true_false puhul 2 esimest on Tõene ja Väär, ülejäänud tühjad sõned).`
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.8-flash',
+    model: getGlobalModel(),
     contents: prompt,
     config: {
       temperature: 0.7,

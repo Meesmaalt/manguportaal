@@ -38,16 +38,16 @@ if (envBasePath) {
 
 app.use(express.json({ limit: '10mb' }));
 
-import { getGlobalApiKey, setGlobalApiKey } from './aiSettings.ts';
+import { getGlobalApiKey, getGlobalModel, setGlobalSettings } from './aiSettings.ts';
 
 const apiRouter = express.Router();
 
 apiRouter.get('/api/ai/key', (req, res) => {
-  res.json({ ok: true, key: getGlobalApiKey() });
+  res.json({ ok: true, key: getGlobalApiKey(), model: getGlobalModel() });
 });
 
 apiRouter.post('/api/ai/key', (req, res) => {
-  setGlobalApiKey(req.body.key || '');
+  setGlobalSettings(req.body.key || '', req.body.model || 'gemini-3.8-flash');
   res.json({ ok: true });
 });
 

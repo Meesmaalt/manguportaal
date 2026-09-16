@@ -4,6 +4,7 @@ import { appUrl } from '@/lib/config'
 
 export default function AdminAiSettingsCard() {
   const [apiKey, setApiKey] = useState('')
+  const [model, setModel] = useState('gemini-3.8-flash')
   const [saved, setSaved] = useState(false)
   const [hasKey, setHasKey] = useState(false)
 
@@ -11,9 +12,14 @@ export default function AdminAiSettingsCard() {
     fetch(appUrl('/api/ai/key'))
       .then(res => res.json())
       .then(data => {
-        if (data.ok && data.key) {
-          setApiKey(data.key)
-          setHasKey(true)
+        if (data.ok) {
+          if (data.key) {
+            setApiKey(data.key)
+            setHasKey(true)
+          }
+          if (data.model) {
+            setModel(data.model)
+          }
         }
       })
       .catch(() => {})
@@ -26,7 +32,7 @@ export default function AdminAiSettingsCard() {
       await fetch(appUrl('/api/ai/key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: val })
+        body: JSON.stringify({ key: val, model })
       })
       setHasKey(Boolean(val))
       setSaved(true)
@@ -39,7 +45,7 @@ export default function AdminAiSettingsCard() {
       await fetch(appUrl('/api/ai/key'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: '' })
+        body: JSON.stringify({ key: '', model: 'gemini-3.8-flash' })
       })
       setApiKey('')
       setHasKey(false)
@@ -65,7 +71,7 @@ export default function AdminAiSettingsCard() {
               )}
             </h3>
             <p className="text-white/60 text-xs">
-              Võimaldab mängude sisu (Miljonär, Blitz, Kuldvillak, Rooside Sõda, Alias jne) automaatse genereerimise otse lehelt kasutades Gemini 3.6 Flash mudelit.
+              Võimaldab mängude sisu (Miljonär, Blitz, Kuldvillak, Rooside Sõda, Alias jne) automaatse genereerimise otse lehelt kasutades Gemini AI mudelit.
             </p>
           </div>
         </div>
@@ -102,7 +108,29 @@ export default function AdminAiSettingsCard() {
             )}
           </div>
         </div>
-
+        <div className="mt-4">
+          <label className="block text-xs font-semibold text-white/70 mb-1.5">
+            Gemini Mudel
+          </label>
+          <input
+            type="text"
+            list="gemini-models"
+            className="input-field text-sm w-full sm:w-64"
+            value={model}
+            placeholder="nt. gemini-3.7-flash"
+            onChange={(e) => setModel(e.target.value)}
+          />
+          <datalist id="gemini-models">
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Vaikimisi - kiire)</option>
+            <option value="gemini-3.8-pro">Gemini 3.8 Pro (Võimsam)</option>
+            <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+            <option value="gemini-3.7-pro">Gemini 3.7 Pro</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+            <option value="gemini-3.6-pro">Gemini 3.6 Pro</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+          </datalist>
+        </div>
         <div className="bg-blue-950/30 border border-blue-900/40 rounded-xl p-3 text-xs text-blue-200/80 space-y-1.5">
           <div className="flex items-center gap-1.5 font-semibold text-blue-300">
             <ShieldCheck size={14} /> Tasuta API võtme hankimine:
