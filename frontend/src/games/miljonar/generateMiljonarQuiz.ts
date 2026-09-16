@@ -104,7 +104,8 @@ Vasta AINULT kehtiva JSON massiivina (ilma markdown märkideta):
 
   // 2. Try Node.js server route if available
   try {
-    const res = await fetch('/api/ai/quiz', {
+    const { appUrl } = await import('@/lib/config');
+    const res = await fetch(appUrl('/api/ai/quiz'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

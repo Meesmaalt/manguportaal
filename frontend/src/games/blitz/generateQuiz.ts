@@ -241,7 +241,8 @@ Vasta AINULT kehtiva JSON massiivina ilma koodiplokkideta:
 
   // 2. Server route
   try {
-    const res = await fetch('/api/ai/quiz', {
+    const { appUrl } = await import('@/lib/config');
+    const res = await fetch(appUrl('/api/ai/quiz'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),

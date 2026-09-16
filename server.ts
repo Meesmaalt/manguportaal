@@ -82,6 +82,7 @@ console.info("[ohtu] Dynamic config loaded: basePath=${envBasePath || '/'} pbUrl
 });
 
 const staticOptions = {
+  index: false,
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -99,6 +100,7 @@ app.use(express.static(path.join(__dirname, 'dist'), staticOptions));
 app.use((req, res) => {
   // Do not return index.html for missing JS/CSS assets
   if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    res.setHeader('Content-Type', 'text/plain');
     res.status(404).send('Not found');
     return;
   }

@@ -219,7 +219,7 @@ export default function EditPack() {
     try {
       const data = mode === 'json' ? JSON.parse(jsonText) : buildDataFromVisual()
       
-      const res = await fetch('/api/ai/translate', {
+      const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packData: data, gameType: pack?.game_type, targetLanguage: lang })
