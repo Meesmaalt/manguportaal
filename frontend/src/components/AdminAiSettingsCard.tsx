@@ -121,11 +121,11 @@ export default function AdminAiSettingsCard() {
             onChange={(e) => setModel(e.target.value)}
           />
           <datalist id="gemini-models">
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Uusim, kiire)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Kiire ja stabiilne)</option>
             <option value="gemini-2.5-pro">Gemini 2.5 Pro (Võimekas)</option>
-            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stabiilne)</option>
-            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Uusim)</option>
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Kerge ja kiire)</option>
+            <option value="gemini-flash-latest">Gemini Flash Latest</option>
           </datalist>
         </div>
         <div className="bg-blue-950/30 border border-blue-900/40 rounded-xl p-3 text-xs text-blue-200/80 space-y-1.5">
