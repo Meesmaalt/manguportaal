@@ -46,29 +46,32 @@ app.post('/api/ai/translate', async (req, res) => {
   }
 });
 
-const isProd = process.env.NODE_ENV === 'production';
+const basePath = process.env.BASE_PATH || '/';
 
-if (!isProd) {
-  const { createServer } = await import('vite');
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-    root: path.join(__dirname, 'frontend'),
-  });
-  app.use(vite.middlewares);
-} else {
-  const basePath = process.env.BASE_PATH || '/';
-  
-  if (basePath !== '/' && basePath !== '') {
-    app.use(basePath, express.static(path.join(__dirname, 'dist')));
-  } else {
-    app.use(express.static(path.join(__dirname, 'dist')));
+const staticOptions = {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('env.js')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
   }
-  
-  app.use((req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  });
+};
+
+// Serve static files from the basePath (e.g. /mangud)
+if (basePath !== '/' && basePath !== '') {
+  app.use(basePath, express.static(path.join(__dirname, 'dist'), staticOptions));
 }
+// Also serve static files from root, so /env.js can be found even if basePath is /mangud
+app.use(express.static(path.join(__dirname, 'dist'), staticOptions));
+
+app.use((req, res) => {
+  // Do not return index.html for missing JS/CSS assets
+  if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    res.status(404).send('Not found');
+    return;
+  }
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

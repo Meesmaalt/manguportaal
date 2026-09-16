@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend && mkdir -p dist && cp -r frontend/dist/* dist/",
-    "start": "node --experimental-strip-types server.ts",
+    "start": "NODE_ENV=production node --experimental-strip-types server.ts",
     "preview": "npm run preview --workspace=frontend",
     "lint": "npm run lint --workspace=frontend"
   },
