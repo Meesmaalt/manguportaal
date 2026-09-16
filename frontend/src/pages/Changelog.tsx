@@ -5,6 +5,21 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.29.0',
+    items: [
+      'Gemini AI: lisatud reaalajas mudelite pärimine Google API-st (Admin paneelis nupuga)',
+      'Mudelite dünaamiline valik ja visuaalsed kiirvaliku nupud',
+      'Kuldvillaku ja teiste mängupakkide automaatne mitmekeelne tõlketugi',
+    ],
+  },
+  {
+    v: '3.28.0',
+    items: [
+      'Täielik Google Gemini AI integreerimine (Miljonär, Blitz, Kuldvillak, Rooside Sõda, Alias)',
+      'Mitmekeelne AI tõlkimine (eesti, inglise, soome, vene jne)',
+    ],
+  },
+  {
     v: '3.23.0',
     items: [
       'Rohkem heliüleslaadimise kohti (FX, Blitz, Kuldvillak, Deal…)',

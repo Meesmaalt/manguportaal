@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { generateQuizWithGemini } from './frontend/src/server/aiQuizHandler.ts';
 import { translatePackWithGemini } from './frontend/src/server/aiTranslateHandler.ts';
+import { listAvailableGeminiModels } from './frontend/src/server/aiModelsHandler.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +50,16 @@ apiRouter.get('/api/ai/key', (req, res) => {
 apiRouter.post('/api/ai/key', (req, res) => {
   setGlobalSettings(req.body.key || '', req.body.model || 'gemini-2.5-flash');
   res.json({ ok: true });
+});
+
+apiRouter.post('/api/ai/models', async (req, res) => {
+  try {
+    const models = await listAvailableGeminiModels(req.body.key);
+    res.json({ ok: true, models });
+  } catch (err: any) {
+    console.error('Models AI Error:', err);
+    res.status(500).json({ ok: false, error: err?.message || 'Mudelite pärimine ebaõnnestus' });
+  }
 });
 
 apiRouter.post('/api/ai/quiz', async (req, res) => {
