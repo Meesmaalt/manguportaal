@@ -6,6 +6,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { generateQuizWithGemini } from './frontend/src/server/aiQuizHandler.ts';
 import { translatePackWithGemini } from './frontend/src/server/aiTranslateHandler.ts';
 import { listAvailableGeminiModels } from './frontend/src/server/aiModelsHandler.ts';
+import { generateContentWithGemini } from './frontend/src/server/aiGenerateHandler.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +69,16 @@ apiRouter.post('/api/ai/quiz', async (req, res) => {
     res.json({ ok: true, questions });
   } catch (err: any) {
     console.error('Quiz AI Error:', err);
+    res.status(500).json({ ok: false, error: err?.message || 'AI genereerimine ebaõnnestus' });
+  }
+});
+
+apiRouter.post('/api/ai/generate', async (req, res) => {
+  try {
+    const text = await generateContentWithGemini(req.body);
+    res.json({ ok: true, text });
+  } catch (err: any) {
+    console.error('Generate AI Error:', err);
     res.status(500).json({ ok: false, error: err?.message || 'AI genereerimine ebaõnnestus' });
   }
 });

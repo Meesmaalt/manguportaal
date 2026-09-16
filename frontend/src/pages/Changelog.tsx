@@ -5,6 +5,22 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.31.0',
+    items: [
+      'Täiustatud ja struktureeritud administraatori juhtpaneel (kontekstipõhised vahekaardid: Mängupakid, AI, Helid, Süsteem)',
+      'Selgem pakkide haldus ja eraldatud tegevused (Ametlik, Avalik, Muutmine, Kustutamine)',
+      'Parandatud ülevaatlikkus ning süsteemi diagnostika vaade',
+    ],
+  },
+  {
+    v: '3.30.0',
+    items: [
+      'Parandatud mängude AI genereerimise aken ja käitlemine (kõrvaldatud funktsiooni kutsumise viga)',
+      'Täiustatud otsene ja serveripoolne Gemini API päringute töökindlus',
+      'Uuendatud rakenduse ja jaluse versioon v3.30.0',
+    ],
+  },
+  {
     v: '3.29.0',
     items: [
       'Gemini AI: lisatud reaalajas mudelite pärimine Google API-st (Admin paneelis nupuga)',

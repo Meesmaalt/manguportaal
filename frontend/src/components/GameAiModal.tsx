@@ -49,12 +49,14 @@ export default function GameAiModal<T = any>({
     setLoading(true)
     setError('')
     try {
-      if (generateFn) {
+      if (typeof generateFn === 'function') {
         const res = await generateFn(t)
         setGeneratedData(res)
-      } else if (onGenerate) {
+      } else if (typeof onGenerate === 'function') {
         await onGenerate(t, 15, 'medium')
         handleClose()
+      } else {
+        throw new Error('Mängu genereerimise funktsioon puudub.')
       }
     } catch (err: any) {
       console.error(err)
