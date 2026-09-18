@@ -127,53 +127,45 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
     <div className="max-w-6xl mx-auto px-2 md:px-4 pb-10">
       <DealActionTheater event={state.lastEvent} />
       {isHost && <SessionCodeBadge code={code} />}
-      {isHost && phase === 'lobby' && (
-        <div className="card-panel border-gold/30 p-3 mb-3 max-w-xl mx-auto text-sm text-white/75 space-y-1">
-          <p className="text-gold font-display text-sm">Peo soovitus (2–5 mängijat)</p>
-          <p>1. Lisa nimed all · 2. Anna igaühele oma QR/link · 3. Ava TV samast koodist · 4. Alusta mängu</p>
-          <p className="text-white/45 text-xs">Iga mängija telefon = käsi. Host saab vajadusel käike aidata.</p>
-        </div>
-      )}
-      {isHost && code && (
-        <TvJoinPanel code={code} />
-      )}
 
-      {isHost && phase === 'turn' && !state.coachDismissed && (state.turnCount || 0) < 2 && (
-        <div className="card-panel border-cyan-400/40 bg-cyan-950/40 p-3 mb-3 max-w-xl mx-auto text-sm">
-          <p className="text-cyan-200 font-display text-sm mb-1">Esimese käigu meeldetuletus</p>
-          <ol className="text-white/75 text-xs space-y-0.5 list-decimal list-inside">
-            <li>Võta 2 kaarti pakist (automaatne käigu alguses, kui loogika seda teeb).</li>
-            <li>Mängi kuni 3 kaarti: raha → pank, kinnistu → rida, tegevus → vali sihtmärk.</li>
-            <li>Käe lõpuks max 7 kaarti — ülejääk ära viska / panka.</li>
-            <li>Host: „Lõpeta käik“ kui mängija on valmis.</li>
-          </ol>
-          <button
-            type="button"
-            className="btn-outline text-xs mt-2"
-            onClick={() => update({ ...state, coachDismissed: true })}
-          >
-            Sain aru
-          </button>
+      {/* Header */}
+      <div className="text-center mb-5">
+        <div className="inline-flex items-center gap-2 text-gold font-display text-2xl md:text-3xl font-black">
+          <Landmark /> Kinnistu Deal
         </div>
-      )}
+        <p className="text-white/50 text-sm mt-1">Kogu {winSets} kinnistukomplekti · igaüks mängib oma telefonis</p>
+      </div>
 
+      {/* Host Toolbar */}
       {isHost && (
         <GameToolbar
           onReset={resetLobby}
           extra={
             phase === 'lobby' ? (
-              <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={addPlayer}>
-                <UserPlus size={14} /> Lisa mängija
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={addPlayer} disabled={players.length >= 5}>
+                  <UserPlus size={14} /> Lisa mängija
+                </button>
+                {code && (
+                  <a
+                    href={appUrl(`/ekraan/${code}`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-outline text-xs flex items-center gap-1 border-gold/40 text-gold"
+                  >
+                    <Tv size={13} /> <ExternalLink size={12} /> TV ekraan
+                  </a>
+                )}
+              </div>
             ) : phase !== 'over' ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {phase === 'turn' && (
-                  <button type="button" className="btn-outline text-xs flex items-center gap-1" onClick={doEndTurn}>
+                  <button type="button" className="btn-gold text-xs flex items-center gap-1 font-bold" onClick={doEndTurn}>
                     <SkipForward size={14} /> Lõpeta käik
                   </button>
                 )}
                 {phase === 'pay' && (
-                  <button type="button" className="btn-outline text-xs" onClick={hostForcePay}>
+                  <button type="button" className="btn-gold text-xs font-bold" onClick={hostForcePay}>
                     Maksa (host)
                   </button>
                 )}
@@ -187,155 +179,153 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                     Tühista tegevus
                   </button>
                 )}
+                {code && (
+                  <a
+                    href={appUrl(`/ekraan/${code}`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-outline text-xs flex items-center gap-1 border-white/20 text-white/70 ml-1"
+                  >
+                    <Tv size={12} /> TV
+                  </a>
+                )}
               </div>
             ) : null
           }
         />
       )}
 
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-2 text-gold font-display text-2xl md:text-3xl font-black">
-          <Landmark /> Kinnistu Deal
-        </div>
-        <p className="text-white/50 text-sm mt-1">Kogu {winSets} kinnistukomplekti · igaüks mängib oma telefonis</p>
-        {phase === 'turn' && (
-          <p className="text-accent-cyan text-sm mt-1">
-            Käik: <strong>{players[current]?.name}</strong>
-            {isHost && (
-              <span className="text-white/40"> · jäänud {playsLeft} · pakk {deck.length}</span>
-            )}
-          </p>
-        )}
-        {phase === 'pick_rent_color' && state.pending && (
-          <p className="text-amber-200 text-sm mt-1">
-            {players[state.pending.from]?.name} valib üüri värvi / maja komplekti
-          </p>
-        )}
-        {phase === 'pick_target' && state.pending && (
-          <p className="text-amber-200 text-sm mt-1">
-            {players[state.pending.from]?.name} valib sihtmärki · {actionLabel(state.pending.action)}
-          </p>
-        )}
-        {phase === 'defend' && state.pending?.target != null && (
-          <p className="text-rose-200 text-sm mt-1">
-            {players[state.pending.target]?.name} võib öelda „Ei, aitäh“
-          </p>
-        )}
-        {phase === 'pay' && state.payFrom != null && (
-          <p className="text-emerald-200 text-sm mt-1">
-            {players[state.payFrom]?.name} maksab {state.payAmount}M
-          </p>
-        )}
-
-      {/* Live action for TV / room */}
-      {phase !== 'lobby' && phase !== 'over' && (
-        <div className="mb-5 rounded-2xl border-2 border-gold/40 bg-gradient-to-r from-gold/15 via-black/40 to-cyan-500/10 px-4 py-4 text-center">
-          {phase === 'turn' && (
-            <p className="text-xl md:text-2xl font-display font-black text-gold">
-              Käik: {players[current]?.name}
-              <span className="text-white/50 text-base font-sans font-normal ml-2">
-                · {playsLeft} kaarti jäänud
-              </span>
-            </p>
-          )}
-          {phase === 'pick_rent_color' && state.pending && (
-            <p className="text-xl font-display font-black text-amber-200">
-              {players[state.pending.from]?.name} valib üüri värvi / maja
-            </p>
-          )}
-          {phase === 'pick_target' && state.pending && (
-            <p className="text-xl font-display font-black text-amber-100">
-              {players[state.pending.from]?.name} · {actionLabel(state.pending.action)}
-              {state.pending.color && state.payAmount == null && (
-                <span className="text-white/60 text-base font-sans font-normal">
-                  {' '}· valib vastast
-                </span>
-              )}
-            </p>
-          )}
-          {phase === 'defend' && state.pending?.target != null && (
-            <p className="text-xl font-display font-black text-rose-200">
-              {players[state.pending.target]?.name} — kaitse või luba efekt
-            </p>
-          )}
-          {phase === 'pay' && state.payFrom != null && (
-            <p className="text-xl md:text-2xl font-display font-black text-emerald-200">
-              {players[state.payFrom]?.name} maksab{' '}
-              <span className="text-gold">{state.payAmount}M</span>
-              {state.pending?.from != null && (
-                <span className="text-white/50 text-base font-sans font-normal">
-                  {' '}→ {players[state.pending.from]?.name}
-                </span>
-              )}
-            </p>
-          )}
-          {phase === 'pick_property' && state.pending && (
-            <p className="text-xl font-display font-black text-violet-200">
-              {players[state.pending.from]?.name} valib kinnistut
-            </p>
-          )}
-          {log[0] && <p className="text-sm text-white/45 mt-2">{log[0]}</p>}
-        </div>
-      )}
-      </div>
-
-      {/* TV join */}
-      {isHost && code && (
-        <div className="card-panel border-gold/30 p-4 mb-4 max-w-xl mx-auto">
-          <div className="flex flex-wrap items-start gap-4">
-            <div className="bg-white p-1.5 rounded-lg shrink-0">
+      {/* LOBBY PHASE: Clean Host Setup & TV Panel */}
+      {isHost && phase === 'lobby' && code && (
+        <div className="card-panel border-gold/30 p-4 mb-6 max-w-2xl mx-auto">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="bg-white p-2 rounded-xl shrink-0">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&ecc=M&margin=4&data=${encodeURIComponent(appUrl(`/ekraan/${code}`))}`}
                 alt="TV QR"
-                width={100}
-                height={100}
+                width={90}
+                height={90}
                 className="block rounded"
               />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 text-sm text-gold font-bold mb-1">
-                <Tv size={16} /> Teleri ekraan
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center gap-2 text-sm text-gold font-bold">
+                <Tv size={16} /> Suur TV ekraan / projektor
               </div>
-              <p className="text-[11px] text-white/50 mb-2 break-all">{appUrl(`/ekraan/${code}`)}</p>
-              <div className="flex flex-wrap gap-2">
-                <a href={appUrl(`/ekraan/${code}`)} target="_blank" rel="noreferrer" className="btn-outline text-xs flex items-center gap-1">
-                  <ExternalLink size={12} /> Ava TV
+              <p className="text-xs text-white/60 leading-snug">
+                Ava telekas või teises aknas avalik laud. Mängijad näevad oma kaarte ainult oma telefonides.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <a href={appUrl(`/ekraan/${code}`)} target="_blank" rel="noreferrer" className="btn-gold text-xs flex items-center gap-1 !py-1.5 !px-3">
+                  <ExternalLink size={12} /> Ava TV vaade
                 </a>
                 <button
                   type="button"
-                  className="btn-outline text-xs"
+                  className="btn-outline text-xs !py-1.5 !px-3"
                   onClick={() => {
-                    navigator.clipboard.writeText(appUrl(`/ekraan/${code}`)).catch(() => {})
-                    setCopied('tv')
-                    setTimeout(() => setCopied(null), 1500)
+                    const text = shareSessionLinks(
+                      code,
+                      appUrl('').replace(/\/$/, '') || window.location.origin,
+                      players.map((p) => ({
+                        name: p.name,
+                        url: appUrl(`/deal/${code}/${p.token}`),
+                      }))
+                    )
+                    navigator.clipboard.writeText(text).then(() => {
+                      setCopied('share')
+                      setTimeout(() => setCopied(null), 2000)
+                    }).catch(() => {})
                   }}
                 >
-                  {copied === 'tv' ? 'Kopeeritud' : 'Kopeeri TV link'}
+                  {copied === 'share' ? '✓ Lingid kopeeritud' : 'Jaga mängijate lingid'}
                 </button>
               </div>
-              <p className="text-[10px] text-white/35 mt-2">Mängijate QR-id on all iga nime juures.</p>
-              <button
-                type="button"
-                className="btn-outline text-xs mt-2"
-                onClick={() => {
-                  const text = shareSessionLinks(
-                    code,
-                    appUrl('').replace(/\/$/, '') || window.location.origin,
-                    players.map((p) => ({
-                      name: p.name,
-                      url: appUrl(`/deal/${code}/${p.token}`),
-                    }))
-                  )
-                  navigator.clipboard.writeText(text).then(() => {
-                    setCopied('share')
-                    setTimeout(() => setCopied(null), 2000)
-                  }).catch(() => {})
-                }}
-              >
-                {copied === 'share' ? 'Kõik lingid kopeeritud' : 'Jaga kõik lingid'}
-              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ACTIVE GAME: Turn & Action Status Banner */}
+      {phase !== 'lobby' && phase !== 'over' && (
+        <div className="mb-5 rounded-2xl border-2 border-gold/40 bg-gradient-to-r from-gold/15 via-black/50 to-cyan-500/10 p-4 md:p-5 text-center shadow-lg">
+          {phase === 'turn' && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-gold/70 font-semibold mb-1">Aktiivne käik</div>
+              <p className="text-xl md:text-2xl font-display font-black text-gold">
+                {players[current]?.name}
+                <span className="text-white/60 text-sm md:text-base font-sans font-normal ml-3">
+                  · {playsLeft} käiku jäänud · pakis {deck.length} kaarti
+                </span>
+              </p>
+            </div>
+          )}
+          {phase === 'pick_rent_color' && state.pending && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-amber-400 font-semibold mb-1">Üüri valik</div>
+              <p className="text-xl font-display font-black text-amber-200">
+                {players[state.pending.from]?.name} valib üüri värvi või maja komplekti
+              </p>
+            </div>
+          )}
+          {phase === 'pick_target' && state.pending && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-amber-400 font-semibold mb-1">Sihtmärgi valik</div>
+              <p className="text-xl font-display font-black text-amber-100">
+                {players[state.pending.from]?.name} · {actionLabel(state.pending.action)}
+                {state.pending.color && state.payAmount == null && (
+                  <span className="text-white/60 text-base font-sans font-normal"> · valib vastast</span>
+                )}
+              </p>
+            </div>
+          )}
+          {phase === 'defend' && state.pending?.target != null && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-rose-400 font-semibold mb-1">Kaitse või lepi</div>
+              <p className="text-xl font-display font-black text-rose-200">
+                {players[state.pending.target]?.name} — võib öelda „Ei, aitäh“ või lubada efekti
+              </p>
+            </div>
+          )}
+          {phase === 'pay' && state.payFrom != null && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-emerald-400 font-semibold mb-1">Maksmine</div>
+              <p className="text-xl md:text-2xl font-display font-black text-emerald-200">
+                {players[state.payFrom]?.name} maksab <span className="text-gold">{state.payAmount}M</span>
+                {state.pending?.from != null && (
+                  <span className="text-white/60 text-base font-sans font-normal"> → {players[state.pending.from]?.name}</span>
+                )}
+              </p>
+            </div>
+          )}
+          {phase === 'pick_property' && state.pending && (
+            <div>
+              <div className="text-xs uppercase tracking-widest text-violet-400 font-semibold mb-1">Kinnistu valik</div>
+              <p className="text-xl font-display font-black text-violet-200">
+                {players[state.pending.from]?.name} valib kinnistut
+              </p>
+            </div>
+          )}
+          {log[0] && <p className="text-xs text-white/50 mt-2 border-t border-white/10 pt-2">{log[0]}</p>}
+        </div>
+      )}
+
+      {/* First-turn coach reminder (collapsible) */}
+      {isHost && phase === 'turn' && !state.coachDismissed && (state.turnCount || 0) < 2 && (
+        <div className="card-panel border-cyan-400/40 bg-cyan-950/40 p-3 mb-4 max-w-xl mx-auto text-sm">
+          <p className="text-cyan-200 font-display text-sm mb-1">Esimese käigu meeldetuletus</p>
+          <ol className="text-white/75 text-xs space-y-0.5 list-decimal list-inside">
+            <li>Võta 2 kaarti pakist (käigu alguses).</li>
+            <li>Mängi kuni 3 kaarti: raha → pank, kinnistu → rida, tegevus → vali sihtmärk.</li>
+            <li>Käe lõpuks max 7 kaarti — ülejääk ära viska / panka.</li>
+            <li>Host: „Lõpeta käik“ kui mängija on valmis.</li>
+          </ol>
+          <button
+            type="button"
+            className="btn-outline text-xs mt-2"
+            onClick={() => update({ ...state, coachDismissed: true })}
+          >
+            Sain aru
+          </button>
         </div>
       )}
 

@@ -280,49 +280,49 @@ export default function Home() {
                 >
                   <Link
                     to={`/play/${g.type}`}
-                    className="group relative h-full rounded-xl bg-white/[0.025] hover:bg-white/[0.045] border border-white/[0.08] hover:border-gold/50 p-4.5 transition-all duration-200 flex flex-col justify-between"
+                    className="group relative h-full rounded-2xl bg-white/[0.03] hover:bg-white/[0.055] border border-white/[0.09] hover:border-gold/50 p-5 sm:p-6 transition-all duration-200 flex flex-col justify-between shadow-sm"
                   >
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.1] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                      <div className="flex items-start justify-between gap-2 mb-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.1] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform shrink-0">
                           {g.emoji}
                         </div>
                         {g.badge && (
-                          <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-white/10 bg-white/[0.03] text-white/70">
+                          <span className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-white/10 bg-white/[0.04] text-white/70 shrink-0">
                             {g.badge.replace(/[🔥💎⭐⚡🃏🎭🌶️👑🎯]/g, '').trim()}
                           </span>
                         )}
                       </div>
 
-                      <p className="text-gold/60 text-[10px] uppercase tracking-widest font-semibold mb-0.5">
+                      <p className="text-gold/60 text-[10px] uppercase tracking-widest font-semibold mb-1">
                         {t(subKey)}
                       </p>
-                      <h3 className="font-display text-lg text-gold font-bold mb-1.5 group-hover:text-gold-hover transition-colors">
+                      <h3 className="font-display text-lg sm:text-xl text-gold font-bold mb-2 group-hover:text-gold-hover transition-colors">
                         {t(titleKey)}
                       </h3>
-                      <p className="text-white/60 text-xs leading-relaxed mb-3 line-clamp-2">
+                      <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-4 line-clamp-2">
                         {t(descKey)}
                       </p>
 
                       {/* Clean Meta Tags */}
-                      <div className="space-y-1 pt-2.5 border-t border-white/[0.06] text-[11px] text-white/50">
-                        <div className="flex items-center gap-1.5">
-                          <Users size={11} className="text-gold/60 shrink-0" />
+                      <div className="space-y-1.5 pt-3 border-t border-white/[0.07] text-[11px] text-white/50">
+                        <div className="flex items-center gap-2">
+                          <Users size={12} className="text-gold/60 shrink-0" />
                           <span>{g.players}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Tv size={11} className="text-gold/60 shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <Tv size={12} className="text-gold/60 shrink-0" />
                           <span>{g.mode}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                    <div className="mt-5 pt-3 border-t border-white/[0.07] flex items-center justify-between text-xs">
                       <span className="text-gold font-semibold flex items-center gap-1 group-hover:text-gold-hover transition-colors">
                         {t('homePlayCta')}
                       </span>
                       <span className="text-white/30 group-hover:text-gold group-hover:translate-x-1 transition-all">
-                        <ArrowRight size={13} />
+                        <ArrowRight size={14} />
                       </span>
                     </div>
                   </Link>
