@@ -118,6 +118,13 @@ export type FxType =
   | 'timer_urgent'
   | 'sad_trombone'
   | 'applause'
+  | 'deal_card'
+  | 'deal_coins'
+  | 'deal_cash'
+  | 'deal_steal'
+  | 'deal_breaker'
+  | 'deal_shield'
+  | 'deal_build'
 
 /** Prefer uploaded file (fx_* or game-specific), else WebAudio synth. */
 export function playFx(type: FxType, opts?: { prefer?: string }) {
@@ -152,6 +159,13 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       buzz: [880, 660],
       timer_urgent: [740, 740, 740],
       sad_trombone: [293.66, 277.18, 261.63, 246.94], // D4, Db4, C4, B3
+      deal_card: [587, 880],
+      deal_coins: [880, 1174, 1480, 1760],
+      deal_cash: [659, 987, 1318],
+      deal_steal: [440, 370, 494, 330],
+      deal_breaker: [261, 392, 523, 784, 1046],
+      deal_shield: [1200, 800, 1500],
+      deal_build: [440, 554, 659, 880],
     }
     
     if (type === 'applause') {
@@ -195,14 +209,40 @@ const duration: Record<string, number> = {
       buzz: 0.15,
       timer_urgent: 0.08,
       sad_trombone: 0.3,
+      deal_card: 0.08,
+      deal_coins: 0.12,
+      deal_cash: 0.15,
+      deal_steal: 0.16,
+      deal_breaker: 0.22,
+      deal_shield: 0.2,
+      deal_build: 0.16,
     }
     ;(notes[type] || [440]).forEach((freq, i) => {
       const o = ctx.createOscillator()
       const g = ctx.createGain()
-      o.type = type === 'wrong' || type === 'buzz' || type === 'sad_trombone' ? 'sawtooth' : 'sine'
+      o.type =
+        type === 'wrong' || type === 'buzz' || type === 'sad_trombone' || type === 'deal_steal'
+          ? 'sawtooth'
+          : type === 'deal_breaker' || type === 'deal_shield'
+            ? 'triangle'
+            : 'sine'
       o.frequency.value = freq
       const gap =
-        type === 'victory' ? 0.09 : type === 'drumroll' ? 0.04 : type === 'sad_trombone' ? 0.4 : type === 'jingle' ? 0.1 : 0.045
+        type === 'victory'
+          ? 0.09
+          : type === 'drumroll'
+            ? 0.04
+            : type === 'sad_trombone'
+              ? 0.4
+              : type === 'jingle'
+                ? 0.1
+                : type === 'deal_coins'
+                  ? 0.06
+                  : type === 'deal_breaker'
+                    ? 0.08
+                    : type === 'deal_build'
+                      ? 0.07
+                      : 0.045
       const t0 = now + i * gap
       g.gain.setValueAtTime(0.0001, t0)
       g.gain.exponentialRampToValueAtTime(0.12 * masterGain, t0 + 0.008)

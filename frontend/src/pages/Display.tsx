@@ -248,7 +248,7 @@ export default function Display() {
           <KuldvillakBoard state={state as KuldvillakState} update={noop} isHost={false} sessionCode={session.code || state.code} />
         )}
         {gt === 'roosidesoda' && (
-          <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} />
+          <RoosidesodaHost state={state as RoosidesodaState} update={noop} isHost={false} sessionCode={session.code || state.code} />
         )}
         {gt === 'blitz' && (
           <BlitzTv state={state as any} sessionCode={session.code || state.code} />

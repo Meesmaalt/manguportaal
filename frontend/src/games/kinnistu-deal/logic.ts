@@ -1,6 +1,7 @@
-import type { DealCard, KinnistuDealState, PlayerBoard, PropColor } from './types'
+import type { DealCard, KinnistuDealState, PlayerBoard, PropColor, DealEventAnimation } from './types'
 import {
   SET_SIZE,
+  COLOR_STYLE,
   completeSets,
   makeToken,
   looseProperties,
@@ -218,6 +219,16 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
     st.log = [`💰 ${p.name} → pank ${card.value}M`, ...st.log].slice(0, 16)
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'money_bank',
+      actorName: p.name,
+      actorIndex: playerIdx,
+      card,
+      amount: card.value,
+      message: `Pani panka ${card.value}M`,
+      timestamp: Date.now(),
+    }
     return st
   }
 
@@ -231,6 +242,17 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
       `🏠 ${p.name} · ${card.name}${done ? ' ✓ komplekt!' : ''}`,
       ...st.log,
     ].slice(0, 16)
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'prop_placed',
+      actorName: p.name,
+      actorIndex: playerIdx,
+      card,
+      propName: card.name,
+      propColor: col,
+      message: done ? `TÄISKOMPLEKT! Mängis: ${card.name}` : `Mängis kinnistu: ${card.name}`,
+      timestamp: Date.now(),
+    }
     return checkWin(st)
   }
 
@@ -243,6 +265,15 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
     st.log = [`📜 ${p.name} · Mine edasi (+2 kaarti)`, ...st.log].slice(0, 16)
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'pass_go',
+      actorName: p.name,
+      actorIndex: playerIdx,
+      card,
+      message: `Mine edasi! Võttis pakist 2 kaarti`,
+      timestamp: Date.now(),
+    }
     return st
   }
 
@@ -252,6 +283,16 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.playsLeft -= 1
     st.log = [`${p.name} pani „Ei, aitäh“ panka (${card.value}M)`, ...st.log].slice(0, 16)
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'money_bank',
+      actorName: p.name,
+      actorIndex: playerIdx,
+      card,
+      amount: card.value,
+      message: `Pani „Ei, aitäh“ panka (${card.value}M)`,
+      timestamp: Date.now(),
+    }
     return st
   }
 
@@ -260,6 +301,16 @@ export function playCard(s: KinnistuDealState, playerIdx: number, cardId: string
     st.players = st.players.map((x, i) => (i === playerIdx ? p : x))
     st.discard = [...st.discard, card]
     st.playsLeft -= 1
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'birthday',
+      actorName: p.name,
+      actorIndex: playerIdx,
+      card,
+      amount: 2,
+      message: `🎂 SÜNNIPÄEV! Kõik teised maksavad 2M!`,
+      timestamp: Date.now(),
+    }
     return beginMultiPay(st, playerIdx, 2, 'birthday', undefined, card.id)
   }
 
@@ -314,6 +365,7 @@ export function pickRentColor(s: KinnistuDealState, color: PropColor): KinnistuD
       buildings[color] = 'hotel'
     }
     const rent = rentForSet({ ...from, buildings }, color)
+    const colorLabel = COLOR_STYLE[color]?.label || color
     return {
       ...s,
       players: s.players.map((x, i) =>
@@ -321,6 +373,16 @@ export function pickRentColor(s: KinnistuDealState, color: PropColor): KinnistuD
       ),
       phase: 'turn',
       pending: null,
+      lastEvent: {
+        id: `${Date.now()}-${Math.random()}`,
+        kind: act === 'hotel' ? 'hotel_built' : 'house_built',
+        actorName: from.name,
+        actorIndex: s.pending.from,
+        propColor: color,
+        amount: rent,
+        message: `${from.name} ehitas ${act === 'hotel' ? 'HOTELLI 🏨' : 'MAJA 🏠'} (${colorLabel})! Üür nüüd ${rent}M`,
+        timestamp: Date.now(),
+      },
       log: [
         `🏗️ ${from.name} · ${act === 'hotel' ? 'hotell' : 'maja'} (${color}) · üür nüüd ${rent}M`,
         ...s.log,
@@ -372,6 +434,16 @@ export function defendWithNo(s: KinnistuDealState, playerIdx: number): KinnistuD
   const noCard = p.hand.find((c) => c.kind === 'action' && c.action === 'just_say_no')
   if (!noCard) return s
   const rest = s.pending.rentTargets || []
+  const defendEvent: DealEventAnimation = {
+    id: `${Date.now()}-${Math.random()}`,
+    kind: 'just_say_no',
+    actorName: p.name,
+    actorIndex: playerIdx,
+    card: noCard,
+    message: `🛡️ ${p.name}: „EI, AITÄH!“ — rünnak tõrjuti!`,
+    timestamp: Date.now(),
+  }
+
   // Multi-pay: skip this payer, continue queue
   if (s.pending.rentMode === 'all' && (s.pending.action === 'birthday' || s.pending.action === 'rent')) {
     const amount =
@@ -386,6 +458,7 @@ export function defendWithNo(s: KinnistuDealState, playerIdx: number): KinnistuD
         i === playerIdx ? { ...x, hand: x.hand.filter((c) => c.id !== noCard.id) } : x
       ),
       discard: [...s.discard, noCard],
+      lastEvent: defendEvent,
       log: [`🚫 ${p.name}: „Ei, aitäh“`, ...s.log].slice(0, 16),
     }
     if (!rest.length) {
@@ -417,6 +490,7 @@ export function defendWithNo(s: KinnistuDealState, playerIdx: number): KinnistuD
     discard: [...s.discard, noCard],
     phase: 'turn',
     pending: null,
+    lastEvent: defendEvent,
     log: [`🚫 ${p.name}: „Ei, aitäh“ — tühistatud`, ...s.log].slice(0, 16),
   }
 }
@@ -484,6 +558,17 @@ function finishForcedDeal(
     }),
     phase: 'turn',
     pending: null,
+    lastEvent: {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'forced_deal',
+      actorName: from.name,
+      actorIndex: act.from,
+      targetName: to.name,
+      targetIndex: act.target,
+      propName: `${take.name}${giveName}`,
+      message: `🔄 SUNNITUD TEHING! ${from.name} vahetas: ${take.name}${giveName}`,
+      timestamp: Date.now(),
+    },
     log: [`🔄 Sunnitud tehing: ${take.name} → ${from.name}${giveName}`, ...s.log].slice(0, 16),
   })
 }
@@ -512,18 +597,42 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
       payFrom: act.target,
       payAmount: 5,
       paySelected: [],
+      lastEvent: {
+        id: `${Date.now()}-${Math.random()}`,
+        kind: 'debt',
+        actorName: from.name,
+        actorIndex: act.from,
+        targetName: to.name,
+        targetIndex: act.target,
+        amount: 5,
+        message: `💸 VÕLANÕUE! ${to.name} peab maksma 5M mängijale ${from.name}!`,
+        timestamp: Date.now(),
+      },
       log: [`💸 Võlanõue: ${to.name} maksab 5M → ${from.name}`, ...st.log].slice(0, 16),
     }
   }
   if (act.action === 'rent') {
     const color = act.color
     const amount = color ? rentForSet(from, color) : 3
+    const colorLabel = color ? (COLOR_STYLE[color]?.label || color) : ''
     return {
       ...st,
       phase: 'pay',
       payFrom: act.target,
       payAmount: amount,
       paySelected: [],
+      lastEvent: {
+        id: `${Date.now()}-${Math.random()}`,
+        kind: 'rent_charged',
+        actorName: from.name,
+        actorIndex: act.from,
+        targetName: to.name,
+        targetIndex: act.target,
+        amount,
+        propColor: color,
+        message: `🔑 ÜÜRINÕUE (${colorLabel})! ${to.name} peab maksma ${amount}M!`,
+        timestamp: Date.now(),
+      },
       log: [`🔑 ${to.name} maksab üüri ${amount}M → ${from.name}`, ...st.log].slice(0, 16),
     }
   }
@@ -565,6 +674,18 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
     })
     st.phase = 'turn'
     st.pending = null
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'sly_deal',
+      actorName: from.name,
+      actorIndex: act.from,
+      targetName: to.name,
+      targetIndex: act.target,
+      propName: chosen.name,
+      propColor: chosen.color,
+      message: `🕵️ SALAKAUP! ${from.name} varastas kinnistu: ${chosen.name}!`,
+      timestamp: Date.now(),
+    }
     st.log = [`🕵️ Salakaup: ${chosen.name} → ${from.name}`, ...st.log].slice(0, 16)
     return checkWin(st)
   }
@@ -611,6 +732,18 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
     })
     st.phase = 'turn'
     st.pending = null
+    const colorLabel = COLOR_STYLE[taken]?.label || taken
+    st.lastEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      kind: 'deal_breaker',
+      actorName: from.name,
+      actorIndex: act.from,
+      targetName: to.name,
+      targetIndex: act.target,
+      propColor: taken,
+      message: `💥 TEHINGUMURDJA! ${from.name} varastas terve komplekti (${colorLabel}) mängijalt ${to.name}!`,
+      timestamp: Date.now(),
+    }
     st.log = [`💥 Tehingumurdja: ${taken} → ${from.name}`, ...st.log].slice(0, 16)
     return checkWin(st)
   }
@@ -726,6 +859,18 @@ export function confirmSelectedPay(s: KinnistuDealState): KinnistuDealState {
     if (i === recvI) return recv
     return x
   })
+  const payEvent: DealEventAnimation = {
+    id: `${Date.now()}-${Math.random()}`,
+    kind: 'pay_completed',
+    actorName: s.players[payerI].name,
+    actorIndex: payerI,
+    targetName: s.players[recvI].name,
+    targetIndex: recvI,
+    amount: sum,
+    message: `💵 ${s.players[payerI].name} maksis ${sum}M mängijale ${s.players[recvI].name}!`,
+    timestamp: Date.now(),
+  }
+
   const queue = s.pending.rentTargets || []
   if (s.pending.rentMode === 'all' && queue.length > 0) {
     const next = queue[0]
@@ -736,6 +881,7 @@ export function confirmSelectedPay(s: KinnistuDealState): KinnistuDealState {
       ...s,
       players: basePlayers,
       pending,
+      lastEvent: payEvent,
       paySelected: [],
       log: [
         `✅ ${s.players[payerI].name} maksis ${sum}M · järgmine: ${s.players[next]?.name}`,
@@ -755,6 +901,7 @@ export function confirmSelectedPay(s: KinnistuDealState): KinnistuDealState {
     payFrom: undefined,
     payAmount: undefined,
     paySelected: [],
+    lastEvent: payEvent,
     log: [`✅ ${s.players[payerI].name} maksis ${sum}M`, ...s.log].slice(0, 16),
   })
 }

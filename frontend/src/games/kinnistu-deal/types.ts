@@ -60,6 +60,36 @@ export type PendingAction = {
   giveStep?: boolean
 }
 
+export type DealEventKind =
+  | 'money_bank'
+  | 'prop_placed'
+  | 'pass_go'
+  | 'rent_charged'
+  | 'birthday'
+  | 'debt'
+  | 'sly_deal'
+  | 'forced_deal'
+  | 'deal_breaker'
+  | 'just_say_no'
+  | 'house_built'
+  | 'hotel_built'
+  | 'pay_completed'
+
+export type DealEventAnimation = {
+  id: string
+  kind: DealEventKind
+  actorName: string
+  actorIndex: number
+  targetName?: string
+  targetIndex?: number
+  card?: DealCard
+  amount?: number
+  propName?: string
+  propColor?: PropColor
+  message: string
+  timestamp: number
+}
+
 export type KinnistuDealState = {
   coachDismissed?: boolean
   turnCount?: number
@@ -80,6 +110,7 @@ export type KinnistuDealState = {
   paySelected?: string[]
   hostBeat?: number
   confettiAt?: number
+  lastEvent?: DealEventAnimation | null
 }
 
 export const SET_SIZE: Record<PropColor, number> = {

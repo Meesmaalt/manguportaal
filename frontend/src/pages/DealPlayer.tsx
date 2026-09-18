@@ -27,6 +27,7 @@ import {
   confirmSelectedPay,
 } from '@/games/kinnistu-deal/logic'
 import { CardFace, PlayerTableBoard, PropertySetRow, BankStrip } from '@/games/kinnistu-deal/DealCards'
+import DealActionTheater from '@/games/kinnistu-deal/DealActionTheater'
 import { Landmark, Loader2 } from 'lucide-react'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
@@ -267,6 +268,7 @@ export default function DealPlayer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#050c18] to-[#02060e] text-white pb-20">
+      <DealActionTheater event={state.lastEvent} compact />
       <div className="max-w-lg mx-auto px-3 pt-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 text-gold font-display font-bold text-lg">

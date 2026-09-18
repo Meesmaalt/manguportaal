@@ -3,6 +3,7 @@ import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
 import { emptyPlayer, startGame, endTurn, resolvePay, skipDefend, hostMoveProperty } from './logic'
 import { CardFace, PlayerTableBoard, BankStrip } from './DealCards'
+import DealActionTheater from './DealActionTheater'
 import TvJoinPanel from '@/components/TvJoinPanel'
 import { playFx } from '@/lib/audio'
 import { shareSessionLinks } from '@/lib/stats'
@@ -124,6 +125,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
 
   return (
     <div className="max-w-6xl mx-auto px-2 md:px-4 pb-10">
+      <DealActionTheater event={state.lastEvent} />
       {isHost && <SessionCodeBadge code={code} />}
       {isHost && phase === 'lobby' && (
         <div className="card-panel border-gold/30 p-3 mb-3 max-w-xl mx-auto text-sm text-white/75 space-y-1">

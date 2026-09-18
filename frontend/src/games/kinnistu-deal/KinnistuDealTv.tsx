@@ -9,6 +9,7 @@ import {
   rentForSet,
 } from './types'
 import { ColorProgressGrid, PropertySetRow } from './DealCards'
+import DealActionTheater from './DealActionTheater'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
 import { Landmark, Trophy, Coins, Swords } from 'lucide-react'
@@ -111,6 +112,7 @@ export default function KinnistuDealTv({
 
   return (
     <div className="min-h-screen bg-[#03070f] text-white px-3 md:px-6 py-4 md:py-6 flex flex-col">
+      <DealActionTheater event={state.lastEvent} />
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 mb-4 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2 text-gold font-display font-black text-xl md:text-2xl">

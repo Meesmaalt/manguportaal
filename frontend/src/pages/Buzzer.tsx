@@ -121,13 +121,16 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
   const { state } = useGameSession<any>(sessionId)
   
   const [name, setName] = useState(() => localStorage.getItem('ohtu_buzz_name') || '')
+  const [selectedTeam, setSelectedTeam] = useState<string>(() => localStorage.getItem('ohtu_buzz_team') || '')
   const [isEditingName, setIsEditingName] = useState(() => !localStorage.getItem('ohtu_buzz_name'))
   const [status, setStatus] = useState<'ready' | 'won' | 'lost' | 'submitted' | 'loading'>('ready')
   const [msg, setMsg] = useState(isLocal ? t('sessionLocalWarn') : '')
   const [locked, setLocked] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [reactionSent, setReactionSent] = useState<string | null>(null)
 
   const inputMode = state?.inputMode || 'buzz' // 'buzz' | 'text'
+  const sessionTeams: Array<{ name: string }> = Array.isArray(state?.teams) ? state.teams : []
 
   // Reset status if buzz is cleared by host
   useEffect(() => {
@@ -141,7 +144,8 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
   // Reset status if inputMode changes or playerInputs is cleared
   useEffect(() => {
     if (inputMode === 'text') {
-      const myInput = state?.playerInputs?.[name.trim()]
+      const displayName = selectedTeam ? `${name.trim()} (${selectedTeam})` : name.trim()
+      const myInput = state?.playerInputs?.[displayName] || state?.playerInputs?.[name.trim()]
       if (!myInput && status === 'submitted') {
         setStatus('ready')
         setLocked(false)
@@ -153,16 +157,27 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
         setMsg('Vastus saadetud!')
       }
     }
-  }, [state?.playerInputs, inputMode, name, status])
+  }, [state?.playerInputs, inputMode, name, selectedTeam, status])
+
+  function getEffectiveName() {
+    const raw = name.trim()
+    if (!raw) return ''
+    if (selectedTeam && sessionTeams.some((t) => t.name === selectedTeam)) {
+      return `${raw} [${selectedTeam}]`
+    }
+    return raw
+  }
 
   async function buzz() {
-    if (!name.trim() || locked) return
+    const effName = getEffectiveName()
+    if (!effName || locked) return
     localStorage.setItem('ohtu_buzz_name', name.trim())
+    if (selectedTeam) localStorage.setItem('ohtu_buzz_team', selectedTeam)
     try {
       if ('vibrate' in navigator) navigator.vibrate([40, 20, 60])
     } catch {}
     setLocked(true)
-    const res = await tryClaimBuzz({ sessionId, isLocal, name: name.trim() })
+    const res = await tryClaimBuzz({ sessionId, isLocal, name: effName })
     if (res.ok) {
       playFx('buzz')
       setStatus('won')
@@ -182,10 +197,12 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
   }
   
   async function submitText() {
-    if (!name.trim() || !inputValue.trim() || locked) return
+    const effName = getEffectiveName()
+    if (!effName || !inputValue.trim() || locked) return
     localStorage.setItem('ohtu_buzz_name', name.trim())
+    if (selectedTeam) localStorage.setItem('ohtu_buzz_team', selectedTeam)
     setLocked(true)
-    const res = await submitPlayerInput({ sessionId, isLocal, name: name.trim(), value: inputValue.trim() })
+    const res = await submitPlayerInput({ sessionId, isLocal, name: effName, value: inputValue.trim() })
     if (res.ok) {
       setStatus('submitted')
       setMsg('Vastus saadetud!')
@@ -196,47 +213,64 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
     }
   }
 
+  async function sendReaction(emoji: string) {
+    setReactionSent(emoji)
+    try {
+      if ('vibrate' in navigator) navigator.vibrate([30])
+    } catch {}
+    setTimeout(() => setReactionSent(null), 1200)
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4 gap-5 py-10">
-      <div className="text-center space-y-2 max-w-md">
-        <h1 className="font-display text-4xl md:text-5xl text-gold font-black tracking-wide">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4 gap-5 py-8 md:py-10 ohtu-page-enter">
+      <div className="text-center space-y-1.5 max-w-md">
+        <h1 className="font-display text-3xl md:text-5xl text-gold font-black tracking-wide">
           {inputMode === 'text' ? '📝 Sisesta vastus' : `🔔 ${t('buzzTitle')}`}
         </h1>
-        <p className="text-white/80 text-base md:text-lg font-medium leading-snug">{t('buzzGuestLead')}</p>
-        <p className="text-white/45 text-sm leading-relaxed">{t('buzzGuestHint')}</p>
+        <p className="text-white/80 text-sm md:text-base font-medium leading-snug">{t('buzzGuestLead')}</p>
       </div>
 
-      <p className="text-white/40 text-xs">
-        {t('sessionCode')}: <span className="text-gold font-mono tracking-widest text-sm">{code || '—'}</span>
-      </p>
+      <div className="flex items-center gap-2 text-xs text-white/50 bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
+        <span>{t('sessionCode')}:</span>
+        <strong className="text-gold font-mono tracking-widest text-sm">{code || '—'}</strong>
+      </div>
 
       <div className="w-full max-w-sm space-y-4">
         {msg && status === 'ready' && (
-          <p className="text-amber-200/80 text-xs text-center leading-relaxed">{msg}</p>
+          <p className="text-amber-200/90 text-xs text-center leading-relaxed bg-amber-500/10 border border-amber-500/20 py-2 px-3 rounded-xl">
+            {msg}
+          </p>
         )}
         
         {!isEditingName && name.trim() && status === 'ready' ? (
-          <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 shadow-sm">
+          <div className="bg-white/5 border border-white/10 rounded-2xl py-3 px-4 shadow-sm flex items-center justify-between">
             <div className="text-left">
-              <span className="text-white/40 text-[10px] uppercase tracking-wider block font-semibold">Mängija</span>
-              <span className="text-gold font-bold text-lg leading-tight">{name}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-white/40 text-[10px] uppercase tracking-wider font-semibold">Mängija</span>
+                {selectedTeam && (
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.2 rounded-full">
+                    {selectedTeam}
+                  </span>
+                )}
+              </div>
+              <span className="text-gold font-bold text-lg leading-tight block">{name}</span>
             </div>
             <button
               type="button"
               onClick={() => setIsEditingName(true)}
-              className="text-white/60 hover:text-gold p-1.5 rounded-lg hover:bg-white/10 transition flex items-center gap-1 text-xs border border-transparent hover:border-gold/30"
-              title="Muuda nime"
+              className="text-white/60 hover:text-gold p-2 rounded-xl hover:bg-white/10 transition flex items-center gap-1.5 text-xs border border-transparent hover:border-gold/30"
+              title="Muuda nime või tiimi"
             >
-              <Pencil size={13} />
+              <Pencil size={14} />
               <span>Muuda</span>
             </button>
           </div>
         ) : (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-            <span className="text-white/50 text-xs block mb-1.5 text-center font-medium">{t('buzzName')}</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
+            <span className="text-white/60 text-xs block text-center font-medium">{t('buzzName')}</span>
             <div className="flex gap-2">
               <input
-                className="input-field text-center text-lg flex-1 !py-2"
+                className="input-field text-center text-base flex-1 !py-2.5 rounded-xl font-medium"
                 placeholder={t('buzzNamePlaceholder')}
                 value={name}
                 disabled={status !== 'ready'}
@@ -258,20 +292,47 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
                     localStorage.setItem('ohtu_buzz_name', name.trim())
                     setIsEditingName(false)
                   }}
-                  className="btn-gold !py-2 px-3.5 flex items-center justify-center text-sm font-bold active:scale-95"
+                  className="btn-gold !py-2.5 px-3.5 rounded-xl flex items-center justify-center text-sm font-bold active:scale-95"
                   title="Salvesta nimi"
                 >
                   <Check size={16} />
                 </button>
               )}
             </div>
+
+            {/* Optional Team Picker if game has teams */}
+            {sessionTeams.length > 0 && (
+              <div className="pt-2 border-t border-white/10">
+                <span className="text-[11px] text-white/50 block text-center mb-1.5">Vali oma tiim:</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {sessionTeams.map((tm) => (
+                    <button
+                      key={tm.name}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeam(tm.name === selectedTeam ? '' : tm.name)
+                        if (tm.name !== selectedTeam) localStorage.setItem('ohtu_buzz_team', tm.name)
+                        else localStorage.removeItem('ohtu_buzz_team')
+                      }}
+                      className={`text-xs py-1.5 px-2 rounded-lg border font-medium transition ${
+                        selectedTeam === tm.name
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
+                          : 'bg-white/[0.03] border-white/10 text-white/70 hover:border-white/30'
+                      }`}
+                    >
+                      {tm.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         
         {inputMode === 'text' && (
           <div className="space-y-3 mt-4">
             <input
-              className="input-field w-full text-center text-xl py-4"
+              className="input-field w-full text-center text-xl py-4 rounded-2xl"
               placeholder="Sinu vastus..."
               value={inputValue}
               disabled={status === 'submitted'}
@@ -282,12 +343,12 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
               type="button"
               disabled={!name.trim() || !inputValue.trim() || status === 'submitted'}
               onClick={submitText}
-              className={`w-full py-6 rounded-2xl font-display text-2xl font-black transition active:scale-95 flex flex-col items-center justify-center gap-2
+              className={`w-full py-5 rounded-2xl font-display text-2xl font-black transition active:scale-95 flex items-center justify-center gap-2
                 ${status === 'submitted' ? 'bg-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)]' :
                   'bg-gold text-bg shadow-[0_0_30px_rgba(223,179,66,0.3)] disabled:opacity-40'}`}
             >
-              <Send size={28} />
-              {status === 'submitted' ? 'Saadetud!' : 'Saada'}
+              <Send size={24} />
+              <span>{status === 'submitted' ? 'Saadetud!' : 'Saada vastus'}</span>
             </button>
           </div>
         )}
@@ -297,20 +358,41 @@ function BuzzerClient({ sessionId, isLocal, code }: { sessionId: string; isLocal
             type="button"
             disabled={!name.trim() || status === 'won' || status === 'lost'}
             onClick={buzz}
-            className={`w-full py-12 rounded-3xl font-display text-3xl md:text-4xl font-black transition active:scale-95 flex flex-col items-center justify-center gap-2
-              ${status === 'won' ? 'bg-emerald-500 text-white shadow-[0_0_48px_rgba(16,185,129,0.8)] border-4 border-emerald-300' :
+            className={`w-full py-12 md:py-14 rounded-3xl font-display text-3xl md:text-4xl font-black transition-all active:scale-90 flex flex-col items-center justify-center gap-2 select-none shadow-2xl
+              ${status === 'won' ? 'bg-emerald-500 text-white shadow-[0_0_50px_rgba(16,185,129,0.8)] border-4 border-emerald-300 animate-pulse' :
                 status === 'lost' ? 'bg-red-500/20 text-white/50 border border-red-500/30 opacity-80' :
-                'bg-gold text-bg shadow-[0_0_48px_rgba(223,179,66,0.5)] disabled:opacity-40'}`}
+                'bg-gold text-bg shadow-[0_0_50px_rgba(223,179,66,0.4)] hover:shadow-[0_0_60px_rgba(223,179,66,0.6)] disabled:opacity-40'}`}
           >
-            <Zap size={36} strokeWidth={2.5} />
-            {t('buzzMe')}
+            <Zap size={40} strokeWidth={2.5} className="animate-bounce" />
+            <span>{t('buzzMe')}</span>
           </button>
         )}
 
-        <p className="text-center text-white/35 text-xs leading-relaxed px-2">{t('buzzNoLogin')}</p>
+        {/* Quick Reaction Emojis */}
+        <div className="pt-2 flex items-center justify-center gap-2">
+          {['👏', '🔥', '😂', '🎯', '🎉'].map((emo) => (
+            <button
+              key={emo}
+              type="button"
+              onClick={() => sendReaction(emo)}
+              className="text-xl p-2 rounded-xl bg-white/[0.04] hover:bg-white/10 active:scale-125 border border-white/10 transition-transform"
+              title="Saada reaktsioon"
+            >
+              {emo}
+            </button>
+          ))}
+        </div>
+
+        {reactionSent && (
+          <div className="text-center text-xs text-gold animate-pulse">
+            Saadetud: {reactionSent}
+          </div>
+        )}
 
         {msg && (status === 'won' || status === 'lost') && (
-          <p className={`text-center text-lg font-bold p-3 rounded-xl ${status === 'won' ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30' : 'text-red-300 bg-red-900/40 border border-red-500/30'}`}>{msg}</p>
+          <p className={`text-center text-lg font-bold p-3.5 rounded-2xl ${
+            status === 'won' ? 'text-emerald-300 bg-emerald-900/40 border border-emerald-500/30' : 'text-red-300 bg-red-900/40 border border-red-500/30'
+          }`}>{msg}</p>
         )}
       </div>
     </div>
