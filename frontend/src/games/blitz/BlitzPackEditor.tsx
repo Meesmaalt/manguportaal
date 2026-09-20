@@ -3,6 +3,7 @@ import type { BlitzQuestion, BlitzQuestionType } from './types'
 import { parseBlitzQuestions, questionsToCsv } from './parseQuestions'
 import { generateBlitzQuiz } from './generateQuiz'
 import { Plus, Trash2, Upload, Sparkles, Loader2, Star } from 'lucide-react'
+import ImagePickerField from '@/components/ImagePickerField'
 
 type Props = {
   questions: BlitzQuestion[]
@@ -547,48 +548,12 @@ export default function BlitzPackEditor({
                 </div>
               )}
 
-              {/* Image URL & upload */}
-              <div className="flex flex-wrap gap-2 items-center">
-                <input
-                  className="input-field text-xs flex-1 min-w-[8rem]"
-                  placeholder="Pildi URL või laadi fail"
-                  value={q.imageUrl || ''}
-                  onChange={(e) => patchQ(i, { imageUrl: e.target.value || undefined })}
-                />
-                <label className="btn-outline text-[10px] cursor-pointer !py-1">
-                  Fail
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (!f) return
-                      if (f.size > 400_000) {
-                        alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või https URL-i.')
-                        return
-                      }
-                      const reader = new FileReader()
-                      reader.onload = () => {
-                        patchQ(i, { imageUrl: String(reader.result || '') })
-                      }
-                      reader.readAsDataURL(f)
-                    }}
-                  />
-                </label>
-                {q.imageUrl && (
-                  <button
-                    type="button"
-                    className="text-[10px] text-accent-red"
-                    onClick={() => patchQ(i, { imageUrl: undefined })}
-                  >
-                    Eemalda pilt
-                  </button>
-                )}
-              </div>
-              {q.imageUrl && (
-                <img src={q.imageUrl} alt="" className="max-h-20 rounded border border-white/10 object-contain" />
-              )}
+              {/* Image Picker */}
+              <ImagePickerField
+                value={q.imageUrl}
+                onChange={(url) => patchQ(i, { imageUrl: url })}
+                placeholder="Pildi URL või laadi fail..."
+              />
 
               <input
                 className="input-field text-xs"

@@ -22,6 +22,7 @@ import {
   generateTodeVoiTeguAi,
 } from '@/lib/aiGameGenerators'
 import AiGeneratorBar from '@/components/AiGeneratorBar'
+import ImagePickerField from '@/components/ImagePickerField'
 import type { MiljonarQuestion } from '@/games/miljonar/types'
 import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
 
@@ -56,7 +57,7 @@ export default function CreatePack() {
     {
       name: string
       name_tr?: string
-      questions: { points: number; q: string; q_tr?: string; a: string; a_tr?: string; hostNote?: string }[]
+      questions: { points: number; q: string; q_tr?: string; a: string; a_tr?: string; hostNote?: string; imageUrl?: string }[]
     }[]
   >([
     {
@@ -212,6 +213,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
               ...(q.q_tr?.trim() ? { q_tr: q.q_tr.trim() } : {}),
               ...(q.a_tr?.trim() ? { a_tr: q.a_tr.trim() } : {}),
               ...(q.hostNote?.trim() ? { hostNote: q.hostNote.trim() } : {}),
+              ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
             })),
           })),
           finalJeopardy:
@@ -482,7 +484,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                         />
                       </div>
 
-                      <div className="pt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                         <input
                           className="input-field text-xs text-amber-100/90"
                           placeholder="Hosti märkus (ainult mängujuhile)"
@@ -492,6 +494,15 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                             next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], hostNote: e.target.value }
                             setCategories(next)
                           }}
+                        />
+                        <ImagePickerField
+                          value={q.imageUrl}
+                          onChange={(url) => {
+                            const next = [...categories]
+                            next[cIdx].questions[qIdx] = { ...next[cIdx].questions[qIdx], imageUrl: url }
+                            setCategories(next)
+                          }}
+                          placeholder="Pildi URL või laadi fail..."
                         />
                       </div>
                     </div>

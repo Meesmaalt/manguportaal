@@ -8,12 +8,76 @@ export type AiTranslateRequest = {
   apiKey?: string
 }
 
+function extractAndStripImages(obj: any): { stripped: any; imageMap: Record<string, string> } {
+  const imageMap: Record<string, string> = {}
+  let counter = 0
+
+  function cloneAndStrip(val: any): any {
+    if (val === null || val === undefined) return val
+    if (typeof val === 'string') {
+      if (val.startsWith('data:image/')) {
+        const placeholder = `__IMG_PRESERVE_${counter++}__`
+        imageMap[placeholder] = val
+        return placeholder
+      }
+      return val
+    }
+    if (Array.isArray(val)) {
+      return val.map(cloneAndStrip)
+    }
+    if (typeof val === 'object') {
+      const res: Record<string, any> = {}
+      for (const [k, v] of Object.entries(val)) {
+        res[k] = cloneAndStrip(v)
+      }
+      return res
+    }
+    return val
+  }
+
+  const stripped = cloneAndStrip(obj)
+  return { stripped, imageMap }
+}
+
+function restoreImages(obj: any, imageMap: Record<string, string>): any {
+  function cloneAndRestore(val: any): any {
+    if (val === null || val === undefined) return val
+    if (typeof val === 'string') {
+      if (val in imageMap) {
+        return imageMap[val]
+      }
+      for (const [placeholder, originalBase64] of Object.entries(imageMap)) {
+        if (val.includes(placeholder)) {
+          return val.replace(placeholder, originalBase64)
+        }
+      }
+      return val
+    }
+    if (Array.isArray(val)) {
+      return val.map(cloneAndRestore)
+    }
+    if (typeof val === 'object') {
+      const res: Record<string, any> = {}
+      for (const [k, v] of Object.entries(val)) {
+        res[k] = cloneAndRestore(v)
+      }
+      return res
+    }
+    return val
+  }
+
+  return cloneAndRestore(obj)
+}
+
 export async function translatePackWithGemini(reqData: AiTranslateRequest) {
   const apiKey = reqData.apiKey || getGlobalApiKey()
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY puudub keskkonnamuutujatest ega ka kliendi seadetest')
   }
   const ai = new GoogleGenAI({ apiKey })
+
+  // Strip massive base64 images before sending to AI to avoid huge token costs and response truncation
+  const { stripped: sanitizedPackData, imageMap } = extractAndStripImages(reqData.packData)
 
   const prompt = `Translate the user-facing text fields in the provided JSON game pack data to the target language: ${reqData.targetLanguage}.
 Original language is likely Estonian.
@@ -24,7 +88,7 @@ Rules:
    - For each question in questions array:
      - keep 'q' as original, and add 'q_tr' with the ${reqData.targetLanguage} translated question.
      - keep 'a' as original, and add 'a_tr' with the ${reqData.targetLanguage} translated answer.
-     - preserve 'points', 'hostNote', 'imageUrl' as is.
+     - preserve 'points', 'hostNote', 'imageUrl' placeholders as is.
    - For 'finalJeopardy' (if present):
      - keep 'q' and 'a', add 'q_tr' and 'a_tr'.
 2. For Blitz pack data:
@@ -35,7 +99,7 @@ Rules:
 5. Return strictly the complete JSON structure with the new translation fields added.
 
 JSON Data:
-${JSON.stringify(reqData.packData, null, 2)}
+${JSON.stringify(sanitizedPackData, null, 2)}
 `
 
   const response = await ai.models.generateContent({
@@ -50,5 +114,8 @@ ${JSON.stringify(reqData.packData, null, 2)}
   const text = response.text || '{}'
   const translatedData = JSON.parse(text)
 
-  return translatedData
+  // Restore the original base64 images
+  const finalData = restoreImages(translatedData, imageMap)
+
+  return finalData
 }

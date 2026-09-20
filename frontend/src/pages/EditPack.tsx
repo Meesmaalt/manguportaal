@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
@@ -19,6 +19,8 @@ import {
   Wand2,
   AlertCircle,
   CheckCircle2,
+  Image as ImageIcon,
+  Minimize2,
 } from 'lucide-react'
 import { appUrl } from '@/lib/config'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
@@ -27,6 +29,14 @@ import { splitBilingualText } from '@/components/BilingualText'
 import type { MiljonarQuestion } from '@/games/miljonar/types'
 import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
 import { MILJONAR_KLASSIKA_QUESTIONS } from '@/games/miljonar/miljonarPacks'
+import ImagePickerField from '@/components/ImagePickerField'
+import {
+  isBase64Image,
+  getBase64Size,
+  extractAndStripImages,
+  restoreImages,
+  compressImageFile,
+} from '@/lib/imageUtils'
 
 type Mode = 'visual' | 'json'
 
@@ -61,6 +71,12 @@ export default function EditPack() {
   const [jsonCopied, setJsonCopied] = useState(false)
   const [jsonValidationMsg, setJsonValidationMsg] = useState<{ valid: boolean; message: string }>({ valid: true, message: '' })
 
+  // Image assets map for folding massive Base64 strings in JSON mode
+  const [compactBase64, setCompactBase64] = useState(true)
+  const [imageAssetsMap, setImageAssetsMap] = useState<Record<string, string>>({})
+  const imageAssetsMapRef = useRef<Record<string, string>>({})
+  imageAssetsMapRef.current = imageAssetsMap
+
   // Kuldvillak state
   const [categories, setCategories] = useState<Cat[]>([])
   const [finalQ, setFinalQ] = useState('')
@@ -94,6 +110,58 @@ export default function EditPack() {
 
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [optimizingImages, setOptimizingImages] = useState(false)
+
+  // Converts pack data object into formatted JSON string with optional compact Base64 tags
+  function formatDataToJsonString(dataObj: any, compact: boolean): string {
+    if (!compact) {
+      return JSON.stringify(dataObj, null, 2)
+    }
+    const { stripped, imageMap } = extractAndStripImages(dataObj)
+    setImageAssetsMap((prev) => {
+      const merged = { ...prev, ...imageMap }
+      imageAssetsMapRef.current = merged
+      return merged
+    })
+
+    function humanizePlaceholders(val: any): any {
+      if (typeof val === 'string' && val.startsWith('__IMG_ASSET_')) {
+        const original = imageMap[val] || imageAssetsMapRef.current[val] || ''
+        const sizeStr = getBase64Size(original)
+        return `data:image/asset [Base64 fail: ${sizeStr} - ID: ${val}]`
+      }
+      if (Array.isArray(val)) return val.map(humanizePlaceholders)
+      if (val && typeof val === 'object') {
+        const res: Record<string, any> = {}
+        for (const [k, v] of Object.entries(val)) {
+          res[k] = humanizePlaceholders(v)
+        }
+        return res
+      }
+      return val
+    }
+
+    const humanized = humanizePlaceholders(stripped)
+    return JSON.stringify(humanized, null, 2)
+  }
+
+  // Parses JSON string from editor, expanding any folded Base64 placeholders
+  function parseDataFromJsonString(text: string): any {
+    let raw = text.trim()
+    if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+    if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+
+    const map = imageAssetsMapRef.current
+    for (const [placeholder, base64] of Object.entries(map)) {
+      // Look for ID in humanized tag or direct placeholder
+      const tagPattern = new RegExp(`"data:image/asset \\[.*ID:\\s*${placeholder}\\]"`, 'g')
+      raw = raw.replace(tagPattern, JSON.stringify(base64))
+      const placeholderPattern = new RegExp(`"${placeholder}"`, 'g')
+      raw = raw.replace(placeholderPattern, JSON.stringify(base64))
+    }
+
+    return JSON.parse(raw)
+  }
 
   // Validate JSON on jsonText change
   useEffect(() => {
@@ -102,12 +170,12 @@ export default function EditPack() {
       return
     }
     try {
-      JSON.parse(jsonText)
+      parseDataFromJsonString(jsonText)
       setJsonValidationMsg({ valid: true, message: 'JSON on korrektne' })
     } catch (e: any) {
       setJsonValidationMsg({ valid: false, message: e.message || 'Vigane JSON süntaks' })
     }
-  }, [jsonText])
+  }, [jsonText, imageAssetsMap])
 
   useEffect(() => {
     if (!id) return
@@ -117,7 +185,7 @@ export default function EditPack() {
         setPack(p)
         setName(p.name)
         setDescription(p.description || '')
-        setJsonText(JSON.stringify(p.data, null, 2))
+        setJsonText(formatDataToJsonString(p.data, true))
         hydrateVisual(p.game_type, p.data)
       })
       .catch((e) => setError(formatPbError(e)))
@@ -348,19 +416,25 @@ export default function EditPack() {
       }
     }
     if (pack.game_type === 'tode_voi_tegu') {
-      const parts = linesText.split(/#\s*TEOD/i)
-      const truthBlock = (parts[0] || '').replace(/#\s*TÕED/i, '')
-      const dareBlock = parts[1] || ''
-      return {
-        truths: truthBlock
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        dares: dareBlock
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean),
+      const lines = linesText.split('\n')
+      const truths: string[] = []
+      const dares: string[] = []
+      let modeState: 'truths' | 'dares' = 'truths'
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        if (trimmed.startsWith('# TÕED') || trimmed.toLowerCase() === 'tõed') {
+          modeState = 'truths'
+          continue
+        }
+        if (trimmed.startsWith('# TEOD') || trimmed.toLowerCase() === 'teod') {
+          modeState = 'dares'
+          continue
+        }
+        if (modeState === 'truths') truths.push(trimmed)
+        else dares.push(trimmed)
       }
+      return { truths, dares }
     }
     if (pack.game_type === 'blitz') {
       return {
@@ -371,16 +445,17 @@ export default function EditPack() {
         shuffleOnStart: true,
       }
     }
-    return JSON.parse(jsonText)
+    try {
+      return parseDataFromJsonString(jsonText)
+    } catch {
+      return {}
+    }
   }
 
   function formatJsonText() {
     try {
-      let raw = jsonText.trim()
-      if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
-      if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
-      const parsed = JSON.parse(raw)
-      const formatted = JSON.stringify(parsed, null, 2)
+      const parsed = parseDataFromJsonString(jsonText)
+      const formatted = formatDataToJsonString(parsed, compactBase64)
       setJsonText(formatted)
       setError('')
     } catch (e: any) {
@@ -389,22 +464,38 @@ export default function EditPack() {
   }
 
   function copyJson() {
-    navigator.clipboard.writeText(jsonText).catch(() => {})
-    setJsonCopied(true)
-    setTimeout(() => setJsonCopied(false), 2000)
+    try {
+      // When copying, user copies the clean or full JSON
+      const parsed = parseDataFromJsonString(jsonText)
+      const cleanJson = JSON.stringify(parsed, null, 2)
+      navigator.clipboard.writeText(cleanJson).catch(() => {})
+      setJsonCopied(true)
+      setTimeout(() => setJsonCopied(false), 2000)
+    } catch {
+      navigator.clipboard.writeText(jsonText).catch(() => {})
+      setJsonCopied(true)
+      setTimeout(() => setJsonCopied(false), 2000)
+    }
+  }
+
+  function toggleCompactMode(nextCompact: boolean) {
+    setCompactBase64(nextCompact)
+    try {
+      const parsed = parseDataFromJsonString(jsonText)
+      setJsonText(formatDataToJsonString(parsed, nextCompact))
+    } catch {
+      // keep current text if invalid
+    }
   }
 
   function switchMode(next: Mode) {
     if (next === mode) return
     try {
       if (next === 'json') {
-        const data = mode === 'visual' ? buildDataFromVisual() : JSON.parse(jsonText)
-        setJsonText(JSON.stringify(data, null, 2))
+        const data = mode === 'visual' ? buildDataFromVisual() : parseDataFromJsonString(jsonText)
+        setJsonText(formatDataToJsonString(data, compactBase64))
       } else {
-        let raw = jsonText.trim()
-        if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
-        if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
-        const data = JSON.parse(raw)
+        const data = parseDataFromJsonString(jsonText)
         if (pack) hydrateVisual(pack.game_type, data)
       }
       setMode(next)
@@ -425,10 +516,7 @@ export default function EditPack() {
     try {
       let data: unknown
       if (mode === 'json') {
-        let raw = jsonText.trim()
-        if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
-        if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
-        data = JSON.parse(raw)
+        data = parseDataFromJsonString(jsonText)
       } else {
         data = buildDataFromVisual()
       }
@@ -453,7 +541,7 @@ export default function EditPack() {
     setTranslating(true)
     setError('')
     try {
-      const data = mode === 'json' ? JSON.parse(jsonText) : buildDataFromVisual()
+      const data = mode === 'json' ? parseDataFromJsonString(jsonText) : buildDataFromVisual()
 
       const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
@@ -469,7 +557,7 @@ export default function EditPack() {
 
       const translatedData = json.translatedData
 
-      setJsonText(JSON.stringify(translatedData, null, 2))
+      setJsonText(formatDataToJsonString(translatedData, compactBase64))
       if (pack) hydrateVisual(pack.game_type, translatedData)
 
       alert('Tõlge lisatud! Vaata tulemus üle ja vajuta all "Salvesta muudatused".')
@@ -511,6 +599,9 @@ export default function EditPack() {
     pack.game_type === 'viimane_pusti' ||
     pack.game_type === 'tode_voi_tegu'
 
+  // Count embedded Base64 images in pack
+  const base64Count = Object.keys(imageAssetsMap).length
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <Link
@@ -519,29 +610,137 @@ export default function EditPack() {
       >
         <ArrowLeft size={16} /> {t('packBack')}
       </Link>
-      <h1 className="font-display text-2xl text-gold mb-2">{t('editPack')}</h1>
-      <p className="text-white/45 text-sm mb-6">{pack.game_type}</p>
 
-      {/* Mode Switcher Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          type="button"
-          onClick={() => switchMode('visual')}
-          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'visual' ? 'bg-gold/20 border-gold text-gold font-bold' : ''}`}
-        >
-          <LayoutTemplate size={14} /> {t('editVisual')}
-        </button>
-        <button
-          type="button"
-          onClick={() => switchMode('json')}
-          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'json' ? 'bg-gold/20 border-gold text-gold font-bold' : ''}`}
-        >
-          <Code2 size={14} /> {t('editJson')}
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <span className="text-xs font-semibold text-gold/80 uppercase tracking-wider block mb-1">
+            {pack.game_type.replace('_', ' ')}
+          </span>
+          <h1 className="text-2xl font-display font-bold text-white">Toimeta mängupakki</h1>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* AI Translate button */}
+          <button
+            type="button"
+            onClick={() => setTranslateModalOpen(true)}
+            className="btn-outline text-xs !py-2 !px-3 flex items-center gap-1.5 hover:border-accent-cyan hover:text-accent-cyan"
+            title="Lisa automaatne tõlge teise keelde"
+          >
+            <Languages size={15} className="text-accent-cyan" />
+            <span>AI Tõlge</span>
+          </button>
+
+          {/* Mode Switcher */}
+          <div className="flex rounded-xl bg-slate-900/80 p-1 border border-white/10">
+            <button
+              type="button"
+              onClick={() => switchMode('visual')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                mode === 'visual'
+                  ? 'bg-gold text-black shadow-sm'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <LayoutTemplate size={14} />
+              <span>Visuaalne</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('json')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                mode === 'json'
+                  ? 'bg-gold text-black shadow-sm'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              <Code2 size={14} />
+              <span>JSON</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-5">
-        {/* Name & Description */}
+      {error && (
+        <div className="p-3 mb-6 bg-accent-red/10 border border-accent-red/30 rounded-xl text-accent-red text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError('')} className="text-xs underline hover:text-white ml-2">
+            Sulge
+          </button>
+        </div>
+      )}
+
+      {/* AI Translate Modal */}
+      {translateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="card-panel max-w-md w-full p-6 bg-[#08112c] border-accent-cyan/40 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2 text-accent-cyan font-display font-bold text-lg">
+              <Globe size={20} />
+              <span>Automaatne AI Kakskeelsus</span>
+            </div>
+            <p className="text-xs text-white/70 leading-relaxed">
+              Gemini lisab igale küsimusele, vastusele ja kategooriale teise keele tõlke. Mängijad näevad teleris ja telefonis korraga mõlemat keelt!
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-white/80 block">Sihtkeel:</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {['Inglise', 'Vene', 'Soome', 'Saksa', 'Hispaania', 'Prantsuse'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setTargetLang(lang)}
+                    className={`text-xs py-2 px-3 rounded-lg border font-medium transition ${
+                      targetLang === lang
+                        ? 'bg-accent-cyan/20 border-accent-cyan text-accent-cyan font-bold'
+                        : 'bg-slate-900 border-white/10 text-white/70 hover:border-white/30'
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setTranslateModalOpen(false)}
+                className="btn-outline text-xs !py-2 !px-4"
+                disabled={translating}
+              >
+                Tühista
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAITranslate(targetLang)}
+                disabled={translating}
+                className="btn-gold text-xs !py-2 !px-5 flex items-center gap-2 font-bold"
+              >
+                {translating ? (
+                  <>
+                    <Sparkles size={14} className="animate-spin text-gold" />
+                    <span>Tõlgin pakki...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <span>Tõlgi {targetLang} keelde</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          save()
+        }}
+        className="space-y-6"
+      >
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gold/80 block">Paki pealkiri</label>
           <input
@@ -565,7 +764,7 @@ export default function EditPack() {
         {mode === 'json' && (
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-900/80 rounded-xl border border-white/10">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-white/60 font-medium">{t('editJsonHint')}</span>
                 {jsonValidationMsg.valid ? (
                   <span className="text-[11px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
@@ -576,9 +775,25 @@ export default function EditPack() {
                     <AlertCircle size={12} /> Vigane JSON
                   </span>
                 )}
+                {base64Count > 0 && (
+                  <span className="text-[11px] text-cyan-300 flex items-center gap-1 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                    <ImageIcon size={12} /> {base64Count} Base64 pilt{base64Count > 1 ? 'i' : ''}
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Compact Base64 toggle */}
+                <label className="text-[11px] text-white/70 hover:text-white flex items-center gap-1.5 cursor-pointer px-2 py-1 bg-white/5 rounded-lg border border-white/10">
+                  <input
+                    type="checkbox"
+                    checked={compactBase64}
+                    onChange={(e) => toggleCompactMode(e.target.checked)}
+                    className="rounded border-white/30 text-gold focus:ring-0"
+                  />
+                  <span>Lühenda Base64</span>
+                </label>
+
                 <button
                   type="button"
                   onClick={formatJsonText}
@@ -586,7 +801,7 @@ export default function EditPack() {
                   title="Vorminda ja korrasta JSON taanded"
                 >
                   <Wand2 size={12} />
-                  <span>Vorminda JSON</span>
+                  <span>Vorminda</span>
                 </button>
                 <button
                   type="button"
@@ -640,7 +855,7 @@ export default function EditPack() {
                         <Globe size={12} className="text-accent-cyan" /> Kategooria tõlge (valikuline)
                       </label>
                       <input
-                        className="input-field font-display text-white/90 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-gold"
+                        className="input-field text-xs text-white/85 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
                         placeholder="nt. Geography"
                         value={cat.name_tr || ''}
                         onChange={(e) => {
@@ -653,11 +868,11 @@ export default function EditPack() {
                     {categories.length > 1 && (
                       <button
                         type="button"
-                        className="text-accent-red p-2 hover:bg-accent-red/10 rounded-lg transition"
+                        className="text-accent-red hover:text-red-400 p-2.5 rounded-xl border border-accent-red/30 hover:bg-accent-red/10 transition shrink-0"
                         title="Kustuta kategooria"
                         onClick={() => setCategories(categories.filter((_, i) => i !== cIdx))}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
@@ -665,15 +880,18 @@ export default function EditPack() {
 
                 <div className="space-y-3">
                   {cat.questions.map((q, qIdx) => (
-                    <div key={qIdx} className="p-3 rounded-xl bg-black/25 border border-white/5 space-y-2">
+                    <div
+                      key={qIdx}
+                      className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-2 hover:border-white/10 transition"
+                    >
                       {/* 1. Põhikeele lahtrid */}
                       <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
-                        <div className="text-gold font-bold text-xs text-center py-2 rounded-lg bg-gold/10 border border-gold/20">
-                          {q.points}p
+                        <div className="font-mono text-gold font-bold text-xs text-center">
+                          {q.points}
                         </div>
                         <input
                           className="input-field text-sm"
-                          placeholder="Küsimus (põhikeel)"
+                          placeholder="Küsimus"
                           value={q.q}
                           onChange={(e) => {
                             const next = [...categories]
@@ -683,7 +901,7 @@ export default function EditPack() {
                         />
                         <input
                           className="input-field text-sm"
-                          placeholder="Vastus (põhikeel)"
+                          placeholder="Vastus"
                           value={q.a}
                           onChange={(e) => {
                             const next = [...categories]
@@ -720,10 +938,10 @@ export default function EditPack() {
                         />
                       </div>
 
-                      {/* 3. Märkus ja pilt */}
-                      <div className="flex gap-2 pt-1 flex-wrap items-center">
+                      {/* 3. Märkus ja pildivalija */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                         <input
-                          className="input-field text-xs text-amber-100/90 flex-1 min-w-[140px]"
+                          className="input-field text-xs text-amber-100/90"
                           placeholder="Hosti märkus (ainult mängujuhile)"
                           value={q.hostNote || ''}
                           onChange={(e) => {
@@ -732,15 +950,14 @@ export default function EditPack() {
                             setCategories(next)
                           }}
                         />
-                        <input
-                          className="input-field text-xs flex-1 min-w-[140px]"
-                          placeholder="Pildi URL"
-                          value={q.imageUrl || ''}
-                          onChange={(e) => {
+                        <ImagePickerField
+                          value={q.imageUrl}
+                          onChange={(url) => {
                             const next = [...categories]
-                            next[cIdx].questions[qIdx] = { ...q, imageUrl: e.target.value || undefined }
+                            next[cIdx].questions[qIdx] = { ...q, imageUrl: url }
                             setCategories(next)
                           }}
+                          placeholder="Pildi URL või laadi fail..."
                         />
                       </div>
                     </div>
@@ -821,20 +1038,21 @@ export default function EditPack() {
             <div className="space-y-3">
               {miljonarQs.map((q, idx) => {
                 const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
-                const letters = ['A', 'B', 'C', 'D']
-
+                const letters = ['A', 'B', 'C', 'D'] as const
                 return (
                   <div
-                    key={q.id || idx}
-                    className={`card-panel p-4 space-y-3 ${
-                      step.isMilestone ? 'border-amber-400/60 bg-amber-950/20' : 'border-white/10 bg-slate-900/60'
+                    key={idx}
+                    className={`card-panel p-4 space-y-3 border ${
+                      step.isMilestone ? 'border-amber-500/50 bg-amber-950/20' : 'border-white/10'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center ${
-                            step.isMilestone ? 'bg-amber-500 text-black' : 'bg-blue-900 text-cyan-300'
+                          className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center ${
+                            step.isMilestone
+                              ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20'
+                              : 'bg-white/10 text-white'
                           }`}
                         >
                           {idx + 1}
@@ -918,28 +1136,34 @@ export default function EditPack() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      <input
-                        type="text"
-                        placeholder="Saatejuhi kommentaar / vihje"
-                        className="input-field text-xs text-amber-100/80"
-                        value={q.hostNote || ''}
-                        onChange={(e) => {
-                          const next = [...miljonarQs]
-                          next[idx] = { ...q, hostNote: e.target.value }
-                          setMiljonarQs(next)
-                        }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Lõbus lisafakt (funFact)"
-                        className="input-field text-xs text-cyan-200/80"
-                        value={q.funFact || ''}
-                        onChange={(e) => {
-                          const next = [...miljonarQs]
-                          next[idx] = { ...q, funFact: e.target.value }
-                          setMiljonarQs(next)
-                        }}
-                      />
+                      <div>
+                        <label className="text-[11px] text-amber-200/70 block mb-1">Hosti lisamärkus</label>
+                        <input
+                          type="text"
+                          placeholder="Märkus mängujuhile..."
+                          className="input-field text-xs text-amber-100/90"
+                          value={q.hostNote || ''}
+                          onChange={(e) => {
+                            const next = [...miljonarQs]
+                            next[idx] = { ...q, hostNote: e.target.value }
+                            setMiljonarQs(next)
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-cyan-200/70 block mb-1">Põnev fakt (peale vastust)</label>
+                        <input
+                          type="text"
+                          placeholder="nt. See ehitati 1889. aastal..."
+                          className="input-field text-xs text-cyan-100/90"
+                          value={q.funFact || ''}
+                          onChange={(e) => {
+                            const next = [...miljonarQs]
+                            next[idx] = { ...q, funFact: e.target.value }
+                            setMiljonarQs(next)
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )
@@ -951,100 +1175,67 @@ export default function EditPack() {
         {/* VISUAL MODE: ROOSIDE SÕDA */}
         {mode === 'visual' && isRoosid && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3.5 bg-slate-900/80 rounded-2xl border border-gold/30">
+            <div className="p-3.5 bg-slate-900/80 rounded-2xl border border-gold/30 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-display font-bold text-gold">Rooside Sõja voorud</h3>
+                <h3 className="text-sm font-display font-bold text-gold flex items-center gap-2">
+                  🌹 Rooside Sõda voorud (100 eestlast vastasid)
+                </h3>
                 <p className="text-white/50 text-xs">
-                  Igas voorus küsitlusküsimus ja 100 inimese hääletustulemused.
+                  Sisesta küsimus ja populaarsuse järjekorras vastused koos punktidega (nt 35, 25, 18...).
                 </p>
               </div>
-              <button
-                type="button"
-                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 hover:border-gold"
-                onClick={() => {
-                  const newIdx = roosideRounds.length + 1
-                  setRoosideRounds([
-                    ...roosideRounds,
-                    {
-                      title: `VOOR ${newIdx}`,
-                      multiplier: newIdx >= 4 ? 3 : newIdx === 3 ? 2 : 1,
-                      question: '',
-                      answers: [30, 20, 15, 10, 8, 5].map((p) => ({ text: '', points: p })),
-                    },
-                  ])
-                }}
-              >
-                <Plus size={14} /> Lisa voor
-              </button>
             </div>
 
             <div className="space-y-4">
-              {roosideRounds.map((r, rIdx) => (
+              {roosideRounds.map((round, rIdx) => (
                 <div key={rIdx} className="card-panel p-4 border-gold/30 space-y-3">
-                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="input-field text-xs font-display font-bold text-gold w-28 !py-1"
-                        value={r.title}
-                        onChange={(e) => {
-                          const next = [...roosideRounds]
-                          next[rIdx] = { ...r, title: e.target.value }
-                          setRoosideRounds(next)
-                        }}
-                      />
-                      <select
-                        className="input-field text-xs !py-1 w-28"
-                        value={r.multiplier}
-                        onChange={(e) => {
-                          const next = [...roosideRounds]
-                          next[rIdx] = { ...r, multiplier: Number(e.target.value) }
-                          setRoosideRounds(next)
-                        }}
-                      >
-                        <option value={1}>1× punktid</option>
-                        <option value={2}>2× punktid</option>
-                        <option value={3}>3× punktid</option>
-                        <option value={4}>4× punktid</option>
-                      </select>
+                      <span className="font-display font-bold text-gold text-sm">{round.title}</span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-gold/20 text-gold font-bold">
+                        {round.multiplier}× punktid
+                      </span>
                     </div>
-
                     {roosideRounds.length > 1 && (
                       <button
                         type="button"
-                        className="text-accent-red p-1.5 hover:bg-accent-red/10 rounded-lg transition"
-                        title="Kustuta voor"
                         onClick={() => setRoosideRounds(roosideRounds.filter((_, i) => i !== rIdx))}
+                        className="text-accent-red hover:text-red-400 p-1.5 rounded-lg border border-accent-red/20"
+                        title="Kustuta voor"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
 
-                  <div>
-                    <label className="text-xs text-white/70 block mb-1">Vooru küsitlusküsimus</label>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70 block">Vooru küsimus</label>
                     <input
                       type="text"
-                      placeholder="nt Nimetage midagi, mida inimesed unustavad kodust lahkudes..."
-                      className="input-field text-sm"
-                      value={r.question}
+                      placeholder="nt. Nimeta midagi, mida inimesed vannitoas teevad..."
+                      className="input-field text-sm font-medium"
+                      value={round.question}
                       onChange={(e) => {
                         const next = [...roosideRounds]
-                        next[rIdx] = { ...r, question: e.target.value }
+                        next[rIdx] = { ...round, question: e.target.value }
                         setRoosideRounds(next)
                       }}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs text-white/70 block">Vastused ja punktid (1-100)</label>
+                    <label className="text-xs text-white/70 block">
+                      Vastused & Punktid (kuni 6 vastust)
+                    </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {r.answers.map((ans, aIdx) => (
+                      {round.answers.map((ans, aIdx) => (
                         <div
                           key={aIdx}
-                          className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-950/40 border border-white/5"
+                          className="flex items-center gap-2 p-1.5 bg-black/30 rounded-xl border border-white/10"
                         >
-                          <span className="text-xs text-gold/60 font-bold px-1.5">{aIdx + 1}.</span>
+                          <span className="w-5 h-5 rounded-md bg-white/10 text-gold text-xs font-bold flex items-center justify-center shrink-0">
+                            {aIdx + 1}
+                          </span>
                           <input
                             type="text"
                             placeholder={`Vastus ${aIdx + 1}`}
@@ -1052,22 +1243,22 @@ export default function EditPack() {
                             value={ans.text}
                             onChange={(e) => {
                               const next = [...roosideRounds]
-                              const nextAns = [...r.answers]
+                              const nextAns = [...round.answers]
                               nextAns[aIdx] = { ...ans, text: e.target.value }
-                              next[rIdx] = { ...r, answers: nextAns }
+                              next[rIdx] = { ...round, answers: nextAns }
                               setRoosideRounds(next)
                             }}
                           />
                           <input
                             type="number"
-                            placeholder="p"
-                            className="input-field text-xs w-14 font-mono font-bold text-amber-400 text-center !py-1"
+                            placeholder="Pkt"
+                            className="input-field text-xs w-14 text-center font-mono text-gold !py-1 !px-1"
                             value={ans.points || ''}
                             onChange={(e) => {
                               const next = [...roosideRounds]
-                              const nextAns = [...r.answers]
+                              const nextAns = [...round.answers]
                               nextAns[aIdx] = { ...ans, points: Number(e.target.value) || 0 }
-                              next[rIdx] = { ...r, answers: nextAns }
+                              next[rIdx] = { ...round, answers: nextAns }
                               setRoosideRounds(next)
                             }}
                           />
@@ -1078,80 +1269,74 @@ export default function EditPack() {
                 </div>
               ))}
             </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setRoosideRounds([
+                  ...roosideRounds,
+                  {
+                    title: `VOOR ${roosideRounds.length + 1}`,
+                    multiplier: roosideRounds.length >= 2 ? 3 : 2,
+                    question: '',
+                    answers: [35, 25, 18, 12, 6, 4].map((p) => ({ text: '', points: p })),
+                  },
+                ])
+              }
+              className="btn-outline text-xs flex items-center gap-2"
+            >
+              <Plus size={14} /> Lisa voor
+            </button>
           </div>
         )}
 
         {/* VISUAL MODE: KINNISTU DEAL */}
         {mode === 'visual' && isDeal && (
           <div className="card-panel p-5 border-gold/30 space-y-4">
-            <h3 className="text-sm font-display font-bold text-gold">Kinnistu Deal seadistus</h3>
+            <h3 className="font-display text-gold text-base font-bold">Kinnistu Deal Seaded</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-white/70 block mb-1">Võiduks vajalikke komplekte</label>
+              <div className="space-y-1.5">
+                <label className="text-xs text-white/70 block">Võiduks vajalikke täiskomplekte</label>
                 <input
                   type="number"
                   min={1}
                   max={5}
-                  className="input-field text-sm"
+                  className="input-field text-sm font-mono text-gold"
                   value={dealWinSets}
                   onChange={(e) => setDealWinSets(Number(e.target.value) || 3)}
                 />
               </div>
-              <div>
-                <label className="text-xs text-white/70 block mb-1">Algkäe kaartide arv</label>
+              <div className="space-y-1.5">
+                <label className="text-xs text-white/70 block">Algkäe kaartide arv</label>
                 <input
                   type="number"
                   min={3}
-                  max={10}
-                  className="input-field text-sm"
+                  max={8}
+                  className="input-field text-sm font-mono text-gold"
                   value={dealStartHand}
                   onChange={(e) => setDealStartHand(Number(e.target.value) || 5)}
                 />
               </div>
             </div>
-            <div>
-              <label className="text-xs text-white/70 block mb-1">Teema / Stiil (valikuline)</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/70 block">Teemaline kohandus / Stiil (valikuline)</label>
               <input
                 type="text"
-                placeholder="nt pulm, tartu, kontor..."
+                placeholder="nt. Eesti kinnisvara, Kosmose kolooniad, Tallinna vanalinn..."
                 className="input-field text-sm"
                 value={dealTheme}
                 onChange={(e) => setDealTheme(e.target.value)}
               />
             </div>
-            <div>
-              <label className="text-xs text-white/70 block mb-1">Mängujuhi reeglid / märkused</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-white/70 block">Hosti juhised / Märkused</label>
               <textarea
-                placeholder="Erirežiimi lisajuhised..."
-                className="input-field text-xs min-h-[100px]"
+                placeholder="Erijuhised mängujuhendiks või reeglite selgituseks..."
+                className="input-field text-xs min-h-[80px]"
                 value={dealNote}
                 onChange={(e) => setDealNote(e.target.value)}
               />
             </div>
-          </div>
-        )}
-
-        {/* VISUAL MODE: LINE-BASED GAMES */}
-        {mode === 'visual' && isLines && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-white/50">
-              <span>
-                {pack.game_type === 'tode_voi_tegu'
-                  ? 'Vorming: # TÕED … ja # TEOD …'
-                  : 'Sisesta iga sõna või väide eraldi reale'}
-              </span>
-              <span>
-                Ridu kokku:{' '}
-                <strong className="text-gold">
-                  {linesText.split('\n').filter((s) => s.trim().length > 0 && !s.trim().startsWith('#')).length}
-                </strong>
-              </span>
-            </div>
-            <textarea
-              className="input-field font-mono text-sm min-h-[300px] leading-relaxed p-3.5"
-              value={linesText}
-              onChange={(e) => setLinesText(e.target.value)}
-            />
           </div>
         )}
 
@@ -1162,98 +1347,53 @@ export default function EditPack() {
             secondsPerQuestion={blitzSec}
             pointsMax={blitzMax}
             revealSeconds={blitzReveal}
-            onChange={(n) => {
-              setBlitzQs(n.questions)
-              setBlitzSec(n.secondsPerQuestion)
-              setBlitzMax(n.pointsMax)
-              setBlitzReveal(n.revealSeconds)
+            onChange={(next) => {
+              setBlitzQs(next.questions)
+              setBlitzSec(next.secondsPerQuestion)
+              setBlitzMax(next.pointsMax)
+              setBlitzReveal(next.revealSeconds)
             }}
           />
         )}
 
-        {/* Toolbar & Save actions */}
-        {pack && (
-          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/10">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className="btn-outline text-xs inline-flex items-center gap-1.5"
-                onClick={() => {
-                  const url = appUrl(`/pack/${pack.id}`)
-                  navigator.clipboard.writeText(url).catch(() => {})
-                  alert('Jagamislink kopeeritud:\n' + url)
-                }}
-              >
-                <Share2 size={14} /> Kopeeri jagamislink
-              </button>
-
-              <button
-                type="button"
-                className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400 disabled:opacity-50"
-                onClick={() => setTranslateModalOpen(true)}
-                disabled={translating}
-              >
-                <Languages size={14} /> {translating ? 'Tõlgin...' : 'AI Tõlgi'}
-              </button>
+        {/* VISUAL MODE: LINE-BASED GAMES */}
+        {mode === 'visual' && isLines && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-white/70">
+                Sisu read (iga kirje eraldi real)
+              </label>
+              <span className="text-xs text-white/40">
+                {linesText.split('\n').filter((l) => l.trim() && !l.startsWith('#')).length} kirjet
+              </span>
             </div>
-
-            <button
-              type="button"
-              className="btn-gold flex items-center gap-2 font-bold px-6 py-2.5 shadow-lg shadow-gold/20"
-              disabled={saving}
-              onClick={save}
-            >
-              <Save size={16} /> {saving ? 'Salvestan…' : t('savePack')}
-            </button>
-          </div>
-        )}
-
-        {error && (
-          <div className="text-accent-red text-xs p-3 rounded-xl bg-accent-red/10 border border-accent-red/30">
-            {error}
-          </div>
-        )}
-      </div>
-
-      {/* AI Translate modal */}
-      {translateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="card-panel max-w-sm w-full p-6 border-purple-500/30 shadow-2xl shadow-purple-500/10 space-y-4">
-            <h3 className="font-display text-xl text-purple-300">Tõlgi pakk teise keelde</h3>
-            <p className="text-white/60 text-xs leading-relaxed">
-              Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome").
-            </p>
-            <input
-              className="input-field w-full font-bold text-sm"
-              value={targetLang}
-              onChange={(e) => setTargetLang(e.target.value)}
-              placeholder="nt Inglise, Soome, Vene..."
-              autoFocus
+            <textarea
+              className="input-field font-mono text-sm min-h-[300px] leading-relaxed p-3.5 bg-black/40"
+              value={linesText}
+              onChange={(e) => setLinesText(e.target.value)}
+              placeholder="Kirjuta või kleebi iga sõna/lause eraldi reale..."
             />
-            <div className="flex gap-3 justify-end pt-2">
-              <button
-                type="button"
-                className="btn-outline text-xs"
-                onClick={() => setTranslateModalOpen(false)}
-              >
-                Tühista
-              </button>
-              <button
-                type="button"
-                className="btn-gold text-xs !bg-purple-600/30 !border-purple-500/50 !text-purple-200 hover:!bg-purple-600/50"
-                onClick={() => {
-                  setTranslateModalOpen(false)
-                  if (targetLang.trim()) {
-                    handleAITranslate(targetLang.trim())
-                  }
-                }}
-              >
-                Käivita tõlge
-              </button>
-            </div>
           </div>
+        )}
+
+        {/* SAVE BUTTON */}
+        <div className="flex items-center justify-between pt-6 border-t border-white/10">
+          <Link
+            to={`/play/${pack.game_type}`}
+            className="btn-outline text-xs !py-2.5 !px-5"
+          >
+            Loobu
+          </Link>
+          <button
+            type="submit"
+            disabled={saving || (mode === 'json' && !jsonValidationMsg.valid)}
+            className="btn-gold flex items-center gap-2 font-bold px-8 shadow-lg shadow-gold/20"
+          >
+            <Save size={16} />
+            <span>{saving ? t('saving') : t('saveChanges')}</span>
+          </button>
         </div>
-      )}
+      </form>
     </div>
   )
 }
