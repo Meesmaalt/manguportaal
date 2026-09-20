@@ -4,6 +4,7 @@ import { pb, formatPbError, type Pack, ensurePbUrl } from '@/lib/pocketbase'
 import { OFFICIAL_PACKS } from '@/data/official-packs'
 import AdminSounds from '@/components/AdminSounds'
 import AdminAiSettingsCard from '@/components/AdminAiSettingsCard'
+import AdminGameSettings from '@/components/AdminGameSettings'
 import { backupUserAuth, restoreUserAuth } from '@/lib/adminAuth'
 import { hideTemplate, isTemplateHidden, clearHiddenTemplates, unhideTemplate } from '@/lib/hiddenTemplates'
 import { useI18n } from '@/i18n/I18nContext'
@@ -31,6 +32,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   FolderPlus,
+  Tv,
 } from 'lucide-react'
 
 const GAME_TYPES: GameType[] = [
@@ -44,7 +46,7 @@ const GAME_TYPES: GameType[] = [
   'blitz',
 ]
 
-type AdminTab = 'packs' | 'ai' | 'sounds' | 'system'
+type AdminTab = 'packs' | 'settings' | 'ai' | 'sounds' | 'system'
 
 /**
  * Site admin via PocketBase superuser (same as /_/ dashboard).
@@ -426,7 +428,7 @@ export default function Admin() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-5 pt-4 border-t border-white/10">
           <button
             type="button"
             onClick={() => setActiveTab('packs')}
@@ -445,6 +447,19 @@ export default function Admin() {
             >
               {packs.length}
             </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-medium text-xs transition border ${
+              activeTab === 'settings'
+                ? 'bg-gold text-bg font-bold border-gold shadow-md'
+                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            <Sliders size={15} />
+            <span>Mängu seaded</span>
           </button>
 
           <button
@@ -482,7 +497,7 @@ export default function Admin() {
                 : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
             }`}
           >
-            <Sliders size={15} />
+            <Tv size={15} />
             <span>Süsteem</span>
           </button>
         </div>
@@ -837,7 +852,14 @@ export default function Admin() {
         </div>
       )}
 
-      {/* TAB 2: AI & GEMINI SETTINGS */}
+      {/* TAB 2: GAME SETTINGS */}
+      {activeTab === 'settings' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <AdminGameSettings />
+        </div>
+      )}
+
+      {/* TAB 3: AI & GEMINI SETTINGS */}
       {activeTab === 'ai' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           <AdminAiSettingsCard />

@@ -13,6 +13,7 @@ import {
   Eye as EyeIcon,
   Sparkles,
   BookOpen,
+  Brain,
   Play,
   Pause,
   RotateCcw,
@@ -24,8 +25,10 @@ import {
   Maximize2,
   Minimize2,
   HelpCircle,
+  SkipForward,
 } from 'lucide-react'
 import { createBgm, sounds, playFx } from '@/lib/audio'
+import { getGameSettings, getFontCssFamily, type KuldvillakSettings } from '@/lib/gameSettings'
 import GameShowFrame from '@/components/GameShowFrame'
 import { trackQuestionResolved } from '@/lib/stats'
 import TvJoinPanel from '@/components/TvJoinPanel'
@@ -84,11 +87,30 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   const [now, setNow] = useState<number>(Date.now())
   const [wagerInput, setWagerInput] = useState<number>(100)
   const [selectedWagerTeam, setSelectedWagerTeam] = useState<number>(0)
-  const [autoTimerEnabled, setAutoTimerEnabled] = useState(false)
+  const [autoTimerEnabled, setAutoTimerEnabled] = useState(true)
 
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
   const lastConfetti = useRef<number>(0)
   const lastTickSec = useRef<number | null>(null)
+
+  const currentSettings = useMemo(() => {
+    const base = getGameSettings('kuldvillak')
+    return {
+      ...base,
+      ...(state.gameSettings || {}),
+      displayFont:
+        (state.displayFont as any) ||
+        state.gameSettings?.displayFont ||
+        base.displayFont ||
+        'cinzel',
+    }
+  }, [state.gameSettings, state.displayFont])
+
+  const readingSec = currentSettings.readingTimeSec ?? 5
+  const thinkingSec = currentSettings.thinkingTimeSec ?? 25
+  const autoStart = autoTimerEnabled || currentSettings.autoTimer
+  const soundEnabled = currentSettings.soundEnabled ?? true
+  const activeFontFamily = getFontCssFamily(currentSettings.displayFont)
 
   useEffect(() => {
     bgmRef.current = createBgm(sounds.kuldvillakBgm, 0.3)
@@ -120,23 +142,59 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     return timer.remaining ?? 0
   }, [timer, now])
 
-  // Sound effects when timer is running and gets low
+  // Sound effects and two-stage phase transition (Reading -> Thinking -> Ended)
   useEffect(() => {
     if (!timer?.running || remainingSec === null) return
+
     if (remainingSec === 0 && lastTickSec.current !== 0) {
       lastTickSec.current = 0
-      playFx('buzz')
-      if (isHost) {
-        update((prev) => ({
-          ...prev,
-          timer: prev.timer ? { ...prev.timer, running: false, remaining: 0, endsAt: null } : null,
-        }))
+
+      // Stage 1 (Reading) expires -> Transition to Stage 2 (Thinking)
+      if (timer.phase === 'reading') {
+        if (soundEnabled) playFx('ding')
+        if (isHost) {
+          const thinkTotal = timer.thinkingTotal || thinkingSec || 25
+          update((prev) => ({
+            ...prev,
+            timer: {
+              phase: 'thinking',
+              readingTotal: timer.readingTotal || readingSec || 5,
+              thinkingTotal: thinkTotal,
+              endsAt: Date.now() + thinkTotal * 1000,
+              remaining: thinkTotal,
+              running: true,
+              total: thinkTotal,
+            },
+          }))
+        }
+      } else {
+        // Stage 2 (Thinking) expires -> Game buzzer and end
+        if (soundEnabled) playFx('buzz')
+        if (isHost) {
+          update((prev) => ({
+            ...prev,
+            timer: prev.timer
+              ? {
+                  ...prev.timer,
+                  phase: 'ended',
+                  running: false,
+                  remaining: 0,
+                  endsAt: null,
+                }
+              : null,
+          }))
+        }
       }
-    } else if (remainingSec > 0 && remainingSec <= 5 && remainingSec !== lastTickSec.current) {
+    } else if (
+      timer.phase === 'thinking' &&
+      remainingSec > 0 &&
+      remainingSec <= 5 &&
+      remainingSec !== lastTickSec.current
+    ) {
       lastTickSec.current = remainingSec
-      playFx('tick')
+      if (soundEnabled) playFx('tick')
     }
-  }, [remainingSec, timer?.running, isHost, update])
+  }, [remainingSec, timer?.running, timer?.phase, isHost, update, soundEnabled, thinkingSec, readingSec])
 
   function toggleMusic() {
     if (!bgmRef.current) return
@@ -149,19 +207,64 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
     }
   }
 
+  function createInitialTimer() {
+    if (readingSec > 0) {
+      return {
+        phase: 'reading' as const,
+        readingTotal: readingSec,
+        thinkingTotal: thinkingSec,
+        endsAt: autoStart ? Date.now() + readingSec * 1000 : null,
+        remaining: readingSec,
+        running: autoStart,
+        total: readingSec,
+      }
+    }
+    return {
+      phase: 'thinking' as const,
+      readingTotal: 0,
+      thinkingTotal: thinkingSec,
+      endsAt: autoStart ? Date.now() + thinkingSec * 1000 : null,
+      remaining: thinkingSec,
+      running: autoStart,
+      total: thinkingSec,
+    }
+  }
+
   // Timer controls
-  function startTimer(seconds = 25) {
+  function startThinkingPhase() {
     if (!isHost) return
-    playFx('click')
-    const endsAt = Date.now() + seconds * 1000
-    update({
+    if (soundEnabled) playFx('ding')
+    const thinkTotal = timer?.thinkingTotal || thinkingSec || 25
+    update((prev) => ({
+      ...prev,
       timer: {
-        endsAt,
-        remaining: seconds,
+        phase: 'thinking',
+        readingTotal: timer?.readingTotal || readingSec || 5,
+        thinkingTotal: thinkTotal,
+        endsAt: Date.now() + thinkTotal * 1000,
+        remaining: thinkTotal,
         running: true,
-        total: seconds,
+        total: thinkTotal,
       },
-    })
+    }))
+  }
+
+  function startReadingPhase() {
+    if (!isHost) return
+    if (soundEnabled) playFx('click')
+    const readTotal = timer?.readingTotal || readingSec || 5
+    update((prev) => ({
+      ...prev,
+      timer: {
+        phase: 'reading',
+        readingTotal: readTotal,
+        thinkingTotal: timer?.thinkingTotal || thinkingSec || 25,
+        endsAt: Date.now() + readTotal * 1000,
+        remaining: readTotal,
+        running: true,
+        total: readTotal,
+      },
+    }))
   }
 
   function pauseTimer() {
@@ -181,27 +284,39 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
   function resumeTimer() {
     if (!isHost) return
     playFx('click')
-    const rem = timer && timer.remaining > 0 ? timer.remaining : 25
+    const currentPhase = timer?.phase || 'thinking'
+    const defaultTotal =
+      currentPhase === 'reading'
+        ? timer?.readingTotal || readingSec || 5
+        : timer?.thinkingTotal || thinkingSec || 25
+    const rem = timer && timer.remaining > 0 ? timer.remaining : defaultTotal
     const endsAt = Date.now() + rem * 1000
     update({
       timer: {
+        phase: currentPhase,
+        readingTotal: timer?.readingTotal || readingSec || 5,
+        thinkingTotal: timer?.thinkingTotal || thinkingSec || 25,
         endsAt,
         remaining: rem,
         running: true,
-        total: timer?.total || 25,
+        total: timer?.total || defaultTotal,
       },
     })
   }
 
-  function resetTimer(seconds = 25) {
+  function resetTimer(phase: 'reading' | 'thinking' = 'thinking') {
     if (!isHost) return
     playFx('click')
+    const total = phase === 'reading' ? (readingSec || 5) : (thinkingSec || 25)
     update({
       timer: {
+        phase,
+        readingTotal: readingSec || 5,
+        thinkingTotal: thinkingSec || 25,
         endsAt: null,
-        remaining: seconds,
+        remaining: total,
         running: false,
-        total: seconds,
+        total,
       },
     })
   }
@@ -214,7 +329,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         timer: {
           ...timer,
           endsAt: timer.endsAt + deltaSec * 1000,
-          total: Math.max(timer.total + deltaSec, 10),
+          total: Math.max((timer.total || 10) + deltaSec, 5),
         },
       })
     } else {
@@ -222,7 +337,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
         timer: {
           ...timer,
           remaining: Math.max(0, (timer.remaining || 0) + deltaSec),
-          total: Math.max(timer.total + deltaSec, 10),
+          total: Math.max((timer.total || 10) + deltaSec, 5),
         },
       })
     }
@@ -250,6 +365,10 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
       if (currentQuestion && e.key.toLowerCase() === 't') {
         if (timer?.running) pauseTimer()
         else resumeTimer()
+      }
+      if (currentQuestion && e.key.toLowerCase() === 's' && timer?.phase === 'reading') {
+        e.preventDefault()
+        startThinkingPhase()
       }
       // Quick team scoring with keys 1..9
       if (currentQuestion && !dailyDoubleStep) {
@@ -290,19 +409,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
 
     playFx(isDaily ? 'jingle' : 'reveal', { prefer: 'kuldvillak_open' })
 
-    const initialTimer = autoTimerEnabled
-      ? {
-          endsAt: Date.now() + 25 * 1000,
-          remaining: 25,
-          running: true,
-          total: 25,
-        }
-      : {
-          endsAt: null,
-          remaining: 25,
-          running: false,
-          total: 25,
-        }
+    const initialTimer = createInitialTimer()
 
     update({
       currentQuestion: {
@@ -456,7 +563,14 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
 
   return (
     <GameShowFrame display={!isHost} title={t('game_kuldvillak').toUpperCase()} hasSessionBg={!!(state as any).bgMedia?.dataUrl}>
-    <div className="w-full max-w-6xl mx-auto px-2 py-2">
+    <div
+      className="w-full max-w-6xl mx-auto px-2 py-2"
+      data-display-font={currentSettings.displayFont}
+      style={{
+        '--font-display': activeFontFamily,
+        '--display-font-family': activeFontFamily,
+      } as React.CSSProperties}
+    >
       {isHost && (
         <GameToolbar
           onReset={resetGame}
@@ -571,7 +685,9 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                   onChange={(e) => setAutoTimerEnabled(e.target.checked)}
                   className="rounded border-white/30 text-gold focus:ring-gold"
                 />
-                <span>Automaatne 25s taimer</span>
+                <span>
+                  Automaattaimer ({readingSec > 0 ? `${readingSec}s lugemine + ` : ''}{thinkingSec}s mõtlemine)
+                </span>
               </label>
             )}
           </div>
@@ -1053,9 +1169,7 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                           currentQuestion: prev.currentQuestion
                             ? { ...prev.currentQuestion, points: validatedWager }
                             : null,
-                          timer: autoTimerEnabled
-                            ? { endsAt: Date.now() + 30 * 1000, remaining: 30, running: true, total: 30 }
-                            : { endsAt: null, remaining: 30, running: false, total: 30 },
+                          timer: createInitialTimer(),
                         }))
                       }}
                       className="btn-gold w-full text-base sm:text-lg font-black py-3 rounded-xl shadow-[0_0_20px_rgba(223,179,66,0.4)] flex items-center justify-center gap-2"
@@ -1114,85 +1228,198 @@ export default function KuldvillakBoard({ state, update, isHost = true, sessionC
                 </div>
               </div>
 
-              {/* Synchronized Question Timer Bar */}
-              {(timer?.running || (timer?.remaining !== undefined && timer.remaining > 0)) && (
-                <div className="mb-5 bg-black/40 border border-white/15 rounded-2xl p-2.5 sm:p-3">
-                  <div className="flex items-center justify-between mb-1.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Clock size={15} className={remainingSec <= 5 ? 'text-red-400 animate-spin' : 'text-accent-cyan'} />
-                      <span className="text-white/70 font-semibold uppercase tracking-wider">Mõtlemisaeg:</span>
-                      <span
-                        className={`font-mono text-base sm:text-lg font-bold ${
-                          remainingSec <= 5
-                            ? 'text-red-400 kuldvillak-timer-urgent font-black'
-                            : remainingSec <= 10
-                            ? 'text-amber-300'
-                            : 'text-white'
-                        }`}
-                      >
-                        {remainingSec}s
-                      </span>
+              {/* Synchronized Two-Stage Question Timer (Reading -> Thinking) */}
+              {timer && (
+                <div className="mb-5 bg-black/50 border border-white/15 rounded-2xl p-3 sm:p-4 space-y-3.5 shadow-xl">
+                  {/* Stage 1: Reading Time Bar */}
+                  {readingSec > 0 && (
+                    <div className="transition-all duration-200">
+                      <div className="flex items-center justify-between mb-1.5 text-xs">
+                        <div className="flex items-center gap-2">
+                          <BookOpen
+                            size={14}
+                            className={
+                              timer.phase === 'reading' && timer.running
+                                ? 'text-amber-400 animate-pulse'
+                                : timer.phase === 'reading'
+                                ? 'text-amber-400'
+                                : 'text-emerald-400'
+                            }
+                          />
+                          <span
+                            className={`font-bold uppercase tracking-wider text-[11px] sm:text-xs ${
+                              timer.phase === 'reading' ? 'text-amber-300' : 'text-emerald-400'
+                            }`}
+                          >
+                            1. Küsimuse lugemine:
+                          </span>
+                          <span className="font-mono text-sm sm:text-base font-black text-amber-300">
+                            {timer.phase === 'reading'
+                              ? `${remainingSec}s`
+                              : '✓ Läbitud'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-white/50 hidden sm:inline">
+                            {timer.phase === 'reading'
+                              ? timer.running
+                                ? 'Mängujuht loeb küsimuse ette'
+                                : 'Lugemisaeg pausil'
+                              : 'Küsimus ette loetud'}
+                          </span>
+                          {isHost && timer.phase === 'reading' && (
+                            <button
+                              type="button"
+                              onClick={startThinkingPhase}
+                              className="px-2.5 py-0.5 rounded-lg bg-accent-cyan/20 hover:bg-accent-cyan/30 text-accent-cyan text-[11px] font-bold border border-accent-cyan/40 flex items-center gap-1 transition"
+                              title="Lõpeta lugemine ja alusta mõtlemist kohe (Klahv S)"
+                            >
+                              <Brain size={12} />
+                              <span>Alusta mõtlemist ⚡</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bar 1 */}
+                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-400 via-amber-300 to-orange-400 rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(251,191,36,0.6)]"
+                          style={{
+                            width:
+                              timer.phase === 'reading'
+                                ? `${Math.min(100, (remainingSec / (timer.readingTotal || readingSec || 5)) * 100)}%`
+                                : '100%',
+                            opacity: timer.phase === 'reading' ? 1 : 0.45,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stage 2: Thinking Time Bar */}
+                  <div className="transition-all duration-200">
+                    <div className="flex items-center justify-between mb-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Brain
+                          size={15}
+                          className={
+                            timer.phase === 'thinking' && remainingSec <= 5 && timer.running
+                              ? 'text-red-400 animate-spin'
+                              : timer.phase === 'thinking'
+                              ? 'text-accent-cyan'
+                              : 'text-white/40'
+                          }
+                        />
+                        <span
+                          className={`font-bold uppercase tracking-wider text-[11px] sm:text-xs ${
+                            timer.phase === 'thinking' ? 'text-accent-cyan' : 'text-white/50'
+                          }`}
+                        >
+                          2. Mõtlemisaeg:
+                        </span>
+                        <span
+                          className={`font-mono text-base sm:text-lg font-black ${
+                            timer.phase === 'thinking'
+                              ? remainingSec <= 5
+                                ? 'text-red-400 kuldvillak-timer-urgent font-black animate-pulse'
+                                : remainingSec <= 10
+                                ? 'text-amber-300'
+                                : 'text-white'
+                              : timer.phase === 'ended' || remainingSec === 0
+                              ? 'text-red-400 font-bold'
+                              : 'text-white/40'
+                          }`}
+                        >
+                          {timer.phase === 'reading'
+                            ? `${timer.thinkingTotal || thinkingSec}s (ootel)`
+                            : timer.phase === 'ended' || remainingSec === 0
+                            ? 'Aeg läbi!'
+                            : `${remainingSec}s`}
+                        </span>
+                      </div>
+
+                      {isHost && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => (timer.running ? pauseTimer() : resumeTimer())}
+                            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1 transition"
+                            title="Paus / Jätka (Klahv T)"
+                          >
+                            {timer.running ? <Pause size={12} /> : <Play size={12} />}
+                            <span>{timer.running ? 'Paus' : 'Jätka'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addTimerTime(5)}
+                            className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
+                            title="+5 sekundit"
+                          >
+                            +5s
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => resetTimer('thinking')}
+                            className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition"
+                            title={`Lähtesta mõtlemisaeg (${thinkingSec}s)`}
+                          >
+                            <RotateCcw size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {isHost && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => (timer?.running ? pauseTimer() : resumeTimer())}
-                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold flex items-center gap-1 transition"
-                        >
-                          {timer?.running ? <Pause size={12} /> : <Play size={12} />}
-                          <span>{timer?.running ? 'Paus' : 'Käivita'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addTimerTime(5)}
-                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition"
-                          title="+5 sekundit"
-                        >
-                          +5s
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => resetTimer(25)}
-                          className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition"
-                          title="Lähtesta (25s)"
-                        >
-                          <RotateCcw size={12} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Visual Progress Bar */}
-                  <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-200 rounded-full ${
-                        remainingSec <= 5
-                          ? 'bg-gradient-to-r from-rose-500 to-red-600 kuldvillak-timer-urgent'
-                          : remainingSec <= 10
-                          ? 'bg-gradient-to-r from-amber-400 to-orange-500'
-                          : 'bg-gradient-to-r from-accent-cyan via-emerald-400 to-accent-green'
-                      }`}
-                      style={{
-                        width: `${Math.min(100, (remainingSec / (timer?.total || 25)) * 100)}%`,
-                      }}
-                    />
+                    {/* Bar 2 */}
+                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          timer.phase === 'thinking'
+                            ? remainingSec <= 5
+                              ? 'bg-gradient-to-r from-rose-500 to-red-600 kuldvillak-timer-urgent shadow-[0_0_15px_rgba(239,68,68,0.8)]'
+                              : remainingSec <= 10
+                              ? 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_12px_rgba(251,191,36,0.6)]'
+                              : 'bg-gradient-to-r from-accent-cyan via-emerald-400 to-accent-green shadow-[0_0_12px_rgba(56,189,248,0.6)]'
+                            : timer.phase === 'ended'
+                            ? 'bg-red-500/40'
+                            : 'bg-white/10'
+                        }`}
+                        style={{
+                          width:
+                            timer.phase === 'thinking'
+                              ? `${Math.min(100, (remainingSec / (timer.thinkingTotal || timer.total || thinkingSec || 25)) * 100)}%`
+                              : timer.phase === 'ended'
+                              ? '0%'
+                              : '0%',
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Host timer trigger if timer is off */}
-              {isHost && (!timer || (!timer.running && (timer.remaining === undefined || timer.remaining === 0))) && (
-                <div className="mb-4 flex items-center gap-2 justify-end">
+              {/* Host timer trigger if timer is off or ended */}
+              {isHost && (!timer || (!timer.running && (timer.remaining === undefined || timer.remaining === 0 || timer.phase === 'ended'))) && (
+                <div className="mb-4 flex items-center gap-2 justify-end flex-wrap">
                   <button
                     type="button"
-                    onClick={() => startTimer(25)}
+                    onClick={startThinkingPhase}
                     className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1.5 text-accent-cyan border-accent-cyan/40 hover:bg-accent-cyan/10"
                   >
-                    <Clock size={13} />
-                    <span>Käivita 25s taimer</span>
+                    <Brain size={13} />
+                    <span>Alusta mõtlemisaega ({thinkingSec}s)</span>
                   </button>
+                  {readingSec > 0 && (
+                    <button
+                      type="button"
+                      onClick={startReadingPhase}
+                      className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1.5 text-amber-300 border-amber-400/40 hover:bg-amber-400/10"
+                    >
+                      <BookOpen size={13} />
+                      <span>Alusta lugemisaega ({readingSec}s)</span>
+                    </button>
+                  )}
                 </div>
               )}
 

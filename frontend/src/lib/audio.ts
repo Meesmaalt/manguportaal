@@ -115,6 +115,8 @@ export type FxType =
   | 'drumroll'
   | 'join'
   | 'buzz'
+  | 'ding'
+  | 'gong'
   | 'timer_urgent'
   | 'sad_trombone'
   | 'applause'
@@ -157,6 +159,8 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       drumroll: [150, 160, 170, 180, 190, 200, 210, 220],
       join: [523, 659],
       buzz: [880, 660],
+      ding: [784, 1046],
+      gong: [220, 277, 330],
       timer_urgent: [740, 740, 740],
       sad_trombone: [293.66, 277.18, 261.63, 246.94], // D4, Db4, C4, B3
       deal_card: [587, 880],
@@ -207,6 +211,8 @@ const duration: Record<string, number> = {
       drumroll: 0.05,
       join: 0.12,
       buzz: 0.15,
+      ding: 0.18,
+      gong: 0.35,
       timer_urgent: 0.08,
       sad_trombone: 0.3,
       deal_card: 0.08,

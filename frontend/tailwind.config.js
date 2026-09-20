@@ -22,7 +22,7 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Cinzel', 'serif'],
+        display: ['var(--font-display, Cinzel)', 'Cinzel', 'serif'],
         sans: ['Montserrat', 'system-ui', 'sans-serif'],
       },
       boxShadow: {

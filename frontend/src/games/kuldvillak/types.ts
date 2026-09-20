@@ -38,13 +38,26 @@ export type KuldvillakState = {
   finalPhase?: FinalPhase
   finalWagers?: number[]
   finalCorrect?: boolean[]
-  /** Thinking countdown timer */
+  /** Two-phase question countdown timer (reading + thinking) */
   timer?: {
+    phase?: 'reading' | 'thinking' | 'ended'
+    readingTotal?: number
+    thinkingTotal?: number
     endsAt: number | null
     remaining: number
     running: boolean
     total: number
   } | null
+  /** Public display font override */
+  displayFont?: string
+  /** Game configuration settings */
+  gameSettings?: {
+    displayFont?: string
+    readingTimeSec?: number
+    thinkingTimeSec?: number
+    autoTimer?: boolean
+    soundEnabled?: boolean
+  }
   /** Daily Double (Kuldvillaku Duubel) settings */
   dailyDoubleTile?: string | null
   dailyDoubleWager?: number | null

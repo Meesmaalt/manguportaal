@@ -2,9 +2,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useGameSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import KuldvillakBoard from '@/games/kuldvillak/KuldvillakBoard'
 import type { KuldvillakState } from '@/games/kuldvillak/types'
-import { ArrowLeft, LogOut, HelpCircle, SkipForward } from 'lucide-react'
+import { ArrowLeft, LogOut, HelpCircle, SkipForward, Sliders } from 'lucide-react'
 import { useState } from 'react'
 import GameHelpModal from '@/components/GameHelpModal'
+import GameSettingsModal from '@/components/GameSettingsModal'
+import { getGameSettings, type KuldvillakSettings } from '@/lib/gameSettings'
 import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 import { useI18n } from '@/i18n/I18nContext'
 import { endGameSession } from '@/lib/sessions'
@@ -18,6 +20,7 @@ export default function PlayKuldvillak() {
     useGameSession<KuldvillakState>(sessionId!)
   const { t } = useI18n()
   const [helpOpen, setHelpOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const pl = playlistStatus()
 
   async function endSession() {
@@ -78,6 +81,14 @@ export default function PlayKuldvillak() {
           )}
           <button
             type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 text-gold border-gold/40 hover:bg-gold/10"
+            title="Mängu seaded (Taimer & font)"
+          >
+            <Sliders size={14} /> <span>Seaded</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setHelpOpen(true)}
             className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1"
           >
@@ -121,6 +132,18 @@ export default function PlayKuldvillak() {
         onClose={() => setHelpOpen(false)}
         publicShown={!!(state as any).publicGuide}
         onTogglePublic={() => update({ publicGuide: !(state as any).publicGuide } as any)}
+      />
+      <GameSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        currentSettings={(state?.gameSettings as any) || getGameSettings('kuldvillak')}
+        currentFont={state?.displayFont}
+        onSave={(newSettings) => {
+          update({
+            displayFont: newSettings.displayFont,
+            gameSettings: newSettings,
+          } as any)
+        }}
       />
     </div>
   )

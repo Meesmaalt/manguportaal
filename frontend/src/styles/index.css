@@ -203,6 +203,14 @@ html[data-theme="emerald"] .card-panel {
   border: 1px solid rgba(var(--theme-accent-rgb, 223, 179, 66), 0.25);
 }
 
+/* Public display typography customizer */
+[data-display-font="cinzel"], .font-display-cinzel { --font-display: 'Cinzel', serif; }
+[data-display-font="bebas"], .font-display-bebas { --font-display: 'Bebas Neue', cursive, sans-serif; }
+[data-display-font="montserrat"], .font-display-montserrat { --font-display: 'Montserrat', sans-serif; }
+[data-display-font="playfair"], .font-display-playfair { --font-display: 'Playfair Display', serif; }
+[data-display-font="oswald"], .font-display-oswald { --font-display: 'Oswald', sans-serif; }
+[data-display-font="rubik"], .font-display-rubik { --font-display: 'Rubik', sans-serif; }
+
 /* Host play: LIVE bar sits just under site header */
 .layout-has-header .game-show:not(.game-show-display) .game-show-topbar{top:3.25rem}
 .game-show-display .game-show-topbar{top:0}

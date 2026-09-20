@@ -18,6 +18,7 @@ import type { KuldvillakState } from '@/games/kuldvillak/types'
 import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { useI18n } from '@/i18n/I18nContext'
 import { applyTheme, getStoredTheme, type ThemeId } from '@/lib/themes'
+import { getGameSettings, getFontCssFamily } from '@/lib/gameSettings'
 import { PublicGuideOverlay } from '@/components/GameHelpModal'
 import { SessionBgLayer } from '@/components/ThemeStudio'
 import type { TranslationKey } from '@/i18n/translations'
@@ -195,8 +196,24 @@ export default function Display() {
   const noop = () => {}
   const title = t(('game_' + gt) as TranslationKey).toUpperCase()
 
+  const activeFont =
+    state?.displayFont ||
+    state?.gameSettings?.displayFont ||
+    getGameSettings(session.game_type).displayFont ||
+    'cinzel'
+  const activeFontFamily = getFontCssFamily(activeFont)
+
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      data-display-font={activeFont}
+      style={
+        {
+          '--font-display': activeFontFamily,
+          '--display-font-family': activeFontFamily,
+        } as React.CSSProperties
+      }
+    >
       <DisplayCornerTools />
       
       {/* Auto-fading TV connection & fullscreen reminder */}
