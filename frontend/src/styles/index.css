@@ -650,6 +650,175 @@ a.card-panel, .group.card-panel {
 .font-display.text-gold, h1.font-display {
   background-size: 200% auto;
 }
+
+/* ===== Kuldvillak Cinematic TV Show Leap ===== */
+@keyframes kuldvillakModalIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) scale(0.68) rotateX(14deg) translateY(45px);
+    filter: brightness(1.7) drop-shadow(0 0 60px rgba(223, 179, 66, 0.7));
+  }
+  65% {
+    opacity: 1;
+    transform: perspective(1200px) scale(1.02) rotateX(-2deg) translateY(-4px);
+    filter: brightness(1.1) drop-shadow(0 0 35px rgba(223, 179, 66, 0.35));
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) scale(1) rotateX(0deg) translateY(0);
+    filter: brightness(1) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.75));
+  }
+}
+
+.kuldvillak-card-modal {
+  animation: kuldvillakModalIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kuldvillak-spotlight {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 30%, rgba(30, 64, 175, 0.38) 0%, rgba(223, 179, 66, 0.09) 45%, transparent 75%),
+    radial-gradient(circle at 50% 100%, rgba(15, 23, 42, 0.8) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.kuldvillak-beam {
+  position: absolute;
+  top: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90vw, 700px);
+  height: 550px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(223, 179, 66, 0.22) 0%, rgba(59, 130, 246, 0.12) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+@keyframes answerReveal3D {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(-35deg) scale(0.92);
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+  }
+  70% {
+    transform: perspective(900px) rotateX(4deg) scale(1.02);
+    box-shadow: 0 0 35px rgba(34, 197, 94, 0.45);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) scale(1);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.25);
+  }
+}
+
+.kuldvillak-answer-reveal {
+  animation: answerReveal3D 0.45s cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.kuldvillak-gold-text {
+  background: linear-gradient(135deg, #ffffff 0%, #fff3cd 20%, #dfb342 50%, #ffd700 80%, #b8860b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 14px rgba(223, 179, 66, 0.45));
+}
+
+@keyframes kuldvillakShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.kuldvillak-shimmer-badge {
+  background: linear-gradient(90deg, rgba(223,179,66,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(223,179,66,0.1) 100%);
+  background-size: 200% 100%;
+  animation: kuldvillakShine 3s infinite linear;
+}
+
+.kuldvillak-tile {
+  position: relative;
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease, border-color 0.18s ease, filter 0.18s ease;
+}
+
+.kuldvillak-tile:not(:disabled):hover {
+  transform: translateY(-4px) scale(1.035);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 22px rgba(223, 179, 66, 0.35);
+  border-color: #ffd700 !important;
+  filter: brightness(1.1);
+}
+
+.kuldvillak-tile-opening {
+  animation: tileOpeningPulse 0.35s ease-out infinite alternate;
+}
+
+@keyframes tileOpeningPulse {
+  0% { transform: scale(1); box-shadow: 0 0 16px rgba(223, 179, 66, 0.5); filter: brightness(1.2); }
+  100% { transform: scale(1.08); box-shadow: 0 0 40px rgba(223, 179, 66, 0.95); filter: brightness(1.4); }
+}
+
+@keyframes buzzBannerDrop {
+  0% { transform: translateY(-35px) scale(0.9); opacity: 0; }
+  70% { transform: translateY(5px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.kuldvillak-buzz-banner {
+  animation: buzzBannerDrop 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.25) both;
+}
+
+@keyframes scoreFloatUp {
+  0% { opacity: 0; transform: translateY(12px) scale(0.75); }
+  25% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+  75% { opacity: 0.95; transform: translateY(-32px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+}
+
+.floating-score-badge {
+  animation: scoreFloatUp 1.25s cubic-bezier(0.2, 0.85, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes dailyDoubleIntro {
+  0% {
+    transform: scale(0.3) rotate(-8deg);
+    opacity: 0;
+    filter: brightness(3);
+  }
+  60% {
+    transform: scale(1.12) rotate(2deg);
+    opacity: 1;
+    filter: brightness(1.4);
+  }
+  80% {
+    transform: scale(0.98) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+.daily-double-banner {
+  animation: dailyDoubleIntro 0.55s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+}
+
+@keyframes dailyDoublePulseGlow {
+  0%, 100% { box-shadow: 0 0 35px rgba(251, 191, 36, 0.45), inset 0 0 25px rgba(251, 191, 36, 0.25); }
+  50% { box-shadow: 0 0 75px rgba(251, 191, 36, 0.85), inset 0 0 45px rgba(251, 191, 36, 0.55); }
+}
+
+.daily-double-glow {
+  animation: dailyDoublePulseGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes timerUrgentPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.06); filter: brightness(1.3); }
+}
+
+.kuldvillak-timer-urgent {
+  animation: timerUrgentPulse 0.5s ease-in-out infinite;
+}
+
 @keyframes blitzFloatUp {
   0% {
     opacity: 0;

@@ -22,6 +22,7 @@ export type KuldvillakState = {
     points: number
     hostNote?: string
     imageUrl?: string
+    isDailyDouble?: boolean
   } | null
   showAnswer: boolean
   packData: KuldvillakPackData
@@ -37,4 +38,22 @@ export type KuldvillakState = {
   finalPhase?: FinalPhase
   finalWagers?: number[]
   finalCorrect?: boolean[]
+  /** Thinking countdown timer */
+  timer?: {
+    endsAt: number | null
+    remaining: number
+    running: boolean
+    total: number
+  } | null
+  /** Daily Double (Kuldvillaku Duubel) settings */
+  dailyDoubleTile?: string | null
+  dailyDoubleWager?: number | null
+  dailyDoubleTeam?: number | null
+  dailyDoubleStep?: 'intro' | 'wager' | 'question' | null
+  /** Floating score animation trigger */
+  floatingScore?: {
+    teamIdx: number
+    delta: number
+    id: number
+  } | null
 }

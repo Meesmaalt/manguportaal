@@ -65,6 +65,7 @@ export type KuldvillakQuestion = {
   a_tr?: string
   hostNote?: string
   imageUrl?: string
+  isDailyDouble?: boolean
 }
 
 export type KuldvillakFinalJeopardy = {

@@ -227,7 +227,7 @@ export default function EditPack() {
     }
 
     if (gameType === 'miljonar') {
-      const d = data as Record<string, any>
+      const d = data as any
       let list: MiljonarQuestion[] = []
       if (Array.isArray(d)) list = d
       else if (Array.isArray(d.questions)) list = d.questions
@@ -1390,7 +1390,7 @@ export default function EditPack() {
             className="btn-gold flex items-center gap-2 font-bold px-8 shadow-lg shadow-gold/20"
           >
             <Save size={16} />
-            <span>{saving ? t('saving') : t('saveChanges')}</span>
+            <span>{saving ? 'Salvestan...' : 'Salvesta muudatused'}</span>
           </button>
         </div>
       </form>
