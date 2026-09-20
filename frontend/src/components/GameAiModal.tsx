@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles, Loader2, Copy, Check, ArrowRight, X } from 'lucide-react'
+import { Sparkles, Loader2, Copy, Check, ArrowRight, X, Eye } from 'lucide-react'
 
 type Props<T = any> = {
   isOpen: boolean
@@ -34,6 +34,7 @@ export default function GameAiModal<T = any>({
   const [error, setError] = useState('')
   const [generatedData, setGeneratedData] = useState<T | null>(null)
   const [copiedPrompt, setCopiedPrompt] = useState(false)
+  const [copiedJson, setCopiedJson] = useState(false)
 
   if (!isOpen) return null
 
@@ -73,6 +74,13 @@ export default function GameAiModal<T = any>({
     navigator.clipboard.writeText(promptText)
     setCopiedPrompt(true)
     setTimeout(() => setCopiedPrompt(false), 2000)
+  }
+
+  function handleCopyGeneratedJson() {
+    if (!generatedData) return
+    navigator.clipboard.writeText(JSON.stringify(generatedData, null, 2))
+    setCopiedJson(true)
+    setTimeout(() => setCopiedJson(false), 2000)
   }
 
   function handleApply() {
@@ -201,21 +209,34 @@ export default function GameAiModal<T = any>({
               <span className="text-xs text-emerald-300 font-semibold flex items-center gap-1.5">
                 <Check size={16} /> Uus mängu sisu on edukalt genereeritud!
               </span>
-              <button
-                type="button"
-                onClick={() => setGeneratedData(null)}
-                className="text-xs text-white/50 hover:text-white underline"
-              >
-                Genereeri uuesti
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyGeneratedJson}
+                  className="text-xs text-cyan-300 hover:text-cyan-200 flex items-center gap-1"
+                  title="Kopeeri sisu JSON kujul"
+                >
+                  {copiedJson ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{copiedJson ? 'Kopeeritud' : 'Kopeeri JSON'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGeneratedData(null)}
+                  className="text-xs text-white/50 hover:text-white underline ml-2"
+                >
+                  Genereeri uuesti
+                </button>
+              </div>
             </div>
 
             {renderPreview ? (
               <div className="max-h-[50vh] overflow-y-auto pr-1">{renderPreview(generatedData)}</div>
             ) : (
-              <pre className="p-3 bg-black/40 rounded-xl text-xs text-white/70 overflow-x-auto max-h-60">
-                {JSON.stringify(generatedData, null, 2)}
-              </pre>
+              <div className="p-3.5 bg-black/60 border border-white/10 rounded-xl max-h-60 overflow-y-auto">
+                <pre className="text-xs text-emerald-300 font-mono whitespace-pre-wrap break-words leading-relaxed">
+                  {JSON.stringify(generatedData, null, 2)}
+                </pre>
+              </div>
             )}
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">

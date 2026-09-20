@@ -3,16 +3,50 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
 import { useAuth } from '@/hooks/useAuth'
 import { useI18n } from '@/i18n/I18nContext'
-import { ArrowLeft, Save, Code2, LayoutTemplate, Plus, Trash2, Share2, Languages, Globe } from 'lucide-react'
+import {
+  ArrowLeft,
+  Save,
+  Code2,
+  LayoutTemplate,
+  Plus,
+  Trash2,
+  Share2,
+  Languages,
+  Globe,
+  Sparkles,
+  Copy,
+  Check,
+  Wand2,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react'
 import { appUrl } from '@/lib/config'
 import BlitzPackEditor from '@/games/blitz/BlitzPackEditor'
 import type { BlitzQuestion } from '@/games/blitz/types'
 import { splitBilingualText } from '@/components/BilingualText'
+import type { MiljonarQuestion } from '@/games/miljonar/types'
+import { MILJONAR_LADDER, formatPrize } from '@/games/miljonar/types'
+import { MILJONAR_KLASSIKA_QUESTIONS } from '@/games/miljonar/miljonarPacks'
 
 type Mode = 'visual' | 'json'
 
 type CatQ = { points: number; q: string; a: string; q_tr?: string; a_tr?: string; hostNote?: string; imageUrl?: string }
 type Cat = { name: string; name_tr?: string; questions: CatQ[] }
+
+interface RoosideAnswer {
+  text: string
+  points: number
+}
+interface RoosideRound {
+  title: string
+  multiplier: number
+  question: string
+  answers: RoosideAnswer[]
+}
+interface RoosideFinalQ {
+  question: string
+  answers: RoosideAnswer[]
+}
 
 export default function EditPack() {
   const { id } = useParams<{ id: string }>()
@@ -24,19 +58,56 @@ export default function EditPack() {
   const [description, setDescription] = useState('')
   const [mode, setMode] = useState<Mode>('visual')
   const [jsonText, setJsonText] = useState('')
+  const [jsonCopied, setJsonCopied] = useState(false)
+  const [jsonValidationMsg, setJsonValidationMsg] = useState<{ valid: boolean; message: string }>({ valid: true, message: '' })
+
+  // Kuldvillak state
   const [categories, setCategories] = useState<Cat[]>([])
   const [finalQ, setFinalQ] = useState('')
   const [finalQ_tr, setFinalQ_tr] = useState('')
   const [finalA, setFinalA] = useState('')
   const [finalA_tr, setFinalA_tr] = useState('')
   const [finalNote, setFinalNote] = useState('')
+
+  // Miljonär state
+  const [miljonarQs, setMiljonarQs] = useState<MiljonarQuestion[]>([])
+  const [miljonarBackups, setMiljonarBackups] = useState<MiljonarQuestion[]>([])
+
+  // Rooside Sõda state
+  const [roosideRounds, setRoosideRounds] = useState<RoosideRound[]>([])
+  const [roosideFinal, setRoosideFinal] = useState<RoosideFinalQ[]>([])
+
+  // Kinnistu Deal state
+  const [dealWinSets, setDealWinSets] = useState(3)
+  const [dealStartHand, setDealStartHand] = useState(5)
+  const [dealTheme, setDealTheme] = useState('')
+  const [dealNote, setDealNote] = useState('')
+
+  // Line-based games state
   const [linesText, setLinesText] = useState('')
+
+  // Blitz state
   const [blitzQs, setBlitzQs] = useState<BlitzQuestion[]>([])
   const [blitzSec, setBlitzSec] = useState(20)
   const [blitzMax, setBlitzMax] = useState(1000)
   const [blitzReveal, setBlitzReveal] = useState(5)
+
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Validate JSON on jsonText change
+  useEffect(() => {
+    if (!jsonText.trim()) {
+      setJsonValidationMsg({ valid: true, message: '' })
+      return
+    }
+    try {
+      JSON.parse(jsonText)
+      setJsonValidationMsg({ valid: true, message: 'JSON on korrektne' })
+    } catch (e: any) {
+      setJsonValidationMsg({ valid: false, message: e.message || 'Vigane JSON süntaks' })
+    }
+  }, [jsonText])
 
   useEffect(() => {
     if (!id) return
@@ -86,11 +157,92 @@ export default function EditPack() {
       setFinalNote(d.finalJeopardy?.hostNote || '')
       return
     }
-    if (gameType === 'roosidesoda') {
-      setJsonText(JSON.stringify(data, null, 2))
-      setMode('json')
+
+    if (gameType === 'miljonar') {
+      const d = data as Record<string, any>
+      let list: MiljonarQuestion[] = []
+      if (Array.isArray(d)) list = d
+      else if (Array.isArray(d.questions)) list = d.questions
+      else if (Array.isArray(d.data)) list = d.data
+
+      if (!list || list.length === 0) {
+        list = MILJONAR_KLASSIKA_QUESTIONS.filter((q) => !q.backup)
+      }
+
+      // Ensure 15 items with ladder info
+      const fullList: MiljonarQuestion[] = list.slice(0, 15).map((q, idx) => {
+        const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
+        return {
+          id: q.id || `m-${idx + 1}`,
+          tier: idx + 1,
+          prize: step.prize,
+          q: q.q || '',
+          choices: Array.isArray(q.choices) && q.choices.length === 4
+            ? [q.choices[0] || '', q.choices[1] || '', q.choices[2] || '', q.choices[3] || '']
+            : ['', '', '', ''],
+          correct: (typeof q.correct === 'number' && q.correct >= 0 && q.correct <= 3 ? q.correct : 0) as 0 | 1 | 2 | 3,
+          hostNote: q.hostNote || '',
+          funFact: q.funFact || '',
+          difficulty: q.difficulty || (idx < 5 ? 'easy' : idx < 10 ? 'medium' : 'hard'),
+        }
+      })
+      while (fullList.length < 15) {
+        const idx = fullList.length
+        const def = MILJONAR_KLASSIKA_QUESTIONS[idx] || {
+          id: `m-${idx + 1}`,
+          tier: idx + 1,
+          prize: MILJONAR_LADDER[idx]?.prize || 100,
+          q: '',
+          choices: ['', '', '', ''],
+          correct: 0,
+        }
+        fullList.push({ ...def, tier: idx + 1 })
+      }
+      setMiljonarQs(fullList)
+      setMiljonarBackups(Array.isArray(d?.backupQuestions) ? d.backupQuestions : [])
       return
     }
+
+    if (gameType === 'roosidesoda') {
+      const d = data as Record<string, any>
+      const rds = Array.isArray(d?.rounds) ? d.rounds : []
+      if (rds.length > 0) {
+        setRoosideRounds(
+          rds.map((r: any, rIdx: number) => ({
+            title: r.title || `VOOR ${rIdx + 1}`,
+            multiplier: Number(r.multiplier) || (rIdx >= 3 ? 3 : rIdx === 2 ? 2 : 1),
+            question: r.question || '',
+            answers: Array.isArray(r.answers)
+              ? r.answers.map((ans: any) => ({
+                  text: typeof ans === 'string' ? ans : ans.text || '',
+                  points: typeof ans === 'object' ? Number(ans.points) || 10 : 10,
+                }))
+              : [30, 20, 15, 10, 8, 5].map((p) => ({ text: '', points: p })),
+          }))
+        )
+      } else {
+        setRoosideRounds([
+          {
+            title: 'VOOR 1',
+            multiplier: 1,
+            question: '',
+            answers: [35, 25, 18, 12, 6, 4].map((p) => ({ text: '', points: p })),
+          },
+        ])
+      }
+      setRoosideFinal(Array.isArray(d?.finalRound) ? d.finalRound : [])
+      return
+    }
+
+    if (gameType === 'kinnistu_deal') {
+      const d = data as Record<string, any>
+      setDealWinSets(Number(d.winSets) || 3)
+      setDealStartHand(Number(d.startHand) || 5)
+      setDealTheme(d.theme || '')
+      setDealNote(d.note || '')
+      return
+    }
+
     if (gameType === 'blitz') {
       const d = data as Record<string, unknown>
       setBlitzQs((d.questions as BlitzQuestion[]) || [])
@@ -99,6 +251,7 @@ export default function EditPack() {
       setBlitzReveal(Number(d.revealSeconds) ?? 5)
       return
     }
+
     // line-based packs
     const d = data as Record<string, unknown>
     if (Array.isArray(d.words)) setLinesText((d.words as string[]).join('\n'))
@@ -107,7 +260,9 @@ export default function EditPack() {
       const truths = (d.truths as string[]) || []
       const dares = (d.dares as string[]) || []
       setLinesText(`# TÕED\n${truths.join('\n')}\n\n# TEOD\n${dares.join('\n')}`)
-    } else setLinesText(JSON.stringify(data, null, 2))
+    } else {
+      setLinesText(JSON.stringify(data, null, 2))
+    }
   }
 
   function buildDataFromVisual(): unknown {
@@ -138,6 +293,32 @@ export default function EditPack() {
               },
             }
           : {}),
+      }
+    }
+    if (pack.game_type === 'miljonar') {
+      return {
+        name: name.trim() || 'Miljonär',
+        questions: miljonarQs,
+        backupQuestions: miljonarBackups,
+      }
+    }
+    if (pack.game_type === 'roosidesoda') {
+      return {
+        rounds: roosideRounds.map((r) => ({
+          title: r.title,
+          multiplier: r.multiplier,
+          question: r.question,
+          answers: r.answers.filter((a) => a.text.trim() !== ''),
+        })),
+        ...(roosideFinal.length > 0 ? { finalRound: roosideFinal } : {}),
+      }
+    }
+    if (pack.game_type === 'kinnistu_deal') {
+      return {
+        winSets: dealWinSets,
+        startHand: dealStartHand,
+        theme: dealTheme.trim() || undefined,
+        note: dealNote.trim() || undefined,
       }
     }
     if (pack.game_type === 'sonaseletus') {
@@ -193,6 +374,26 @@ export default function EditPack() {
     return JSON.parse(jsonText)
   }
 
+  function formatJsonText() {
+    try {
+      let raw = jsonText.trim()
+      if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+      if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+      const parsed = JSON.parse(raw)
+      const formatted = JSON.stringify(parsed, null, 2)
+      setJsonText(formatted)
+      setError('')
+    } catch (e: any) {
+      setError('JSON vormindamine ebaõnnestus: ' + (e?.message || 'Vigane süntaks'))
+    }
+  }
+
+  function copyJson() {
+    navigator.clipboard.writeText(jsonText).catch(() => {})
+    setJsonCopied(true)
+    setTimeout(() => setJsonCopied(false), 2000)
+  }
+
   function switchMode(next: Mode) {
     if (next === mode) return
     try {
@@ -200,13 +401,16 @@ export default function EditPack() {
         const data = mode === 'visual' ? buildDataFromVisual() : JSON.parse(jsonText)
         setJsonText(JSON.stringify(data, null, 2))
       } else {
-        const data = JSON.parse(jsonText)
+        let raw = jsonText.trim()
+        if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+        if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+        const data = JSON.parse(raw)
         if (pack) hydrateVisual(pack.game_type, data)
       }
       setMode(next)
       setError('')
     } catch (e: any) {
-      setError(e?.message || 'JSON vigane')
+      setError(e?.message || 'JSON vigane. Paranda JSON enne visuaalvaatesse minekut.')
     }
   }
 
@@ -219,7 +423,15 @@ export default function EditPack() {
     setSaving(true)
     setError('')
     try {
-      const data = mode === 'json' ? JSON.parse(jsonText) : buildDataFromVisual()
+      let data: unknown
+      if (mode === 'json') {
+        let raw = jsonText.trim()
+        if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+        if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+        data = JSON.parse(raw)
+      } else {
+        data = buildDataFromVisual()
+      }
       await pb.collection('packs').update(pack.id, {
         name: name.trim(),
         description: description.trim(),
@@ -242,24 +454,24 @@ export default function EditPack() {
     setError('')
     try {
       const data = mode === 'json' ? JSON.parse(jsonText) : buildDataFromVisual()
-      
+
       const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          packData: data, 
-          gameType: pack?.game_type, 
-          targetLanguage: lang
-        })
+        body: JSON.stringify({
+          packData: data,
+          gameType: pack?.game_type,
+          targetLanguage: lang,
+        }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
-      
+
       const translatedData = json.translatedData
-      
+
       setJsonText(JSON.stringify(translatedData, null, 2))
       if (pack) hydrateVisual(pack.game_type, translatedData)
-      
+
       alert('Tõlge lisatud! Vaata tulemus üle ja vajuta all "Salvesta muudatused".')
       setTranslateModalOpen(false)
     } catch (e: any) {
@@ -290,6 +502,9 @@ export default function EditPack() {
   }
 
   const isKuld = pack.game_type === 'kuldvillak'
+  const isMiljonar = pack.game_type === 'miljonar'
+  const isRoosid = pack.game_type === 'roosidesoda'
+  const isDeal = pack.game_type === 'kinnistu_deal'
   const isLines =
     pack.game_type === 'sonaseletus' ||
     pack.game_type === 'ma_ei_ole_kunagi' ||
@@ -307,43 +522,100 @@ export default function EditPack() {
       <h1 className="font-display text-2xl text-gold mb-2">{t('editPack')}</h1>
       <p className="text-white/45 text-sm mb-6">{pack.game_type}</p>
 
+      {/* Mode Switcher Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           type="button"
           onClick={() => switchMode('visual')}
-          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'visual' ? 'bg-gold/20 border-gold' : ''}`}
+          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'visual' ? 'bg-gold/20 border-gold text-gold font-bold' : ''}`}
         >
           <LayoutTemplate size={14} /> {t('editVisual')}
         </button>
         <button
           type="button"
           onClick={() => switchMode('json')}
-          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'json' ? 'bg-gold/20 border-gold' : ''}`}
+          className={`btn-outline text-sm flex items-center gap-1.5 ${mode === 'json' ? 'bg-gold/20 border-gold text-gold font-bold' : ''}`}
         >
           <Code2 size={14} /> {t('editJson')}
         </button>
       </div>
 
-      <div className="space-y-4">
-        <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nimi" />
-        <input
-          className="input-field"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Kirjeldus"
-        />
+      <div className="space-y-5">
+        {/* Name & Description */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gold/80 block">Paki pealkiri</label>
+          <input
+            className="input-field text-base font-medium"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Paki nimi"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-white/50 block">Paki lühikirjeldus (valikuline)</label>
+          <input
+            className="input-field text-sm"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Lühikirjeldus teemast või raskusastmest..."
+          />
+        </div>
 
+        {/* JSON MODE VIEW */}
         {mode === 'json' && (
-          <>
-            <p className="text-white/40 text-xs">{t('editJsonHint')}</p>
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-900/80 rounded-xl border border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/60 font-medium">{t('editJsonHint')}</span>
+                {jsonValidationMsg.valid ? (
+                  <span className="text-[11px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    <CheckCircle2 size={12} /> Kehtiv JSON
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-accent-red flex items-center gap-1 bg-accent-red/10 px-2 py-0.5 rounded-md border border-accent-red/20">
+                    <AlertCircle size={12} /> Vigane JSON
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={formatJsonText}
+                  className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1 hover:border-gold"
+                  title="Vorminda ja korrasta JSON taanded"
+                >
+                  <Wand2 size={12} />
+                  <span>Vorminda JSON</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyJson}
+                  className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1"
+                  title="Kopeeri JSON lõikelauale"
+                >
+                  {jsonCopied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  <span>{jsonCopied ? 'Kopeeritud!' : 'Kopeeri'}</span>
+                </button>
+              </div>
+            </div>
+
             <textarea
-              className="input-field font-mono text-xs min-h-[360px]"
+              className="input-field font-mono text-xs min-h-[380px] leading-relaxed p-3.5 bg-[#050b18] border-gold/30 text-emerald-200 focus:text-white"
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
+              spellCheck={false}
             />
-          </>
+
+            {!jsonValidationMsg.valid && (
+              <p className="text-accent-red text-xs p-2 rounded bg-accent-red/10 border border-accent-red/30">
+                {jsonValidationMsg.message}
+              </p>
+            )}
+          </div>
         )}
 
+        {/* VISUAL MODE: KULDVILLAK */}
         {mode === 'visual' && isKuld && (
           <div className="space-y-4">
             {categories.map((cat, cIdx) => (
@@ -421,7 +693,7 @@ export default function EditPack() {
                         />
                       </div>
 
-                      {/* 2. Tõlgitud lahtrid eraldi kordinaatides */}
+                      {/* 2. Tõlgitud lahtrid */}
                       <div className="grid grid-cols-[54px_1fr_1fr] gap-2 items-center">
                         <div className="text-[10px] text-accent-cyan/80 font-bold uppercase tracking-wider text-center flex items-center justify-center gap-0.5">
                           <Globe size={11} /> TR
@@ -462,7 +734,7 @@ export default function EditPack() {
                         />
                         <input
                           className="input-field text-xs flex-1 min-w-[140px]"
-                          placeholder="Pildi URL või laadi fail"
+                          placeholder="Pildi URL"
                           value={q.imageUrl || ''}
                           onChange={(e) => {
                             const next = [...categories]
@@ -470,48 +742,7 @@ export default function EditPack() {
                             setCategories(next)
                           }}
                         />
-                        <label className="btn-outline text-[10px] cursor-pointer !py-1 px-3 flex items-center justify-center whitespace-nowrap">
-                          Lisa fail
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0]
-                              if (!f) return
-                              if (f.size > 400_000) {
-                                alert('Pilt liiga suur (max ~400 KB). Kasuta väiksemat faili või URL-i.')
-                                return
-                              }
-                              const reader = new FileReader()
-                              reader.onload = () => {
-                                const next = [...categories]
-                                next[cIdx].questions[qIdx] = { ...q, imageUrl: String(reader.result || '') }
-                                setCategories(next)
-                              }
-                              reader.readAsDataURL(f)
-                            }}
-                          />
-                        </label>
-                        {q.imageUrl && (
-                          <button
-                            type="button"
-                            className="btn-outline text-[10px] text-accent-red !py-1 px-3 whitespace-nowrap"
-                            onClick={() => {
-                              const next = [...categories]
-                              next[cIdx].questions[qIdx] = { ...q, imageUrl: undefined }
-                              setCategories(next)
-                            }}
-                          >
-                            Eemalda pilt
-                          </button>
-                        )}
                       </div>
-                      {q.imageUrl && (
-                        <div className="pt-1">
-                          <img src={q.imageUrl} alt="" className="max-h-24 rounded border border-white/10 object-contain bg-black/20" />
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -573,21 +804,358 @@ export default function EditPack() {
           </div>
         )}
 
+        {/* VISUAL MODE: MILJONÄR */}
+        {mode === 'visual' && isMiljonar && (
+          <div className="space-y-4">
+            <div className="p-3.5 bg-slate-900/80 rounded-2xl border border-gold/30 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-display font-bold text-gold flex items-center gap-2">
+                  <Sparkles size={16} /> 15 astet miljonini (100 € → 1 000 000 €)
+                </h3>
+                <p className="text-white/50 text-xs">
+                  Vali igal astmel õige vastuse täht (A, B, C või D).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {miljonarQs.map((q, idx) => {
+                const step = MILJONAR_LADDER[idx] || { prize: 100, isMilestone: false }
+                const letters = ['A', 'B', 'C', 'D']
+
+                return (
+                  <div
+                    key={q.id || idx}
+                    className={`card-panel p-4 space-y-3 ${
+                      step.isMilestone ? 'border-amber-400/60 bg-amber-950/20' : 'border-white/10 bg-slate-900/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center ${
+                            step.isMilestone ? 'bg-amber-500 text-black' : 'bg-blue-900 text-cyan-300'
+                          }`}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span className="font-mono text-sm font-bold text-amber-400">
+                          {formatPrize(step.prize)}
+                        </span>
+                        {step.isMilestone && (
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            Turvasumma
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-white/40">Aste {idx + 1}/15</span>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-white/70 block mb-1">Küsimus</label>
+                      <input
+                        type="text"
+                        placeholder={`Aste ${idx + 1} küsimus...`}
+                        className="input-field text-sm font-medium"
+                        value={q.q}
+                        onChange={(e) => {
+                          const next = [...miljonarQs]
+                          next[idx] = { ...q, q: e.target.value }
+                          setMiljonarQs(next)
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-white/70 block">Vastusevariandid & Õige valik</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {q.choices.map((choice, cIdx) => {
+                          const isCorrect = q.correct === cIdx
+                          return (
+                            <div
+                              key={cIdx}
+                              onClick={() => {
+                                const next = [...miljonarQs]
+                                next[idx] = { ...q, correct: cIdx as 0 | 1 | 2 | 3 }
+                                setMiljonarQs(next)
+                              }}
+                              className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition ${
+                                isCorrect
+                                  ? 'bg-emerald-950/60 border-emerald-500/80 shadow-md shadow-emerald-500/10'
+                                  : 'bg-slate-950/40 border-white/10 hover:border-white/30'
+                              }`}
+                            >
+                              <span
+                                className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
+                                  isCorrect ? 'bg-emerald-500 text-black' : 'bg-slate-800 text-amber-400'
+                                }`}
+                              >
+                                {letters[cIdx]}
+                              </span>
+                              <input
+                                type="text"
+                                placeholder={`Valik ${letters[cIdx]}`}
+                                className="input-field text-xs flex-1 !bg-transparent !border-0 focus:!ring-0 p-0"
+                                value={choice}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const next = [...miljonarQs]
+                                  const nextChoices = [...q.choices] as [string, string, string, string]
+                                  nextChoices[cIdx] = e.target.value
+                                  next[idx] = { ...q, choices: nextChoices }
+                                  setMiljonarQs(next)
+                                }}
+                              />
+                              {isCorrect && (
+                                <span className="text-[10px] font-bold text-emerald-300 px-1.5 py-0.5 rounded bg-emerald-500/20 shrink-0">
+                                  ÕIGE ✓
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      <input
+                        type="text"
+                        placeholder="Saatejuhi kommentaar / vihje"
+                        className="input-field text-xs text-amber-100/80"
+                        value={q.hostNote || ''}
+                        onChange={(e) => {
+                          const next = [...miljonarQs]
+                          next[idx] = { ...q, hostNote: e.target.value }
+                          setMiljonarQs(next)
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Lõbus lisafakt (funFact)"
+                        className="input-field text-xs text-cyan-200/80"
+                        value={q.funFact || ''}
+                        onChange={(e) => {
+                          const next = [...miljonarQs]
+                          next[idx] = { ...q, funFact: e.target.value }
+                          setMiljonarQs(next)
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* VISUAL MODE: ROOSIDE SÕDA */}
+        {mode === 'visual' && isRoosid && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3.5 bg-slate-900/80 rounded-2xl border border-gold/30">
+              <div>
+                <h3 className="text-sm font-display font-bold text-gold">Rooside Sõja voorud</h3>
+                <p className="text-white/50 text-xs">
+                  Igas voorus küsitlusküsimus ja 100 inimese hääletustulemused.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1.5 hover:border-gold"
+                onClick={() => {
+                  const newIdx = roosideRounds.length + 1
+                  setRoosideRounds([
+                    ...roosideRounds,
+                    {
+                      title: `VOOR ${newIdx}`,
+                      multiplier: newIdx >= 4 ? 3 : newIdx === 3 ? 2 : 1,
+                      question: '',
+                      answers: [30, 20, 15, 10, 8, 5].map((p) => ({ text: '', points: p })),
+                    },
+                  ])
+                }}
+              >
+                <Plus size={14} /> Lisa voor
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {roosideRounds.map((r, rIdx) => (
+                <div key={rIdx} className="card-panel p-4 border-gold/30 space-y-3">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        className="input-field text-xs font-display font-bold text-gold w-28 !py-1"
+                        value={r.title}
+                        onChange={(e) => {
+                          const next = [...roosideRounds]
+                          next[rIdx] = { ...r, title: e.target.value }
+                          setRoosideRounds(next)
+                        }}
+                      />
+                      <select
+                        className="input-field text-xs !py-1 w-28"
+                        value={r.multiplier}
+                        onChange={(e) => {
+                          const next = [...roosideRounds]
+                          next[rIdx] = { ...r, multiplier: Number(e.target.value) }
+                          setRoosideRounds(next)
+                        }}
+                      >
+                        <option value={1}>1× punktid</option>
+                        <option value={2}>2× punktid</option>
+                        <option value={3}>3× punktid</option>
+                        <option value={4}>4× punktid</option>
+                      </select>
+                    </div>
+
+                    {roosideRounds.length > 1 && (
+                      <button
+                        type="button"
+                        className="text-accent-red p-1.5 hover:bg-accent-red/10 rounded-lg transition"
+                        title="Kustuta voor"
+                        onClick={() => setRoosideRounds(roosideRounds.filter((_, i) => i !== rIdx))}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-white/70 block mb-1">Vooru küsitlusküsimus</label>
+                    <input
+                      type="text"
+                      placeholder="nt Nimetage midagi, mida inimesed unustavad kodust lahkudes..."
+                      className="input-field text-sm"
+                      value={r.question}
+                      onChange={(e) => {
+                        const next = [...roosideRounds]
+                        next[rIdx] = { ...r, question: e.target.value }
+                        setRoosideRounds(next)
+                      }}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-white/70 block">Vastused ja punktid (1-100)</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {r.answers.map((ans, aIdx) => (
+                        <div
+                          key={aIdx}
+                          className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-950/40 border border-white/5"
+                        >
+                          <span className="text-xs text-gold/60 font-bold px-1.5">{aIdx + 1}.</span>
+                          <input
+                            type="text"
+                            placeholder={`Vastus ${aIdx + 1}`}
+                            className="input-field text-xs flex-1 !bg-transparent !border-0 focus:!ring-0 p-0"
+                            value={ans.text}
+                            onChange={(e) => {
+                              const next = [...roosideRounds]
+                              const nextAns = [...r.answers]
+                              nextAns[aIdx] = { ...ans, text: e.target.value }
+                              next[rIdx] = { ...r, answers: nextAns }
+                              setRoosideRounds(next)
+                            }}
+                          />
+                          <input
+                            type="number"
+                            placeholder="p"
+                            className="input-field text-xs w-14 font-mono font-bold text-amber-400 text-center !py-1"
+                            value={ans.points || ''}
+                            onChange={(e) => {
+                              const next = [...roosideRounds]
+                              const nextAns = [...r.answers]
+                              nextAns[aIdx] = { ...ans, points: Number(e.target.value) || 0 }
+                              next[rIdx] = { ...r, answers: nextAns }
+                              setRoosideRounds(next)
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* VISUAL MODE: KINNISTU DEAL */}
+        {mode === 'visual' && isDeal && (
+          <div className="card-panel p-5 border-gold/30 space-y-4">
+            <h3 className="text-sm font-display font-bold text-gold">Kinnistu Deal seadistus</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-white/70 block mb-1">Võiduks vajalikke komplekte</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  className="input-field text-sm"
+                  value={dealWinSets}
+                  onChange={(e) => setDealWinSets(Number(e.target.value) || 3)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-white/70 block mb-1">Algkäe kaartide arv</label>
+                <input
+                  type="number"
+                  min={3}
+                  max={10}
+                  className="input-field text-sm"
+                  value={dealStartHand}
+                  onChange={(e) => setDealStartHand(Number(e.target.value) || 5)}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-white/70 block mb-1">Teema / Stiil (valikuline)</label>
+              <input
+                type="text"
+                placeholder="nt pulm, tartu, kontor..."
+                className="input-field text-sm"
+                value={dealTheme}
+                onChange={(e) => setDealTheme(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/70 block mb-1">Mängujuhi reeglid / märkused</label>
+              <textarea
+                placeholder="Erirežiimi lisajuhised..."
+                className="input-field text-xs min-h-[100px]"
+                value={dealNote}
+                onChange={(e) => setDealNote(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* VISUAL MODE: LINE-BASED GAMES */}
         {mode === 'visual' && isLines && (
-          <div>
-            <p className="text-white/45 text-xs mb-2">
-              {pack.game_type === 'tode_voi_tegu'
-                ? 'Vorming: # TÕED … # TEOD …'
-                : 'Üks kirje real'}
-            </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-white/50">
+              <span>
+                {pack.game_type === 'tode_voi_tegu'
+                  ? 'Vorming: # TÕED … ja # TEOD …'
+                  : 'Sisesta iga sõna või väide eraldi reale'}
+              </span>
+              <span>
+                Ridu kokku:{' '}
+                <strong className="text-gold">
+                  {linesText.split('\n').filter((s) => s.trim().length > 0 && !s.trim().startsWith('#')).length}
+                </strong>
+              </span>
+            </div>
             <textarea
-              className="input-field font-mono text-sm min-h-[280px]"
+              className="input-field font-mono text-sm min-h-[300px] leading-relaxed p-3.5"
               value={linesText}
               onChange={(e) => setLinesText(e.target.value)}
             />
           </div>
         )}
 
+        {/* VISUAL MODE: BLITZ */}
         {mode === 'visual' && pack.game_type === 'blitz' && (
           <BlitzPackEditor
             questions={blitzQs}
@@ -602,68 +1170,77 @@ export default function EditPack() {
             }}
           />
         )}
-        {mode === 'visual' && pack.game_type === 'roosidesoda' && (
-          <p className="text-white/50 text-sm">
-            Rooside Sõda settide jaoks kasuta JSON-vaadet (struktuur on keerulisem).
-          </p>
-        )}
 
+        {/* Toolbar & Save actions */}
         {pack && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="btn-outline text-xs inline-flex items-center gap-1.5"
-            onClick={() => {
-              const url = appUrl(`/pack/${pack.id}`)
-              navigator.clipboard.writeText(url).catch(() => {})
-              alert('Jagamislink kopeeritud:\n' + url)
-            }}
-          >
-            <Share2 size={14} /> Kopeeri jagamislink
-          </button>
-          
-          <button
-            type="button"
-            className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => setTranslateModalOpen(true)}
-            disabled={translating}
-          >
-            <Languages size={14} /> {translating ? 'Tõlgin...' : 'AI Tõlgi (paralleelkeel)'}
-          </button>
-        </div>
-      )}
-      {error && <p className="text-accent-red text-sm">{error}</p>}
-        <button type="button" className="btn-gold flex items-center gap-2" disabled={saving} onClick={save}>
-          <Save size={16} /> {saving ? '…' : t('savePack')}
-        </button>
-      </div>
-
-      {translateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="card-panel max-w-sm w-full p-6 border-purple-500/30 shadow-2xl shadow-purple-500/10">
-            <h3 className="font-display text-xl text-purple-300 mb-2">Tõlgi pakk</h3>
-            <p className="text-white/60 text-sm mb-4 leading-relaxed">
-              Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome").<br />
-              <span className="opacity-70 text-xs">Tõlge lisatakse teksti lõppu (nt "Õun / Apple"). Enne jätkamist veendu, et pakk on hetke kujul salvestatud.</span>
-            </p>
-            <input
-              className="input-field mb-6 w-full font-bold"
-              value={targetLang}
-              onChange={(e) => setTargetLang(e.target.value)}
-              placeholder="Sisesta keel..."
-              autoFocus
-            />
-            <div className="flex gap-3 justify-end">
+          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/10">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="btn-outline text-sm"
+                className="btn-outline text-xs inline-flex items-center gap-1.5"
+                onClick={() => {
+                  const url = appUrl(`/pack/${pack.id}`)
+                  navigator.clipboard.writeText(url).catch(() => {})
+                  alert('Jagamislink kopeeritud:\n' + url)
+                }}
+              >
+                <Share2 size={14} /> Kopeeri jagamislink
+              </button>
+
+              <button
+                type="button"
+                className="btn-outline text-xs inline-flex items-center gap-1.5 border-purple-500/30 text-purple-300 hover:text-purple-200 hover:border-purple-400 disabled:opacity-50"
+                onClick={() => setTranslateModalOpen(true)}
+                disabled={translating}
+              >
+                <Languages size={14} /> {translating ? 'Tõlgin...' : 'AI Tõlgi'}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="btn-gold flex items-center gap-2 font-bold px-6 py-2.5 shadow-lg shadow-gold/20"
+              disabled={saving}
+              onClick={save}
+            >
+              <Save size={16} /> {saving ? 'Salvestan…' : t('savePack')}
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-accent-red text-xs p-3 rounded-xl bg-accent-red/10 border border-accent-red/30">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* AI Translate modal */}
+      {translateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="card-panel max-w-sm w-full p-6 border-purple-500/30 shadow-2xl shadow-purple-500/10 space-y-4">
+            <h3 className="font-display text-xl text-purple-300">Tõlgi pakk teise keelde</h3>
+            <p className="text-white/60 text-xs leading-relaxed">
+              Mis keelde soovid paki tõlkida? (nt "Inglise", "Vene", "Soome").
+            </p>
+            <input
+              className="input-field w-full font-bold text-sm"
+              value={targetLang}
+              onChange={(e) => setTargetLang(e.target.value)}
+              placeholder="nt Inglise, Soome, Vene..."
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                type="button"
+                className="btn-outline text-xs"
                 onClick={() => setTranslateModalOpen(false)}
               >
                 Tühista
               </button>
               <button
                 type="button"
-                className="btn-gold text-sm !bg-purple-600/20 !border-purple-500/50 !text-purple-200 hover:!bg-purple-600/40"
+                className="btn-gold text-xs !bg-purple-600/30 !border-purple-500/50 !text-purple-200 hover:!bg-purple-600/50"
                 onClick={() => {
                   setTranslateModalOpen(false)
                   if (targetLang.trim()) {
@@ -671,7 +1248,7 @@ export default function EditPack() {
                   }
                 }}
               >
-                Tõlgi
+                Käivita tõlge
               </button>
             </div>
           </div>

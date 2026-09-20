@@ -873,18 +873,38 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
                 </div>
                 <textarea
                   placeholder='Kleebi siia [ { "tier": 1, "q": "...", "choices": ["A","B","C","D"], "correct": 0 }, ... ]'
-                  className="input-field font-mono text-xs min-h-[140px]"
+                  className="input-field font-mono text-xs min-h-[140px] whitespace-pre-wrap leading-relaxed p-3 bg-[#050b18] text-emerald-200"
                   value={miljonarJsonText}
                   onChange={(e) => setMiljonarJsonText(e.target.value)}
+                  spellCheck={false}
                 />
                 {miljonarJsonError && (
-                  <p className="text-accent-red text-xs">{miljonarJsonError}</p>
+                  <p className="text-accent-red text-xs p-2 rounded bg-accent-red/10 border border-accent-red/30">
+                    {miljonarJsonError}
+                  </p>
                 )}
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-between items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        let raw = miljonarJsonText.trim()
+                        if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '').replace(/```$/, '').trim()
+                        if (raw.startsWith('```')) raw = raw.replace(/^```/, '').replace(/```$/, '').trim()
+                        const parsed = JSON.parse(raw)
+                        setMiljonarJsonText(JSON.stringify(parsed, null, 2))
+                      } catch (e: any) {
+                        setMiljonarJsonError('JSON vormindamine ebaõnnestus: ' + e.message)
+                      }
+                    }}
+                    className="btn-outline text-xs !py-1 !px-2.5"
+                  >
+                    Vorminda JSON
+                  </button>
                   <button
                     type="button"
                     onClick={handleImportMiljonarJson}
-                    className="btn-gold text-xs px-4"
+                    className="btn-gold text-xs px-4 font-bold"
                   >
                     Laadi küsimused tabelisse
                   </button>
