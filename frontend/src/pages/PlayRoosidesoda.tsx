@@ -5,13 +5,15 @@ import type { RoosidesodaState } from '@/games/roosidesoda/types'
 import { ArrowLeft, LogOut, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 import GameHelpModal from '@/components/GameHelpModal'
+import GameSettingsModal from '@/components/GameSettingsModal'
 import ThemeStudio, { SessionBgLayer } from '@/components/ThemeStudio'
 import { useI18n } from '@/i18n/I18nContext'
 import { endGameSession } from '@/lib/sessions'
 import { onGameEndedNavigate, playlistStatus } from '@/lib/playlist'
 import { clearRememberedHostSession } from '@/hooks/useGameSession'
 import type { TranslationKey } from '@/i18n/translations'
-import { SkipForward } from 'lucide-react'
+import { SkipForward, Sliders } from 'lucide-react'
+import { getGameSettings } from '@/lib/gameSettings'
 
 export default function PlayRoosidesoda() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -20,6 +22,7 @@ export default function PlayRoosidesoda() {
     useGameSession<RoosidesodaState>(sessionId!)
   const { t } = useI18n()
   const [helpOpen, setHelpOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const pl = playlistStatus()
 
   async function endSession() {
@@ -67,6 +70,15 @@ export default function PlayRoosidesoda() {
           {t('game_roosidesoda')} · {t('hostLabel')}
         </h1>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1 text-gold border-gold/40 hover:border-gold"
+            title="Kohanda avaliku ekraani fonti ja mängu seadeid"
+          >
+            <Sliders size={14} />
+            <span>Seaded</span>
+          </button>
           <button type="button" onClick={() => setHelpOpen(true)} className="btn-outline text-xs !py-1.5 !px-3 flex items-center gap-1">
             <HelpCircle size={14} /> {t('helpBtn')}
           </button>
@@ -104,6 +116,18 @@ export default function PlayRoosidesoda() {
         onClose={() => setHelpOpen(false)}
         publicShown={!!(state as any).publicGuide}
         onTogglePublic={() => update({ publicGuide: !(state as any).publicGuide } as any)}
+      />
+      <GameSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        currentSettings={(state?.gameSettings as any) || getGameSettings('roosidesoda')}
+        currentFont={state?.displayFont}
+        onSave={(newSettings) => {
+          update({
+            displayFont: newSettings.displayFont,
+            gameSettings: newSettings,
+          } as any)
+        }}
       />
     </div>
   )

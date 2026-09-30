@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Play, Check, ChevronRight, X } from 'lucide-react'
+import { Play, Check, ChevronRight, X, AlertTriangle, Sparkles, Volume2 } from 'lucide-react'
 import type { RoosidesodaState, FinalRoundPlayerState } from './types'
 import { playSound, sounds, playFx } from '@/lib/audio'
+import { confettiBurst } from '@/lib/confettiBurst'
 
 type Props = {
   state: RoosidesodaState
@@ -25,13 +26,16 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
     const interval = setInterval(() => {
       const remaining = Math.max(0, Math.ceil((state.finalTimerEndsAt! - Date.now()) / 1000))
       setTimeLeft(remaining)
+      if (remaining <= 5 && remaining > 0) {
+        try { playFx('tick') } catch {}
+      }
       if (remaining <= 0) {
         clearInterval(interval)
         if (isHost && (finalPhase === 'p1_timer' || finalPhase === 'p2_timer')) {
           playSound(sounds.roosError) // Buzzer when time is up
         }
       }
-    }, 100)
+    }, 1000)
     
     return () => clearInterval(interval)
   }, [state.finalTimerEndsAt, finalPhase, isHost])
@@ -41,11 +45,48 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
     update({ finalTimerEndsAt: Date.now() + seconds * 1000 })
   }
 
+  function triggerDuplicate() {
+    if (!isHost) return
+    playSound(sounds.roosError)
+    setTimeout(() => playSound(sounds.roosError), 220)
+    try { playFx('buzz') } catch {}
+    update({ duplicateAlert: true })
+    setTimeout(() => {
+      update({ duplicateAlert: false })
+    }, 2800)
+  }
+
+  // Keyboard shortcut for host
+  useEffect(() => {
+    if (!isHost) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key.toLowerCase() === 'd') {
+        triggerDuplicate()
+      }
+      if (e.key === ' ' && !e.repeat) {
+        e.preventDefault()
+        if (finalPhase === 'p1_reveal') revealNext('p1')
+        else if (finalPhase === 'p2_reveal') revealNext('p2')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isHost, finalPhase, p1.revealedCount, p2.revealedCount])
+
   function handleInput(player: 'p1' | 'p2', idx: number, field: 'text' | 'points', value: any) {
     if (!isHost) return
     const nextState = player === 'p1' ? { ...p1 } : { ...p2 }
     nextState.answers = [...nextState.answers]
     nextState.answers[idx] = { ...nextState.answers[idx], [field]: value }
+    update({ [player]: nextState })
+  }
+
+  function setPresetAnswer(player: 'p1' | 'p2', idx: number, text: string, points: number) {
+    if (!isHost) return
+    const nextState = player === 'p1' ? { ...p1 } : { ...p2 }
+    nextState.answers = [...nextState.answers]
+    nextState.answers[idx] = { text, points }
     update({ [player]: nextState })
   }
 
@@ -56,8 +97,12 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
       if (pState.revealedCount % 2 === 1) {
         // revealing points
         const points = pState.answers[Math.floor(pState.revealedCount / 2)].points
-        if (points > 0) playSound(sounds.roosCorrect)
-        else playSound(sounds.roosError)
+        if (points > 0) {
+          playSound(sounds.roosCorrect)
+          try { playFx('correct') } catch {}
+        } else {
+          playSound(sounds.roosError)
+        }
       } else {
         // revealing text
         playFx('reveal') // A subtle swoosh
@@ -82,7 +127,20 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
 
     if (finalPhase === 'p1_timer' || finalPhase === 'p2_timer') {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+        <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in duration-300 relative">
+          {state.duplicateAlert && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in zoom-in duration-200">
+              <div className="card-panel p-8 max-w-xl mx-4 text-center border-accent-red bg-red-950/80 shadow-[0_0_60px_rgba(230,46,77,0.9)] animate-pulse">
+                <div className="text-accent-red text-6xl mb-2 font-black">⚠️</div>
+                <h2 className="text-4xl md:text-6xl font-display font-black text-white drop-shadow-md tracking-wider">
+                  DUPLIKAAT!
+                </h2>
+                <p className="text-gold text-xl md:text-2xl font-bold mt-3">
+                  See vastus on juba öeldud — ütle teine vastus!
+                </p>
+              </div>
+            </div>
+          )}
           <div className="text-[180px] md:text-[250px] font-display font-bold text-white drop-shadow-[0_0_40px_rgba(0,0,0,0.8)] leading-none tabular-nums tracking-tighter">
             {timeLeft}
           </div>
@@ -227,30 +285,53 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
           <div className="card-panel p-4 space-y-4">
             <h3 className="font-bold text-cyan-300 border-b border-white/10 pb-2">Mängija 1 Vastused</h3>
             {Array(5).fill(0).map((_, i) => (
-              <div key={i} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                <div className="text-white/50 text-xs w-6">{i+1}.</div>
-                <input
-                  type="text"
-                  placeholder="Vastus..."
-                  className="input-field flex-1"
-                  value={p1.answers[i].text}
-                  onChange={e => handleInput('p1', i, 'text', e.target.value)}
-                />
-                <select
-                  className="input-field w-24 sm:w-32 text-cyan-300"
-                  value={p1.answers[i].points}
-                  onChange={e => handleInput('p1', i, 'points', Number(e.target.value))}
-                >
-                  <option value={0}>0 p</option>
-                  {finalRound[i]?.answers?.map(a => (
-                    <option key={a.text} value={a.points}>{a.points}p ({a.text})</option>
-                  ))}
-                  {/* Manual point options if AI didn't provide enough or they said something else */}
-                  {[...Array(100)].map((_, idx) => {
-                    const val = 100 - idx;
-                    return <option key={`man-${val}`} value={val}>{val}p</option>
-                  })}
-                </select>
+              <div key={i} className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <div className="text-white/50 text-xs w-6 font-bold">{i+1}.</div>
+                  <input
+                    type="text"
+                    placeholder="Vastus..."
+                    className="input-field flex-1"
+                    value={p1.answers[i].text}
+                    onChange={e => handleInput('p1', i, 'text', e.target.value)}
+                  />
+                  <select
+                    className="input-field w-24 sm:w-32 text-cyan-300 font-bold"
+                    value={p1.answers[i].points}
+                    onChange={e => handleInput('p1', i, 'points', Number(e.target.value))}
+                  >
+                    <option value={0}>0 p</option>
+                    {finalRound[i]?.answers?.map(a => (
+                      <option key={a.text} value={a.points}>{a.points}p ({a.text})</option>
+                    ))}
+                    {[...Array(100)].map((_, idx) => {
+                      const val = 100 - idx;
+                      return <option key={`man-${val}`} value={val}>{val}p</option>
+                    })}
+                  </select>
+                </div>
+                {/* Quick answer chips */}
+                {finalRound[i]?.answers && finalRound[i].answers.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pl-6">
+                    {finalRound[i].answers.map((a: any) => (
+                      <button
+                        key={a.text}
+                        type="button"
+                        onClick={() => setPresetAnswer('p1', i, a.text, a.points)}
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 hover:bg-gold/20 hover:text-gold border border-white/10 text-white/70 transition"
+                      >
+                        {a.text} ({a.points}p)
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPresetAnswer('p1', i, p1.answers[i].text || 'Valesti', 0)}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-accent-red/10 text-accent-red border border-accent-red/30 hover:bg-accent-red/20 transition"
+                    >
+                      0 punkti
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <button
@@ -264,7 +345,7 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
 
         {finalPhase === 'p1_reveal' && (
           <div className="card-panel p-6 flex flex-col items-center justify-center gap-4">
-            <p className="text-white/70">Ava teleris Mängija 1 vastused ja punktid (kliki nuppe ükshaaval).</p>
+            <p className="text-white/70">Ava teleris Mängija 1 vastused ja punktid (kliki nuppe ükshaaval või vajuta TÜHIKUT).</p>
             <button
               onClick={() => revealNext('p1')}
               disabled={p1.revealedCount >= 10}
@@ -298,12 +379,21 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
         {finalPhase === 'p2_timer' && (
           <div className="card-panel p-6 flex flex-col items-center justify-center gap-6">
             <div className="text-6xl font-display font-bold text-white">{timeLeft}s</div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
               <button
                 onClick={() => startTimer(25)}
                 className="btn-outline px-6"
               >
                 Start 25s
+              </button>
+              <button
+                type="button"
+                onClick={triggerDuplicate}
+                className="btn-outline px-5 py-2.5 border-accent-red text-accent-red hover:bg-accent-red hover:text-white font-bold flex items-center gap-1.5 shadow-sm"
+                title="Vajuta kui Mängija 2 kordab Mängija 1 vastust (Kiirklahv: D)"
+              >
+                <AlertTriangle size={15} />
+                <span>DUPLIKAAT! (Kliki või D)</span>
               </button>
               <button
                 onClick={() => update({ finalPhase: 'p2_input' })}
@@ -323,31 +413,66 @@ export default function RoosidesodaFastMoney({ state, update, isHost }: Props) {
 
         {finalPhase === 'p2_input' && (
           <div className="card-panel p-4 space-y-4">
-            <h3 className="font-bold text-cyan-300 border-b border-white/10 pb-2">Mängija 2 Vastused</h3>
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <h3 className="font-bold text-cyan-300">Mängija 2 Vastused</h3>
+              <button
+                type="button"
+                onClick={triggerDuplicate}
+                className="btn-outline text-xs !py-1 !px-2.5 border-accent-red text-accent-red hover:bg-accent-red hover:text-white font-bold flex items-center gap-1"
+                title="Kiirklahv: D"
+              >
+                <AlertTriangle size={13} />
+                <span>Testi duplikaadi märguannet</span>
+              </button>
+            </div>
             {Array(5).fill(0).map((_, i) => (
-              <div key={i} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                <div className="text-white/50 text-xs w-6">{i+1}.</div>
-                <input
-                  type="text"
-                  placeholder="Vastus..."
-                  className="input-field flex-1"
-                  value={p2.answers[i].text}
-                  onChange={e => handleInput('p2', i, 'text', e.target.value)}
-                />
-                <select
-                  className="input-field w-24 sm:w-32 text-cyan-300"
-                  value={p2.answers[i].points}
-                  onChange={e => handleInput('p2', i, 'points', Number(e.target.value))}
-                >
-                  <option value={0}>0 p</option>
-                  {finalRound[i]?.answers?.map(a => (
-                    <option key={a.text} value={a.points}>{a.points}p ({a.text})</option>
-                  ))}
-                  {[...Array(100)].map((_, idx) => {
-                    const val = 100 - idx;
-                    return <option key={`man-${val}`} value={val}>{val}p</option>
-                  })}
-                </select>
+              <div key={i} className="p-2.5 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <div className="text-white/50 text-xs w-6 font-bold">{i+1}.</div>
+                  <input
+                    type="text"
+                    placeholder="Vastus..."
+                    className="input-field flex-1"
+                    value={p2.answers[i].text}
+                    onChange={e => handleInput('p2', i, 'text', e.target.value)}
+                  />
+                  <select
+                    className="input-field w-24 sm:w-32 text-cyan-300 font-bold"
+                    value={p2.answers[i].points}
+                    onChange={e => handleInput('p2', i, 'points', Number(e.target.value))}
+                  >
+                    <option value={0}>0 p</option>
+                    {finalRound[i]?.answers?.map(a => (
+                      <option key={a.text} value={a.points}>{a.points}p ({a.text})</option>
+                    ))}
+                    {[...Array(100)].map((_, idx) => {
+                      const val = 100 - idx;
+                      return <option key={`man-${val}`} value={val}>{val}p</option>
+                    })}
+                  </select>
+                </div>
+                {/* Quick answer chips */}
+                {finalRound[i]?.answers && finalRound[i].answers.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pl-6">
+                    {finalRound[i].answers.map((a: any) => (
+                      <button
+                        key={a.text}
+                        type="button"
+                        onClick={() => setPresetAnswer('p2', i, a.text, a.points)}
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 hover:bg-gold/20 hover:text-gold border border-white/10 text-white/70 transition"
+                      >
+                        {a.text} ({a.points}p)
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPresetAnswer('p2', i, p2.answers[i].text || 'Valesti', 0)}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-accent-red/10 text-accent-red border border-accent-red/30 hover:bg-accent-red/20 transition"
+                    >
+                      0 punkti
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             <button
