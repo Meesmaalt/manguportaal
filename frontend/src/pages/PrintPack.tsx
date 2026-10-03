@@ -334,34 +334,80 @@ export default function PrintPack() {
       {/* Blitz Quiz */}
       {gt === 'blitz' && (
         <div>
-          <h2>Kiirviktoriini küsimused</h2>
+          <h2>Kiirviktoriini küsimused ja vastused (Spikker)</h2>
           <table>
             <thead>
               <tr>
                 <th style={{ width: '3rem' }}>Nr</th>
-                <th>Küsimus ja valikud</th>
-                <th style={{ width: '8rem' }}>Tüüp / Vastus</th>
+                <th>Küsimus ja valikud (Õige vastus rasvane)</th>
+                <th style={{ width: '9rem' }}>Tüüp / Õige vastus</th>
               </tr>
             </thead>
             <tbody>
-              {(data.questions || []).map((q: any, qIdx: number) => (
-                <tr key={qIdx}>
-                  <td>
-                    <strong>{qIdx + 1}</strong>
-                  </td>
-                  <td>
-                    <div className="font-semibold">{q.text || q.q}</div>
-                    {Array.isArray(q.options) && (
-                      <div className="text-xs text-neutral-600 mt-1">
-                        Valikud: {q.options.join(' · ')}
+              {(data.questions || []).map((q: any, qIdx: number) => {
+                const letters = ['A', 'B', 'C', 'D']
+                const isTF = q.type === 'true_false'
+                const isSlider = q.type === 'slider'
+                const isTypeAns = q.type === 'type_answer'
+                return (
+                  <tr key={qIdx}>
+                    <td>
+                      <strong>{qIdx + 1}</strong>
+                    </td>
+                    <td>
+                      <div className="font-semibold text-sm">
+                        {q.q || q.text}
+                        {q.q_tr && <span className="text-neutral-500 font-normal italic ml-2">({q.q_tr})</span>}
                       </div>
-                    )}
-                  </td>
-                  <td className="correct-answer">
-                    {q.type === 'slider' ? `Väärtus: ${q.correctValue}` : `Õige: ${q.correct ?? q.correctIndex}`}
-                  </td>
-                </tr>
-              ))}
+                      {q.hostNote && <div className="note mt-0.5">Host: {q.hostNote}</div>}
+
+                      {!isSlider && !isTypeAns && Array.isArray(q.choices) && (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-700 mt-1.5">
+                          {q.choices.map((c: string, ci: number) => {
+                            if (isTF && ci >= 2) return null
+                            const isCorrect = q.type === 'multi'
+                              ? (q.multiCorrect || [q.correct]).includes(ci)
+                              : q.correct === ci
+                            const cTr = q.choices_tr?.[ci]
+                            return (
+                              <div
+                                key={ci}
+                                className={isCorrect ? 'font-bold text-black underline' : ''}
+                              >
+                                {letters[ci]}: {c}
+                                {cTr && <span className="text-neutral-500 font-normal italic ml-1">({cTr})</span>}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </td>
+                    <td className="correct-answer">
+                      {isSlider ? (
+                        <span>Õige: {q.sliderTarget} {q.sliderUnit || ''}</span>
+                      ) : isTypeAns ? (
+                        <span>
+                          {(q.acceptedAnswers || [q.choices?.[q.correct]]).join(' · ')}
+                          {q.acceptedAnswers_tr && (
+                            <div className="text-xs text-neutral-500 font-normal italic">
+                              ({q.acceptedAnswers_tr.join(' · ')})
+                            </div>
+                          )}
+                        </span>
+                      ) : (
+                        <span>
+                          {letters[q.correct]}: {q.choices?.[q.correct]}
+                          {q.choices_tr?.[q.correct] && (
+                            <div className="text-xs text-neutral-500 font-normal italic">
+                              ({q.choices_tr[q.correct]})
+                            </div>
+                          )}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

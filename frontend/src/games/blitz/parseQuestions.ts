@@ -1,4 +1,5 @@
 import type { BlitzChoice, BlitzQuestion } from './types'
+import { splitBilingualText } from '@/components/BilingualText'
 
 /**
  * Accepts:
@@ -86,10 +87,33 @@ function normalizeQ(raw: unknown): BlitzQuestion | null {
   if (!q || !choices || choices.length < 4) return null
   const correct = typeof o.correct === 'number' ? o.correct : parseCorrect(String(o.correct ?? '0'))
   if (correct == null) return null
+
+  const qSplit = splitBilingualText(q, o.q_tr ? String(o.q_tr) : undefined)
+  const normChoices: [string, string, string, string] = [
+    String(choices[0] || ''),
+    String(choices[1] || ''),
+    String(choices[2] || ''),
+    String(choices[3] || ''),
+  ]
+  const trChoices: [string, string, string, string] = Array.isArray(o.choices_tr) && o.choices_tr.length === 4
+    ? [String(o.choices_tr[0] || ''), String(o.choices_tr[1] || ''), String(o.choices_tr[2] || ''), String(o.choices_tr[3] || '')]
+    : ['', '', '', '']
+
+  normChoices.forEach((c, idx) => {
+    if (!trChoices[idx] && c.includes(' / ')) {
+      const sp = splitBilingualText(c)
+      normChoices[idx] = sp.primary
+      trChoices[idx] = sp.secondary || ''
+    }
+  })
+
   return {
     id: String(o.id || `q-${Math.random().toString(36).slice(2, 8)}`),
-    q,
-    choices: [choices[0], choices[1], choices[2], choices[3]],
+    q: qSplit.primary,
+    ...(qSplit.secondary ? { q_tr: qSplit.secondary } : {}),
+    choices: normChoices,
+    ...(trChoices.some(Boolean) ? { choices_tr: trChoices } : {}),
+    ...(Array.isArray(o.acceptedAnswers_tr) ? { acceptedAnswers_tr: o.acceptedAnswers_tr.map(String) } : {}),
     correct: correct as BlitzChoice,
     ...(o.hostNote ? { hostNote: String(o.hostNote) } : {}),
     ...(o.imageUrl ? { imageUrl: String(o.imageUrl) } : {}),

@@ -117,6 +117,7 @@ export type FxType =
   | 'buzz'
   | 'ding'
   | 'gong'
+  | 'duplicate'
   | 'timer_urgent'
   | 'sad_trombone'
   | 'applause'
@@ -172,6 +173,14 @@ export function playFx(type: FxType, opts?: { prefer?: string }) {
       deal_build: [440, 554, 659, 880],
     }
     
+    if (type === 'duplicate') {
+      try {
+        playSound(sounds.roosError)
+        setTimeout(() => playSound(sounds.roosError), 200)
+      } catch {}
+      return
+    }
+
     if (type === 'applause') {
       const bufferSize = ctx.sampleRate * 2 // 2 seconds
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)

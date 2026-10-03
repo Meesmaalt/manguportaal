@@ -266,8 +266,14 @@ export function reveal(s: BlitzState): BlitzState {
         accuracyRatio = 0
       }
     } else if (qType === 'type_answer') {
-      const targets = (q.acceptedAnswers && q.acceptedAnswers.length ? q.acceptedAnswers : [q.choices[q.correct]])
-        .map((a) => a.trim().toLowerCase().replace(/\s+/g, ''))
+      const primaryTargets = q.acceptedAnswers && q.acceptedAnswers.length ? q.acceptedAnswers : [q.choices[q.correct]]
+      const trTargets = [
+        ...(q.acceptedAnswers_tr || []),
+        ...(q.choices_tr?.[q.correct] ? [q.choices_tr[q.correct]] : []),
+      ]
+      const targets = [...primaryTargets, ...trTargets]
+        .map((a) => (a || '').trim().toLowerCase().replace(/\s+/g, ''))
+        .filter(Boolean)
       const given = (ans.textAnswer || '').trim().toLowerCase().replace(/\s+/g, '')
       isCorrect = targets.some((t) => t === given)
       accuracyRatio = isCorrect ? 1 : 0

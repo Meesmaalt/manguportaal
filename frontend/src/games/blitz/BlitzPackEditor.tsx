@@ -2,8 +2,10 @@ import { useState } from 'react'
 import type { BlitzQuestion, BlitzQuestionType } from './types'
 import { parseBlitzQuestions, questionsToCsv } from './parseQuestions'
 import { generateBlitzQuiz } from './generateQuiz'
-import { Plus, Trash2, Upload, Sparkles, Loader2, Star } from 'lucide-react'
+import { Plus, Trash2, Upload, Sparkles, Loader2, Star, Globe, Languages, Check, AlertCircle } from 'lucide-react'
 import ImagePickerField from '@/components/ImagePickerField'
+import { appUrl } from '@/lib/config'
+import { splitBilingualText } from '@/components/BilingualText'
 
 type Props = {
   questions: BlitzQuestion[]
@@ -45,6 +47,76 @@ export default function BlitzPackEditor({
   const [aiSpecialTypes, setAiSpecialTypes] = useState(true)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+
+  // AI Translation state
+  const [translateOpen, setTranslateOpen] = useState(false)
+  const [targetLang, setTargetLang] = useState('Inglise')
+  const [translating, setTranslating] = useState(false)
+  const [translateMsg, setTranslateMsg] = useState('')
+  const [translateErr, setTranslateErr] = useState('')
+
+  const hasAnyTranslations = questions.some(
+    (q) => q.q_tr || (q.choices_tr && q.choices_tr.some(Boolean)) || (q.acceptedAnswers_tr && q.acceptedAnswers_tr.length > 0)
+  )
+
+  async function handleTranslateQuestions(lang: string) {
+    if (!questions.length) return
+    setTranslating(true)
+    setTranslateErr('')
+    setTranslateMsg('')
+    try {
+      const res = await fetch(appUrl('/api/ai/translate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packData: { questions },
+          gameType: 'blitz',
+          targetLanguage: lang,
+        }),
+      })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.error || 'Tõlkimine ebaõnnestus')
+
+      const raw = json.translatedData
+      const nextQs: BlitzQuestion[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.questions)
+        ? raw.questions
+        : []
+
+      if (!nextQs.length) {
+        throw new Error('Vastus ei sisaldanud küsimusi')
+      }
+
+      onChange({
+        questions: nextQs,
+        secondsPerQuestion,
+        pointsMax,
+        revealSeconds,
+      })
+      setTranslateMsg(`Tõlge (${lang}) lisatud edukalt kõigile ${nextQs.length} küsimusele!`)
+      setTranslateOpen(false)
+    } catch (e: any) {
+      setTranslateErr(e.message || 'Tõlkimine ebaõnnestus')
+    } finally {
+      setTranslating(false)
+    }
+  }
+
+  function handleClearTranslations() {
+    if (!confirm('Kas soovid eemaldada kõik teise keele tõlked?')) return
+    const cleared = questions.map((q) => {
+      const { q_tr, choices_tr, acceptedAnswers_tr, ...rest } = q
+      return rest as BlitzQuestion
+    })
+    onChange({
+      questions: cleared,
+      secondsPerQuestion,
+      pointsMax,
+      revealSeconds,
+    })
+    setTranslateMsg('Kõik tõlked on eemaldatud.')
+  }
 
   function patchQ(i: number, patch: Partial<BlitzQuestion>) {
     const next = questions.map((q, idx) => (idx === i ? { ...q, ...patch } : q))
@@ -244,6 +316,105 @@ export default function BlitzPackEditor({
         )}
       </div>
 
+      {/* AI Bilingual Translation Tool */}
+      <div className="card-panel border-accent-cyan/40 bg-gradient-to-r from-accent-cyan/10 via-blue-500/10 to-transparent p-4 rounded-2xl">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 text-accent-cyan font-display font-black text-sm">
+            <Languages size={18} className="text-accent-cyan" />
+            <span>AI Tõlge & Kakskeelsus (Bilingual)</span>
+            {hasAnyTranslations && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-cyan/20 border border-accent-cyan/40 text-accent-cyan font-semibold">
+                Tõlgitud
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {hasAnyTranslations && (
+              <button
+                type="button"
+                onClick={handleClearTranslations}
+                className="text-[11px] text-white/50 hover:text-accent-red underline py-1 px-2 transition"
+              >
+                Eemalda tõlked
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setTranslateOpen((v) => !v)
+                setTranslateErr('')
+                setTranslateMsg('')
+              }}
+              className="btn-outline text-xs !py-1 !px-3 font-bold border-accent-cyan/50 text-accent-cyan hover:bg-accent-cyan/15 flex items-center gap-1.5 transition"
+            >
+              <Globe size={14} />
+              {translateOpen ? 'Sulge tõlke tööriist' : '🌐 Ava AI tõlge'}
+            </button>
+          </div>
+        </div>
+
+        {translateMsg && (
+          <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+            <Check size={14} />
+            <span>{translateMsg}</span>
+          </div>
+        )}
+
+        {translateErr && (
+          <div className="mt-3 p-2.5 rounded-xl bg-accent-red/15 border border-accent-red/30 text-accent-red text-xs flex items-center gap-2">
+            <AlertCircle size={14} />
+            <span>{translateErr}</span>
+          </div>
+        )}
+
+        {translateOpen && (
+          <div className="mt-4 space-y-3 pt-3 border-t border-white/10 animate-in fade-in">
+            <p className="text-xs text-white/70 leading-relaxed">
+              Gemini lisab igale Blitz küsimusele ja kõigile 4 valikule teise keele tõlke. Mängijad näevad teleriekraanil ja oma telefonides korraga nii eesti- kui ka võõrkeelseid küsimusi ja vastuseid!
+            </p>
+
+            <div>
+              <label className="text-xs font-semibold text-white/80 block mb-1.5">Vali sihtkeel:</label>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {['Inglise', 'Vene', 'Soome', 'Saksa', 'Hispaania', 'Prantsuse'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setTargetLang(lang)}
+                    className={`text-xs py-2 px-2.5 rounded-xl border font-medium text-center transition ${
+                      targetLang === lang
+                        ? 'bg-accent-cyan/25 border-accent-cyan text-accent-cyan font-bold shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                        : 'bg-slate-900/80 border-white/10 text-white/70 hover:border-white/30'
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                disabled={translating || !questions.length}
+                onClick={() => handleTranslateQuestions(targetLang)}
+                className="btn-gold !bg-accent-cyan !text-slate-950 hover:brightness-110 flex-1 text-xs py-2.5 font-black flex items-center justify-center gap-2 shadow-lg"
+              >
+                {translating ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" /> Tõlgin {questions.length} küsimust ja valikuid ({targetLang})...
+                  </>
+                ) : (
+                  <>
+                    <Globe size={15} /> Tõlgi kõik küsimused ja valikud {targetLang} keelde ({questions.length} tk)
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Global timings */}
       <div className="grid grid-cols-3 gap-2">
         <label className="text-xs text-white/50">
@@ -409,49 +580,93 @@ export default function BlitzPackEditor({
               </div>
 
               {/* Question text */}
-              <input
-                className="input-field text-sm font-semibold"
-                placeholder="Küsimuse tekst…"
-                value={q.q}
-                onChange={(e) => patchQ(i, { q: e.target.value })}
-              />
+              <div className="space-y-1.5">
+                <input
+                  className="input-field text-sm font-semibold"
+                  placeholder="Küsimuse tekst…"
+                  value={q.q}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val.includes(' / ') && !q.q_tr) {
+                      const sp = splitBilingualText(val)
+                      patchQ(i, { q: sp.primary, q_tr: sp.secondary })
+                    } else {
+                      patchQ(i, { q: val })
+                    }
+                  }}
+                />
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[10px] text-accent-cyan/90 font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 px-2 py-1 rounded bg-accent-cyan/10 border border-accent-cyan/20">
+                    <Globe size={11} /> TR
+                  </div>
+                  <input
+                    className="input-field text-xs text-white/90 bg-slate-950/45 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan flex-1"
+                    placeholder="Küsimuse tõlge (nt. inglise keeles)…"
+                    value={q.q_tr || ''}
+                    onChange={(e) => patchQ(i, { q_tr: e.target.value })}
+                  />
+                </div>
+              </div>
 
               {/* CONTROLS BASED ON QUESTION TYPE */}
 
               {/* 1. QUIZ & MULTI */}
               {(qType === 'quiz' || qType === 'multi' || qType === 'poll') && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {q.choices.map((c, ci) => (
-                    <div key={ci} className="flex gap-1.5 items-center">
-                      <input
-                        type={qType === 'multi' ? 'checkbox' : 'radio'}
-                        name={`correct-${q.id || i}`}
-                        checked={
-                          qType === 'multi'
-                            ? (q.multiCorrect || [q.correct]).includes(ci)
-                            : q.correct === ci
-                        }
-                        onChange={() => {
-                          if (qType === 'multi') {
-                            const cur = q.multiCorrect || [q.correct]
-                            const next = cur.includes(ci) ? cur.filter((x) => x !== ci) : [...cur, ci]
-                            patchQ(i, { multiCorrect: next })
-                          } else {
-                            patchQ(i, { correct: ci as 0 | 1 | 2 | 3 })
+                    <div key={ci} className="p-2 rounded-xl bg-black/20 border border-white/5 space-y-1">
+                      <div className="flex gap-1.5 items-center">
+                        <input
+                          type={qType === 'multi' ? 'checkbox' : 'radio'}
+                          name={`correct-${q.id || i}`}
+                          checked={
+                            qType === 'multi'
+                              ? (q.multiCorrect || [q.correct]).includes(ci)
+                              : q.correct === ci
                           }
-                        }}
-                        title="Märgi õigeks vastuseks"
-                      />
-                      <input
-                        className="input-field text-xs flex-1"
-                        placeholder={['A', 'B', 'C', 'D'][ci]}
-                        value={c}
-                        onChange={(e) => {
-                          const choices = [...q.choices] as [string, string, string, string]
-                          choices[ci] = e.target.value
-                          patchQ(i, { choices })
-                        }}
-                      />
+                          onChange={() => {
+                            if (qType === 'multi') {
+                              const cur = q.multiCorrect || [q.correct]
+                              const next = cur.includes(ci) ? cur.filter((x) => x !== ci) : [...cur, ci]
+                              patchQ(i, { multiCorrect: next })
+                            } else {
+                              patchQ(i, { correct: ci as 0 | 1 | 2 | 3 })
+                            }
+                          }}
+                          title="Märgi õigeks vastuseks"
+                        />
+                        <input
+                          className="input-field text-xs flex-1 font-medium"
+                          placeholder={['A', 'B', 'C', 'D'][ci]}
+                          value={c}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            const choices = [...q.choices] as [string, string, string, string]
+                            const choices_tr = [...(q.choices_tr || ['', '', '', ''])] as [string, string, string, string]
+                            if (val.includes(' / ') && !choices_tr[ci]) {
+                              const sp = splitBilingualText(val)
+                              choices[ci] = sp.primary
+                              choices_tr[ci] = sp.secondary || ''
+                              patchQ(i, { choices, choices_tr })
+                            } else {
+                              choices[ci] = val
+                              patchQ(i, { choices })
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 pl-5">
+                        <input
+                          className="input-field text-[11px] text-white/80 bg-slate-950/40 border-dashed border-white/15 focus:border-solid focus:border-accent-cyan flex-1"
+                          placeholder={`Valiku ${['A', 'B', 'C', 'D'][ci]} tõlge…`}
+                          value={q.choices_tr?.[ci] || ''}
+                          onChange={(e) => {
+                            const choices_tr = [...(q.choices_tr || ['', '', '', ''])] as [string, string, string, string]
+                            choices_tr[ci] = e.target.value
+                            patchQ(i, { choices_tr })
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -459,26 +674,53 @@ export default function BlitzPackEditor({
 
               {/* 2. TRUE / FALSE */}
               {qType === 'true_false' && (
-                <div className="flex gap-4 items-center bg-white/5 p-2 rounded-xl">
-                  <span className="text-xs text-white/60">Õige vastus:</span>
-                  <label className="flex items-center gap-1.5 text-xs text-sky-300 font-bold cursor-pointer">
+                <div className="space-y-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
+                  <div className="flex gap-4 items-center">
+                    <span className="text-xs text-white/60">Õige vastus:</span>
+                    <label className="flex items-center gap-1.5 text-xs text-sky-300 font-bold cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`tf-${q.id || i}`}
+                        checked={q.correct === 0}
+                        onChange={() => patchQ(i, { correct: 0 })}
+                      />
+                      TÕENE
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs text-rose-300 font-bold cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`tf-${q.id || i}`}
+                        checked={q.correct === 1}
+                        onChange={() => patchQ(i, { correct: 1 })}
+                      />
+                      VÄÄR
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-white/10">
+                    <span className="text-[10px] text-accent-cyan flex items-center gap-1 font-medium shrink-0">
+                      <Globe size={11} /> Tõlge:
+                    </span>
                     <input
-                      type="radio"
-                      name={`tf-${q.id || i}`}
-                      checked={q.correct === 0}
-                      onChange={() => patchQ(i, { correct: 0 })}
+                      className="input-field !text-[11px] !py-0.5 !px-2 flex-1 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                      placeholder="True (Tõene tõlge)"
+                      value={q.choices_tr?.[0] || ''}
+                      onChange={(e) => {
+                        const tr = [...(q.choices_tr || ['', '', '', ''])] as [string, string, string, string]
+                        tr[0] = e.target.value
+                        patchQ(i, { choices_tr: tr })
+                      }}
                     />
-                    TÕENE
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-rose-300 font-bold cursor-pointer">
                     <input
-                      type="radio"
-                      name={`tf-${q.id || i}`}
-                      checked={q.correct === 1}
-                      onChange={() => patchQ(i, { correct: 1 })}
+                      className="input-field !text-[11px] !py-0.5 !px-2 flex-1 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                      placeholder="False (Väär tõlge)"
+                      value={q.choices_tr?.[1] || ''}
+                      onChange={(e) => {
+                        const tr = [...(q.choices_tr || ['', '', '', ''])] as [string, string, string, string]
+                        tr[1] = e.target.value
+                        patchQ(i, { choices_tr: tr })
+                      }}
                     />
-                    VÄÄR
-                  </label>
+                  </div>
                 </div>
               )}
 
@@ -526,25 +768,44 @@ export default function BlitzPackEditor({
 
               {/* 4. TYPE ANSWER */}
               {qType === 'type_answer' && (
-                <div className="bg-white/5 p-2.5 rounded-xl space-y-1.5 text-xs">
-                  <label className="block text-white/60">
-                    Õiged vastused (eralda komaga, väiketähed kontrollitakse automaatselt):
-                  </label>
-                  <input
-                    className="input-field text-xs font-bold text-emerald-300"
-                    placeholder="nt Tallinn, tallin"
-                    value={(q.acceptedAnswers || [q.choices[q.correct]]).join(', ')}
-                    onChange={(e) => {
-                      const split = e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                      patchQ(i, {
-                        acceptedAnswers: split,
-                        choices: [split[0] || '', '', '', ''],
-                      })
-                    }}
-                  />
+                <div className="bg-white/5 p-2.5 rounded-xl space-y-2 text-xs">
+                  <div>
+                    <label className="block text-white/60 mb-1">
+                      Õiged vastused (eralda komaga, väiketähed kontrollitakse automaatselt):
+                    </label>
+                    <input
+                      className="input-field text-xs font-bold text-emerald-300"
+                      placeholder="nt Tallinn, tallin"
+                      value={(q.acceptedAnswers || [q.choices[q.correct]]).join(', ')}
+                      onChange={(e) => {
+                        const split = e.target.value
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                        patchQ(i, {
+                          acceptedAnswers: split,
+                          choices: [split[0] || '', '', '', ''],
+                        })
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-accent-cyan/80 mb-1 flex items-center gap-1 font-semibold">
+                      <Globe size={11} /> Tõlgitud vastused (nt inglise k, eralda komaga):
+                    </label>
+                    <input
+                      className="input-field text-xs text-white/90 bg-slate-950/40 border-dashed border-white/20 focus:border-solid focus:border-accent-cyan"
+                      placeholder="nt Tallinn, Revel"
+                      value={(q.acceptedAnswers_tr || []).join(', ')}
+                      onChange={(e) => {
+                        const split = e.target.value
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                        patchQ(i, { acceptedAnswers_tr: split })
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

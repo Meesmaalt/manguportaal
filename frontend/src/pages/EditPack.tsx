@@ -312,8 +312,33 @@ export default function EditPack() {
     }
 
     if (gameType === 'blitz') {
-      const d = data as Record<string, unknown>
-      setBlitzQs((d.questions as BlitzQuestion[]) || [])
+      const d = data as any
+      const rawList = Array.isArray(d) ? d : (d?.questions as BlitzQuestion[]) || []
+      const hydratedQs: BlitzQuestion[] = rawList.map((q: any) => {
+        const qSplit = splitBilingualText(q.q, q.q_tr)
+        const choices = Array.isArray(q.choices) ? q.choices : ['', '', '', '']
+        const choices_tr = Array.isArray(q.choices_tr) ? q.choices_tr : ['', '', '', '']
+        const newChoices = [...choices] as [string, string, string, string]
+        const newChoicesTr = [...choices_tr] as [string, string, string, string]
+
+        newChoices.forEach((c, idx) => {
+          if (!newChoicesTr[idx] && typeof c === 'string' && c.includes(' / ')) {
+            const sp = splitBilingualText(c)
+            newChoices[idx] = sp.primary
+            newChoicesTr[idx] = sp.secondary || ''
+          }
+        })
+
+        return {
+          ...q,
+          q: qSplit.primary,
+          ...(qSplit.secondary ? { q_tr: qSplit.secondary } : q.q_tr ? { q_tr: q.q_tr } : {}),
+          choices: newChoices,
+          ...(newChoicesTr.some(Boolean) ? { choices_tr: newChoicesTr } : q.choices_tr ? { choices_tr: q.choices_tr } : {}),
+          ...(Array.isArray(q.acceptedAnswers_tr) ? { acceptedAnswers_tr: q.acceptedAnswers_tr } : {}),
+        }
+      })
+      setBlitzQs(hydratedQs)
       setBlitzSec(Number(d.secondsPerQuestion) || 20)
       setBlitzMax(Number(d.pointsMax) || 1000)
       setBlitzReveal(Number(d.revealSeconds) ?? 5)

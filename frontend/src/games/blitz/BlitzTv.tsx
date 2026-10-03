@@ -18,6 +18,7 @@ import {
 } from './blitzAudio'
 import { appUrl } from '@/lib/config'
 import { Trophy, Zap, Volume2, VolumeX, Flame, TrendingUp } from 'lucide-react'
+import BilingualText from '@/components/BilingualText'
 
 export default function BlitzTv({ state, sessionCode }: { state: BlitzState; sessionCode?: string }) {
   const code = sessionCode || state.code || ''
@@ -309,9 +310,9 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
 
             {/* Question Text */}
             <div className="blitz-q-card blitz-q-enter mb-5 max-w-4xl mx-auto w-full">
-              <h1
+              <div
                 key={q.id + state.phase}
-                className="font-display font-black text-2xl md:text-4xl lg:text-5xl leading-tight text-center text-white"
+                className="leading-tight text-center"
               >
                 {q.difficulty ? (
                   <span className={`inline-block text-xs font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full border mb-2 ${
@@ -320,8 +321,14 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                     'border-amber-400/50 text-amber-200'
                   }`}>{q.difficulty}</span>
                 ) : null}
-                <span className="block">{q.q}</span>
-              </h1>
+                <BilingualText
+                  text={q.q}
+                  translation={q.q_tr}
+                  layout="block"
+                  primaryClassName="font-display font-black text-2xl md:text-4xl lg:text-5xl text-white drop-shadow-md"
+                  translationClassName="font-display font-bold text-lg md:text-2xl text-cyan-300 mt-1.5 drop-shadow"
+                />
+              </div>
             </div>
 
             {/* Kahoot-style Animated Bar Chart on Reveal */}
@@ -388,6 +395,11 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 <div className="text-3xl md:text-4xl font-display font-black text-emerald-300">
                   {(q.acceptedAnswers && q.acceptedAnswers.length ? q.acceptedAnswers : [q.choices[q.correct]]).join(' · ')}
                 </div>
+                {q.acceptedAnswers_tr && q.acceptedAnswers_tr.length > 0 && (
+                  <div className="text-lg md:text-xl text-emerald-200/80 font-medium italic mt-1">
+                    ({q.acceptedAnswers_tr.join(' · ')})
+                  </div>
+                )}
               </div>
             )}
 
@@ -402,6 +414,11 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                 const show = state.phase === 'reveal'
                 const st = BLITZ_ANSWER_STYLE[i]
 
+                const tfDefaultLabel = i === 0 ? 'TÕENE' : 'VÄÄR'
+                const tfDefaultTr = i === 0 ? 'TRUE' : 'FALSE'
+                const labelText = q.type === 'true_false' ? (c || tfDefaultLabel) : (c || `Valik ${st.label}`)
+                const trText = q.choices_tr?.[i] || (q.type === 'true_false' ? tfDefaultTr : undefined)
+
                 return (
                   <div
                     key={i}
@@ -409,11 +426,19 @@ export default function BlitzTv({ state, sessionCode }: { state: BlitzState; ses
                       show && isCorrect ? 'blitz-answer-correct' : ''
                     } ${show && !isCorrect ? 'blitz-answer-wrong' : ''}`}
                   >
-                    <span className="blitz-shape-badge">
+                    <span className="blitz-shape-badge shrink-0">
                       <AnswerShape index={i} className="text-white w-6 h-6" />
                     </span>
-                    <span className="flex-1">{c || `Valik ${st.label}`}</span>
-                    {show && isCorrect && <span className="text-3xl font-black text-emerald-300">✓</span>}
+                    <span className="flex-1 min-w-0">
+                      <BilingualText
+                        text={labelText}
+                        translation={trText}
+                        layout="block"
+                        primaryClassName="font-bold text-xl md:text-2xl truncate"
+                        translationClassName="text-white/80 text-sm md:text-base font-medium truncate mt-0.5"
+                      />
+                    </span>
+                    {show && isCorrect && <span className="text-3xl font-black text-emerald-300 shrink-0">✓</span>}
                   </div>
                 )
               })}

@@ -10,6 +10,7 @@ import { playFx } from '@/lib/audio'
 import { Zap, Loader2, Wifi, WifiOff, CheckCircle2, XCircle, Flame, Send, Sliders, Lock } from 'lucide-react'
 import { BlitzStage, AnswerShape, BLITZ_ANSWER_STYLE } from '@/games/blitz/BlitzStage'
 import { motion, AnimatePresence } from 'framer-motion'
+import BilingualText from '@/components/BilingualText'
 
 const PID_KEY = 'ohtu_blitz_pid'
 const NAME_KEY = 'ohtu_blitz_name'
@@ -608,7 +609,13 @@ export default function BlitzPlayer() {
                         transition={{ duration: 0.25, ease: 'easeOut' }}
                         className="blitz-q-card mb-4 p-3.5 border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                       >
-                        <p className="text-center font-bold text-base leading-snug text-white">{q.q}</p>
+                        <BilingualText
+                          text={q.q}
+                          translation={q.q_tr}
+                          layout="block"
+                          primaryClassName="text-center font-bold text-base leading-snug text-white"
+                          translationClassName="text-center text-xs text-cyan-300 font-medium mt-1 leading-snug"
+                        />
                       </motion.div>
 
                       {/* Power-ups */}
@@ -720,7 +727,15 @@ export default function BlitzPlayer() {
                                     <span className="blitz-shape-badge">
                                       <AnswerShape index={i} />
                                     </span>
-                                    <span className="flex-1 text-left font-bold">{c || `Valik ${BLITZ_ANSWER_STYLE[i].label}`}</span>
+                                    <span className="flex-1 text-left min-w-0">
+                                      <BilingualText
+                                        text={c || `Valik ${BLITZ_ANSWER_STYLE[i].label}`}
+                                        translation={q.choices_tr?.[i]}
+                                        layout="inline"
+                                        primaryClassName="font-bold text-white"
+                                        translationClassName="text-white/80 text-xs font-normal italic ml-1.5"
+                                      />
+                                    </span>
                                   </motion.button>
                                 )
                               })}
@@ -737,9 +752,13 @@ export default function BlitzPlayer() {
                                 whileTap={{ scale: 0.95 }}
                                 disabled={busy}
                                 onClick={() => onAnswerSingle(0)}
-                                className="blitz-answer bg-[#1368ce] text-xl font-bold py-6 w-full flex items-center justify-center gap-3 rounded-2xl active:scale-95 shadow-lg border-2 border-blue-300/40"
+                                className="blitz-answer bg-[#1368ce] text-xl font-bold py-5 w-full flex items-center justify-center gap-3 rounded-2xl active:scale-95 shadow-lg border-2 border-blue-300/40"
                               >
-                                <span className="text-3xl">✓</span> TÕENE
+                                <span className="text-3xl">✓</span>
+                                <div className="flex flex-col items-center leading-tight">
+                                  <span>TÕENE</span>
+                                  <span className="text-xs font-normal text-cyan-200 opacity-90">{q.choices_tr?.[0] || 'TRUE'}</span>
+                                </div>
                               </motion.button>
                               <motion.button
                                 type="button"
@@ -749,9 +768,13 @@ export default function BlitzPlayer() {
                                 whileTap={{ scale: 0.95 }}
                                 disabled={busy}
                                 onClick={() => onAnswerSingle(1)}
-                                className="blitz-answer bg-[#e21b3c] text-xl font-bold py-6 w-full flex items-center justify-center gap-3 rounded-2xl active:scale-95 shadow-lg border-2 border-rose-300/40"
+                                className="blitz-answer bg-[#e21b3c] text-xl font-bold py-5 w-full flex items-center justify-center gap-3 rounded-2xl active:scale-95 shadow-lg border-2 border-rose-300/40"
                               >
-                                <span className="text-3xl">✗</span> VÄÄR
+                                <span className="text-3xl">✗</span>
+                                <div className="flex flex-col items-center leading-tight">
+                                  <span>VÄÄR</span>
+                                  <span className="text-xs font-normal text-rose-200 opacity-90">{q.choices_tr?.[1] || 'FALSE'}</span>
+                                </div>
                               </motion.button>
                             </div>
                           )}
@@ -784,7 +807,15 @@ export default function BlitzPlayer() {
                                       <span className="blitz-shape-badge">
                                         <AnswerShape index={i} />
                                       </span>
-                                      <span className="flex-1 text-left font-bold">{c}</span>
+                                      <span className="flex-1 text-left min-w-0">
+                                        <BilingualText
+                                          text={c}
+                                          translation={q.choices_tr?.[i]}
+                                          layout="inline"
+                                          primaryClassName="font-bold text-white"
+                                          translationClassName="text-white/80 text-xs font-normal italic ml-1.5"
+                                        />
+                                      </span>
                                       <span className="text-lg font-black">{isChecked ? '☑' : '☐'}</span>
                                     </motion.button>
                                   )
@@ -893,7 +924,15 @@ export default function BlitzPlayer() {
                                     <span className="blitz-shape-badge">
                                       <AnswerShape index={i} />
                                     </span>
-                                    <span className="flex-1 text-left font-bold">{c}</span>
+                                    <span className="flex-1 text-left min-w-0">
+                                      <BilingualText
+                                        text={c}
+                                        translation={q.choices_tr?.[i]}
+                                        layout="inline"
+                                        primaryClassName="font-bold text-white"
+                                        translationClassName="text-white/80 text-xs font-normal italic ml-1.5"
+                                      />
+                                    </span>
                                   </button>
                                 )
                               })}
@@ -946,9 +985,60 @@ export default function BlitzPlayer() {
                           )}
                         </motion.div>
 
-                        <p className="font-display font-black text-2xl md:text-3xl mb-1">
-                          {wasCorrect ? 'Õige vastus!' : answered ? 'Kahjuks valesti!' : 'Aeg sai otsa!'}
-                        </p>
+                        <div className="font-display font-black text-2xl md:text-3xl mb-1">
+                          {wasCorrect ? (
+                            <div>
+                              <span>Õige vastus!</span>
+                              <span className="block text-xs font-normal text-emerald-200/90 tracking-normal mt-0.5">Correct answer!</span>
+                            </div>
+                          ) : answered ? (
+                            <div>
+                              <span>Kahjuks valesti!</span>
+                              <span className="block text-xs font-normal text-rose-200/90 tracking-normal mt-0.5">Incorrect answer!</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span>Aeg sai otsa!</span>
+                              <span className="block text-xs font-normal text-white/70 tracking-normal mt-0.5">Time's up!</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Show correct answer with translation */}
+                        {q && (
+                          <div className="my-2.5 p-2.5 rounded-2xl bg-black/40 border border-white/10 text-xs">
+                            <span className="text-white/50 block text-[10px] uppercase font-bold tracking-wider mb-1">
+                              Õige vastus / Correct answer:
+                            </span>
+                            {q.type === 'slider' ? (
+                              <span className="font-bold text-amber-300 text-sm">{q.sliderTarget} {q.sliderUnit || ''}</span>
+                            ) : q.type === 'type_answer' ? (
+                              <div className="font-bold text-emerald-300 text-sm">
+                                <div>{(q.acceptedAnswers && q.acceptedAnswers.length ? q.acceptedAnswers : [q.choices[q.correct]]).join(' · ')}</div>
+                                {q.acceptedAnswers_tr && q.acceptedAnswers_tr.length > 0 && (
+                                  <div className="text-emerald-200/80 font-normal italic text-xs mt-0.5">
+                                    ({q.acceptedAnswers_tr.join(' · ')})
+                                  </div>
+                                )}
+                              </div>
+                            ) : q.type === 'true_false' ? (
+                              <div className="font-bold text-emerald-300 text-sm flex items-center justify-center gap-1.5">
+                                <span>{q.correct === 0 ? 'TÕENE' : 'VÄÄR'}</span>
+                                <span className="text-emerald-200/80 font-normal italic text-xs">
+                                  ({q.choices_tr?.[q.correct] || (q.correct === 0 ? 'TRUE' : 'FALSE')})
+                                </span>
+                              </div>
+                            ) : (
+                              <BilingualText
+                                text={q.choices[q.correct]}
+                                translation={q.choices_tr?.[q.correct]}
+                                layout="inline"
+                                primaryClassName="font-bold text-emerald-300 text-sm"
+                                translationClassName="text-emerald-200/80 text-xs italic ml-1"
+                              />
+                            )}
+                          </div>
+                        )}
 
                         {wasCorrect && (
                           <motion.div

@@ -91,8 +91,13 @@ Rules:
      - preserve 'points', 'hostNote', 'imageUrl' placeholders as is.
    - For 'finalJeopardy' (if present):
      - keep 'q' and 'a', add 'q_tr' and 'a_tr'.
-2. For Blitz pack data:
-   - For each question: keep 'q', add 'q_tr'; keep 'choices', add 'choices_tr' (translated array of choices).
+2. For Blitz pack data (whether wrapped in an object with 'questions' or directly an array of questions):
+   - For each question:
+     - keep 'q' as original, and add 'q_tr' with the ${reqData.targetLanguage} translated question.
+     - keep 'choices' as original array of 4 choices, and add 'choices_tr' (array of 4 translated strings in the exact same order).
+     - for 'true_false' questions, populate choices_tr with translated True / False in target language (e.g. English: ["True", "False", "", ""], Russian: ["Истина", "Ложь", "", ""], Finnish: ["Totta", "Tarua", "", ""], German: ["Wahr", "Falsch", "", ""], Spanish: ["Verdadero", "Falso", "", ""], French: ["Vrai", "Faux", "", ""]).
+     - if 'acceptedAnswers' is present, keep it and add 'acceptedAnswers_tr' with the translated acceptable text answers.
+     - preserve 'id', 'correct', 'type', 'multiCorrect', 'pointsMultiplier', 'timeLimit', 'difficulty', 'imageUrl', 'hostNote', 'sliderMin', 'sliderMax', 'sliderTarget', 'sliderUnit', etc. exactly as in original.
 3. For line-based strings (e.g. words, statements, truths, dares):
    - format each item as: "Original text / ${reqData.targetLanguage} translation"
 4. If an original field already contains a slash ' / ', treat the left part as original and right part as translation.

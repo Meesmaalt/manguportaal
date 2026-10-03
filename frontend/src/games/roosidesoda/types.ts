@@ -40,6 +40,9 @@ export type RoosidesodaState = {
   p1?: FinalRoundPlayerState
   p2?: FinalRoundPlayerState
   duplicateAlert?: boolean
+  duplicateAlertText?: string
   displayFont?: string
   gameSettings?: any
+  buzz?: { name: string; at: number } | null
+  buzzEnabled?: boolean
 }

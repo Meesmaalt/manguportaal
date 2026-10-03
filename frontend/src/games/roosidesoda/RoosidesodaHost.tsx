@@ -29,6 +29,7 @@ import { useI18n } from '@/i18n/I18nContext'
 import GameAiModal from '@/components/GameAiModal'
 import { generateRoosidesodaAi } from '@/lib/aiGameGenerators'
 import { getGameSettings, getFontCssFamily } from '@/lib/gameSettings'
+import BuzzQrOverlay from '@/components/BuzzQrOverlay'
 
 type Props = {
   state: RoosidesodaState
@@ -75,6 +76,7 @@ export default function RoosidesodaHost({
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pulseTeam, setPulseTeam] = useState<number | null>(null)
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null)
+  const [showBuzzQr, setShowBuzzQr] = useState(false)
   const lastConfetti = useRef(0)
   const bgmRef = useRef<ReturnType<typeof createBgm> | null>(null)
 
@@ -154,6 +156,36 @@ export default function RoosidesodaHost({
 
   const [animatingBank, setAnimatingBank] = useState<{ amount: number; toTeam: number } | null>(null)
 
+  // Real-time phone buzzer detection
+  const lastBuzzRef = useRef<number>(0)
+  useEffect(() => {
+    const b = (state as any).buzz
+    if (!b || !b.at || b.at === lastBuzzRef.current) return
+    lastBuzzRef.current = b.at
+
+    const buzzedName: string = b.name || ''
+    let detectedTeam = 0
+    if (teams[1] && (buzzedName.toLowerCase().includes(teams[1].name.toLowerCase()) || buzzedName.includes('[Meeskond 2]'))) {
+      detectedTeam = 1
+    } else if (teams[0] && (buzzedName.toLowerCase().includes(teams[0].name.toLowerCase()) || buzzedName.includes('[Meeskond 1]'))) {
+      detectedTeam = 0
+    }
+
+    try {
+      playFx('ding')
+      playSound(sounds.roosCorrect)
+    } catch {}
+
+    if (isHost && roundPhase === 'faceoff') {
+      update({
+        faceoffWinner: detectedTeam,
+        faceoffBuzzerTeam: detectedTeam,
+        faceoffBuzzerName: buzzedName,
+        soundEffectTrigger: { type: 'ding', at: Date.now() },
+      })
+    }
+  }, [state.buzz, isHost, roundPhase, teams])
+
   // Sound sync effect on TV
   const lastSoundRef = useRef<number>(0)
   useEffect(() => {
@@ -166,6 +198,10 @@ export default function RoosidesodaHost({
           playSound(sounds.roosError)
           playFx('buzz')
         } catch {}
+      } else if (t === 'duplicate') {
+        try {
+          playFx('duplicate')
+        } catch {}
       } else {
         try {
           playFx(t as any)
@@ -174,11 +210,15 @@ export default function RoosidesodaHost({
     }
   }, [state.soundEffectTrigger, isHost])
 
-  function triggerSoundFx(fx: 'applause' | 'drumroll' | 'ding' | 'buzz' | 'victory') {
+  function triggerSoundFx(fx: 'applause' | 'drumroll' | 'ding' | 'buzz' | 'victory' | 'duplicate') {
     if (fx === 'buzz') {
       try {
         playSound(sounds.roosError)
         playFx('buzz')
+      } catch {}
+    } else if (fx === 'duplicate') {
+      try {
+        playFx('duplicate')
       } catch {}
     } else {
       try {
@@ -186,6 +226,21 @@ export default function RoosidesodaHost({
       } catch {}
     }
     update({ soundEffectTrigger: { type: fx, at: Date.now() } })
+  }
+
+  function triggerDuplicateAlert() {
+    if (!isHost) return
+    try {
+      playFx('duplicate')
+    } catch {}
+    update({
+      duplicateAlert: true,
+      duplicateAlertText: 'SEE VASTUS ON JUBA LAUAL!',
+      soundEffectTrigger: { type: 'duplicate', at: Date.now() },
+    })
+    setTimeout(() => {
+      update({ duplicateAlert: false })
+    }, 2800)
   }
 
   function revealRemaining() {
@@ -204,6 +259,7 @@ export default function RoosidesodaHost({
         ...(prev.revealedCuriosity || []),
         ...unrevealed.filter((i) => !(prev.revealedCuriosity || []).includes(i)),
       ],
+      soundEffectTrigger: { type: 'reveal', at: Date.now() },
     }))
   }
 
@@ -217,6 +273,7 @@ export default function RoosidesodaHost({
       faceoffWinner: teamIdx,
       faceoffBuzzerTeam: teamIdx,
       faceoffBuzzerName: teams[teamIdx]?.name,
+      soundEffectTrigger: { type: 'ding', at: Date.now() },
     })
   }
 
@@ -231,6 +288,7 @@ export default function RoosidesodaHost({
       if (k === 'b') awardBank()
       if (k === 'o') revealRemaining()
       if (k === 'a') triggerSoundFx('applause')
+      if (k === 'j') triggerDuplicateAlert()
       if (k === 'd' && !e.ctrlKey && !e.metaKey) triggerSoundFx('drumroll')
       if (k === 'z' && roundPhase === 'faceoff') handleFaceoffBuzzer(0)
       if (k === 'x' && roundPhase === 'faceoff') handleFaceoffBuzzer(1)
@@ -295,6 +353,7 @@ export default function RoosidesodaHost({
         revealed: [...prev.revealed, idx],
         bank: prev.bank + pts,
         lastBankAdded: { amount: pts, at: Date.now() },
+        soundEffectTrigger: { type: 'correct', at: Date.now() },
       }))
     }
   }
@@ -315,9 +374,14 @@ export default function RoosidesodaHost({
         showStrikeOverlay: true,
         roundPhase: 'steal',
         stealTeam: otherTeam,
+        soundEffectTrigger: { type: 'buzz', at: Date.now() },
       })
     } else {
-      update({ strikes: next, showStrikeOverlay: true })
+      update({
+        strikes: next,
+        showStrikeOverlay: true,
+        soundEffectTrigger: { type: 'buzz', at: Date.now() },
+      })
     }
   }
 
@@ -355,6 +419,7 @@ export default function RoosidesodaHost({
         strikes: 0,
         roundPhase: 'main',
         confettiAt: success ? Date.now() : prev.confettiAt,
+        soundEffectTrigger: { type: success ? 'victory' : 'buzz', at: Date.now() },
       }
     })
   }
@@ -369,6 +434,10 @@ export default function RoosidesodaHost({
     update({
       roundPhase: 'faceoff',
       faceoffWinner: null,
+      faceoffBuzzerTeam: null,
+      faceoffBuzzerName: null,
+      buzz: null,
+      buzzEnabled: true,
       strikes: 0,
     })
   }
@@ -539,6 +608,19 @@ export default function RoosidesodaHost({
           }}
           buzzerControl={{
             sessionCode,
+            buzzEnabled: (state as any).buzzEnabled ?? true,
+            onToggleBuzz: () =>
+              update((prev: any) => ({ ...prev, buzzEnabled: !(prev.buzzEnabled ?? true) })),
+            buzz: (state as any).buzz || null,
+            onClearBuzz: () =>
+              update((prev: any) => ({
+                ...prev,
+                buzz: null,
+                faceoffBuzzerTeam: null,
+                faceoffBuzzerName: null,
+              })),
+            showBuzzQr,
+            onToggleBuzzQr: () => setShowBuzzQr((v) => !v),
             connection,
             lastSync,
             onRetry,
@@ -684,6 +766,15 @@ export default function RoosidesodaHost({
                   <span>🎺</span>
                   <span>Fanfaar</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={triggerDuplicateAlert}
+                  className="btn-outline text-xs !py-1 !px-2.5 flex items-center gap-1 border-amber-500/50 text-amber-300 hover:bg-amber-500/10 font-bold"
+                  title="Korduv / Juba öeldud vastus (Kiirklahv: J)"
+                >
+                  <span>⚠️</span>
+                  <span>Juba laual!</span>
+                </button>
               </div>
             )}
 
@@ -698,12 +789,17 @@ export default function RoosidesodaHost({
                   Mõlema meeskonna esindajad laua juurde!
                 </h3>
                 <p className="text-white/70 text-xs sm:text-sm mt-1 max-w-xl mx-auto">
-                  Kiirem nupuvajutaja või kõrgema vastuse pakkuja otsustab: kas meeskond mängib ise või annab mängukorra vastastele.
+                  Kiirem nupuvajutaja telefonist või lauast vastab esimesena. Kõrgema vastuse pakkuja otsustab: mängime ise või anname vastastele!
                 </p>
 
                 {state.faceoffBuzzerTeam !== null && state.faceoffBuzzerTeam !== undefined && (
-                  <div className="my-3 py-2 px-4 rounded-xl bg-gold/20 border border-gold text-gold font-display font-black text-base md:text-lg animate-bounce max-w-md mx-auto">
+                  <div className="my-3 py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-500/25 via-gold/30 to-amber-500/25 border-2 border-gold text-gold font-display font-black text-lg md:text-2xl animate-bounce max-w-xl mx-auto shadow-[0_0_30px_rgba(223,179,66,0.35)]">
                     ⚡ {teams[state.faceoffBuzzerTeam]?.name} vajutas esimesena!
+                    {state.faceoffBuzzerName && (
+                      <div className="text-xs font-sans font-medium text-white/90 mt-1">
+                        Mängija: <span className="text-amber-200 font-bold">{state.faceoffBuzzerName}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -712,7 +808,7 @@ export default function RoosidesodaHost({
                     <div className="text-xs font-bold text-gold uppercase tracking-wider">
                       {state.faceoffWinner !== null && state.faceoffWinner !== undefined
                         ? `Valitud duelli võitja: ${teams[state.faceoffWinner]?.name}`
-                        : 'Vali duelli võitnud meeskond (või vajuta Z / X):'}
+                        : 'Vali duelli võitnud meeskond (või klahvid Z / X):'}
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
                       {teams.map((tm, idx) => (
@@ -729,6 +825,23 @@ export default function RoosidesodaHost({
                           {tm.name} võitis duelli ({idx === 0 ? 'Klahv Z' : 'Klahv X'})
                         </button>
                       ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          update({
+                            faceoffWinner: null,
+                            faceoffBuzzerTeam: null,
+                            faceoffBuzzerName: null,
+                            buzz: null,
+                            buzzEnabled: true,
+                          })
+                        }
+                        className="btn-outline text-xs !py-1.5 !px-3 text-white/60 border-white/20 hover:text-white"
+                        title="Lähtesta nupuvajutus ja luba mängijatel uuesti vajutada"
+                      >
+                        <RotateCcw size={12} className="inline mr-1" />
+                        Lähtesta nupp
+                      </button>
                     </div>
 
                     {state.faceoffWinner !== null && state.faceoffWinner !== undefined && (
@@ -736,7 +849,7 @@ export default function RoosidesodaHost({
                         <button
                           type="button"
                           onClick={() => chooseFaceoffAction(true)}
-                          className="btn-gold text-xs !py-2 !px-4 flex items-center gap-1.5 font-bold"
+                          className="btn-gold text-xs !py-2 !px-4 flex items-center gap-1.5 font-bold shadow-lg"
                         >
                           <Check size={14} />
                           <span>Mängime ise ({teams[state.faceoffWinner]?.name})</span>
@@ -1049,6 +1162,16 @@ export default function RoosidesodaHost({
 
                   <button
                     type="button"
+                    onClick={triggerDuplicateAlert}
+                    className="btn-outline flex items-center gap-1.5 border-amber-500/50 text-amber-300 hover:bg-amber-500/10 font-bold text-xs"
+                    title="Teata korduvast / juba öeldud vastusest (Kiirklahv: J)"
+                  >
+                    <span>⚠️</span>
+                    <span>Juba laual (J)</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={revealRemaining}
                     className="btn-outline flex items-center gap-1.5 border-purple-400/50 text-purple-200 hover:bg-purple-500/10 font-medium text-xs"
                     title="Ava kõik vastused mida tiimid ei arvanud ära (Kiirklahv: O)"
@@ -1112,6 +1235,7 @@ export default function RoosidesodaHost({
                   <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">B</kbd> = Pank</span>
                   <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">T</kbd> = 5s Kell</span>
                   <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">Z / X</kbd> = Duell</span>
+                  <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">J</kbd> = Juba öeldud</span>
                   <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">A</kbd> = Aplaus</span>
                   <span className="font-mono text-white/60"><kbd className="bg-white/10 px-1 rounded">M</kbd> = Muusika</span>
                 </div>
@@ -1180,6 +1304,21 @@ export default function RoosidesodaHost({
         </div>
       )}
 
+      {/* DUPLICATE ANSWER OVERLAY */}
+      {state.duplicateAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm pointer-events-none animate-in zoom-in duration-200">
+          <div className="card-panel p-8 max-w-xl mx-4 text-center border-accent-red bg-red-950/90 shadow-[0_0_80px_rgba(230,46,77,1)] animate-bounce">
+            <div className="text-accent-red text-6xl mb-2 font-black">⚠️</div>
+            <h2 className="text-4xl md:text-6xl font-display font-black text-white drop-shadow-md tracking-wider">
+              JUBA ÖELDUD!
+            </h2>
+            <p className="text-amber-300 text-lg md:text-2xl font-bold mt-3">
+              {state.duplicateAlertText || 'See vastus on juba laual — ütle teine vastus!'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* AI GENERATION MODAL */}
       <GameAiModal
         isOpen={aiModalOpen}
@@ -1230,6 +1369,31 @@ export default function RoosidesodaHost({
           </div>
         )}
       />
+
+      {/* BUZZER QR MODAL */}
+      {showBuzzQr && sessionCode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="card-panel p-6 max-w-sm w-full text-center relative border-gold shadow-2xl animate-in zoom-in duration-150">
+            <button
+              type="button"
+              onClick={() => setShowBuzzQr(false)}
+              className="absolute top-3 right-3 text-white/40 hover:text-white p-1 rounded-full hover:bg-white/10"
+              aria-label="Sulge"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="font-display text-xl text-gold font-bold mb-2">Liitu nupuga telefonist</h3>
+            <BuzzQrOverlay code={sessionCode} />
+            <button
+              type="button"
+              onClick={() => setShowBuzzQr(false)}
+              className="btn-gold w-full mt-4 text-xs font-bold"
+            >
+              Sulge
+            </button>
+          </div>
+        </div>
+      )}
     </GameShowFrame>
   )
 }

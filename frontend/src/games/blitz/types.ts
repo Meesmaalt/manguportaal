@@ -7,7 +7,9 @@ export type BlitzQuestionType = 'quiz' | 'true_false' | 'multi' | 'type_answer' 
 export type BlitzQuestion = {
   id: string
   q: string
+  q_tr?: string
   choices: [string, string, string, string]
+  choices_tr?: [string, string, string, string]
   correct: BlitzChoice
   /** Question type: default 'quiz' (4 choices). Kahoot types: true_false, multi, type_answer, slider, poll */
   type?: BlitzQuestionType
@@ -15,6 +17,7 @@ export type BlitzQuestion = {
   multiCorrect?: number[]
   /** Accepted text answers for 'type_answer' (case-insensitive) */
   acceptedAnswers?: string[]
+  acceptedAnswers_tr?: string[]
   /** For 'slider' (numerical guess) */
   sliderMin?: number
   sliderMax?: number

@@ -42,7 +42,10 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  FileText,
+  X,
 } from 'lucide-react'
+import BilingualText from '@/components/BilingualText'
 import BlitzPackEditor from './BlitzPackEditor'
 import {
   BLITZ_KAHOOT_SHOWCASE_QUESTIONS,
@@ -68,6 +71,7 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
   const [soundOk, setSoundOk] = useState(false)
   const [tvOpened, setTvOpened] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const questions = state.questions || []
   const players = state.players || []
   const answers = state.answers || {}
@@ -326,6 +330,14 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
               >
                 <Tv size={12} /> <ExternalLink size={12} /> Ava teler
               </a>
+              <button
+                type="button"
+                className="btn-outline text-xs flex items-center gap-1 border-gold/40 text-gold hover:bg-gold/10"
+                onClick={() => setSheetOpen(true)}
+                title="Ava küsimuste ja vastuste spikker"
+              >
+                <FileText size={12} /> Spikker
+              </button>
             </div>
             <p className="text-[11px] text-white/35">
               {questions.length} küsimust · {state.secondsPerQuestion}s ·{' '}
@@ -698,10 +710,23 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
       {isHost && state.phase === 'reveal' && state.questions[state.qIndex + 1] && (
         <div className="card-panel border-amber-500/30 p-3 mb-4 text-sm">
           <p className="text-amber-200/80 text-xs uppercase tracking-wide mb-1">Järgmise eelvaade (ainult host)</p>
-          <p className="text-white/80">{state.questions[state.qIndex + 1].q}</p>
-          <p className="text-[11px] text-white/35 mt-1">
-            Õige: {state.questions[state.qIndex + 1].choices[state.questions[state.qIndex + 1].correct]}
-          </p>
+          <BilingualText
+            text={state.questions[state.qIndex + 1].q}
+            translation={state.questions[state.qIndex + 1].q_tr}
+            layout="inline"
+            primaryClassName="text-white/80 font-medium"
+            translationClassName="text-cyan-300/85 text-xs italic ml-1.5"
+          />
+          <div className="text-[11px] text-white/50 mt-1 flex items-center gap-1.5">
+            <span>Õige:</span>
+            <BilingualText
+              text={state.questions[state.qIndex + 1].choices[state.questions[state.qIndex + 1].correct]}
+              translation={state.questions[state.qIndex + 1].choices_tr?.[state.questions[state.qIndex + 1].correct]}
+              layout="inline"
+              primaryClassName="text-emerald-300 font-semibold"
+              translationClassName="text-emerald-200/70 italic text-[10px] ml-1"
+            />
+          </div>
         </div>
       )}
 
@@ -754,7 +779,15 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
             )}
           </div>
 
-          <p className="text-white text-lg font-semibold mb-3">{q.q}</p>
+          <div className="mb-3">
+            <BilingualText
+              text={q.q}
+              translation={q.q_tr}
+              layout="block"
+              primaryClassName="text-white text-lg md:text-xl font-semibold leading-snug"
+              translationClassName="text-cyan-300 text-sm font-medium mt-1 leading-snug"
+            />
+          </div>
 
           {/* Type-specific host display */}
           {q.type === 'slider' && (
@@ -794,11 +827,21 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                       state.phase === 'reveal' && isCorrect ? 'ring-2 ring-white' : ''
                     }`}
                   >
-                    <span className="opacity-80 mr-2">{CHOICE_COLORS[i].label}</span>
-                    {c}
-                    {state.phase === 'reveal' && isCorrect && (
-                      <span className="ml-2 text-xs font-black text-emerald-300">✓ Õige</span>
-                    )}
+                    <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                      <span className="opacity-80 shrink-0 font-bold">{CHOICE_COLORS[i].label}</span>
+                      <div className="flex-1 min-w-0">
+                        <BilingualText
+                          text={c}
+                          translation={q.choices_tr?.[i]}
+                          layout="inline"
+                          primaryClassName="font-medium text-white"
+                          translationClassName="text-white/80 text-xs italic ml-1.5"
+                        />
+                      </div>
+                      {state.phase === 'reveal' && isCorrect && (
+                        <span className="shrink-0 text-xs font-black text-emerald-300 ml-1">✓ Õige</span>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -853,13 +896,26 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
                     <div className="flex items-start gap-2">
                       <span className="text-white/35 tabular-nums w-5 shrink-0">{i + 1}.</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/80 truncate">{qq.q}</p>
+                        <BilingualText
+                          text={qq.q}
+                          translation={qq.q_tr}
+                          layout="inline"
+                          primaryClassName="text-white/80 font-medium"
+                          translationClassName="text-cyan-300/80 text-[11px] italic ml-1 truncate"
+                        />
                         {qq.hostNote && (
                           <p className="text-amber-200/70 text-[10px] mt-0.5">Host: {qq.hostNote}</p>
                         )}
-                        <p className="text-white/30 text-[10px] mt-0.5 truncate">
-                          Õige: {qq.choices?.[qq.correct]}
-                        </p>
+                        <div className="text-white/40 text-[10px] mt-0.5 flex items-center gap-1 truncate">
+                          <span>Õige:</span>
+                          <BilingualText
+                            text={qq.choices?.[qq.correct]}
+                            translation={qq.choices_tr?.[qq.correct]}
+                            layout="inline"
+                            primaryClassName="text-white/60 font-medium"
+                            translationClassName="text-cyan-300/60 text-[9px] italic ml-1"
+                          />
+                        </div>
                       </div>
                       {canJump && (
                         <button
@@ -973,6 +1029,133 @@ export default function BlitzHost({ state: rawState, update, sessionCode, isHost
           <p className="text-white/35 text-sm text-center py-4">Ootame mängijaid…</p>
         )}
       </div>
+
+      {/* HOST SPICKER MODAL */}
+      {sheetOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSheetOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="card-panel max-w-3xl w-full max-h-[85vh] overflow-y-auto p-5 md:p-6 border-gold/50 relative shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSheetOpen(false)}
+              className="absolute top-3 right-3 text-white/50 hover:text-white transition"
+            >
+              <X size={22} />
+            </button>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">⚡</span>
+              <h2 className="font-display text-2xl text-gold font-bold">Mängujuhi spikker (Blitz)</h2>
+            </div>
+            <p className="text-white/45 text-xs mb-4">
+              Kõik küsimused, tõlked ja vastused ühes vaates. Kasuta saate juhtimiseks või spikrina!
+            </p>
+
+            <div className="space-y-3">
+              {questions.map((qItem, idx) => {
+                const letters = ['A', 'B', 'C', 'D']
+                const isTF = qItem.type === 'true_false'
+                const isSlider = qItem.type === 'slider'
+                const isTypeAns = qItem.type === 'type_answer'
+                return (
+                  <div key={idx} className="bg-black/40 rounded-xl p-3 border border-white/10 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gold font-bold text-xs bg-gold/15 px-2 py-0.5 rounded border border-gold/30">
+                          #{idx + 1}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold text-cyan-300">
+                          {qItem.type || 'quiz'}
+                        </span>
+                        {qItem.pointsMultiplier === 2 && (
+                          <span className="text-[10px] text-amber-300 font-bold bg-amber-400/20 px-1.5 py-0.2 rounded">
+                            ★ 2X
+                          </span>
+                        )}
+                      </div>
+                      {qItem.difficulty && (
+                        <span className="text-[10px] text-white/40 uppercase">{qItem.difficulty}</span>
+                      )}
+                    </div>
+
+                    <BilingualText
+                      text={qItem.q}
+                      translation={qItem.q_tr}
+                      layout="block"
+                      primaryClassName="text-white font-semibold text-sm"
+                      translationClassName="text-cyan-300 text-xs italic"
+                    />
+
+                    {!isSlider && !isTypeAns && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 text-xs">
+                        {qItem.choices.map((c, ci) => {
+                          if (isTF && ci >= 2) return null
+                          const isCorrect = qItem.type === 'multi'
+                            ? (qItem.multiCorrect || [qItem.correct]).includes(ci)
+                            : qItem.correct === ci
+                          const tfLabel = ci === 0 ? 'TÕENE' : 'VÄÄR'
+                          const label = isTF ? tfLabel : c
+                          const tr = qItem.choices_tr?.[ci]
+                          return (
+                            <div
+                              key={ci}
+                              className={`p-1.5 rounded-lg border flex items-center justify-between gap-1.5 ${
+                                isCorrect
+                                  ? 'bg-emerald-950/60 border-emerald-400/60 text-emerald-200 font-bold'
+                                  : 'bg-white/5 border-white/5 text-white/70'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <span className="opacity-75 font-mono text-[11px]">{letters[ci]}:</span>
+                                <BilingualText
+                                  text={label}
+                                  translation={tr}
+                                  layout="inline"
+                                  primaryClassName="truncate"
+                                  translationClassName="text-[10px] opacity-80 italic ml-1"
+                                />
+                              </div>
+                              {isCorrect && <span className="text-emerald-300 text-xs shrink-0">✓</span>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {isSlider && (
+                      <div className="text-xs text-amber-300 bg-amber-950/30 p-2 rounded-lg border border-amber-500/20">
+                        Õige number: <strong>{qItem.sliderTarget} {qItem.sliderUnit || ''}</strong> (vahemik {qItem.sliderMin ?? 0} – {qItem.sliderMax ?? 100})
+                      </div>
+                    )}
+
+                    {isTypeAns && (
+                      <div className="text-xs text-emerald-300 bg-emerald-950/30 p-2 rounded-lg border border-emerald-500/20">
+                        <div>Õiged: <strong>{(qItem.acceptedAnswers || [qItem.choices[qItem.correct]]).join(' · ')}</strong></div>
+                        {qItem.acceptedAnswers_tr && qItem.acceptedAnswers_tr.length > 0 && (
+                          <div className="text-emerald-200/70 text-[11px] italic mt-0.5">
+                            Tõlgitud: {qItem.acceptedAnswers_tr.join(' · ')}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {qItem.hostNote && (
+                      <div className="text-[11px] text-amber-200/70 italic pt-0.5">
+                        Host: {qItem.hostNote}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
