@@ -163,10 +163,29 @@ export function formatPbError(
     fieldHints.includes('Invalid value') ||
     (typeof data === 'object' && data && JSON.stringify(data).includes('validation_invalid_value'))
   ) {
+    const rawStr = JSON.stringify(data || {}) + ' ' + msg + ' ' + fieldHints
+    let gameType = ''
+    if (rawStr.includes('blitz')) gameType = 'blitz'
+    else if (rawStr.includes('kinnistu_deal')) gameType = 'kinnistu_deal'
+    else if (rawStr.includes('miljonar')) gameType = 'miljonar'
+    else {
+      const match = rawStr.match(/"value":\s*"([^"]+)"/) || rawStr.match(/Invalid value\s+([a-zA-Z0-9_-]+)/)
+      if (match) gameType = match[1]
+    }
+
+    const docName = gameType === 'blitz'
+      ? 'pb/FIX_BLITZ.md'
+      : gameType === 'kinnistu_deal'
+      ? 'pb/FIX_KINNISTU_DEAL.md'
+      : gameType === 'miljonar'
+      ? 'pb/FIX_MILJONAR.md'
+      : 'pb/FIX_BLITZ.md või pb/FIX_KINNISTU_DEAL.md'
+
+    const targetVal = gameType || 'blitz'
     return (
       msg +
       fieldHints +
-      ' — game_type selectis puudub see väärtus. PB Admin → packs → game_type → Values: lisa nt kinnistu_deal (sama game_sessions). Vt pb/FIX_KINNISTU_DEAL.md'
+      ` — game_type selectis puudub see väärtus. PB Admin → packs → game_type → Values: lisa ${targetVal} (sama game_sessions). Vt ${docName}`
     )
   }
   if (status === 400 || msg.includes('Failed to create')) {

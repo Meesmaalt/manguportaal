@@ -289,6 +289,84 @@ export default function Admin() {
     }
   }
 
+  async function syncDatabaseSchema() {
+    if (!ensureStillAdmin()) return
+    setBusy('sync-schema')
+    setError('')
+    setMsg('')
+    try {
+      const requiredGameTypes = [
+        'kuldvillak',
+        'roosidesoda',
+        'sonaseletus',
+        'ma_ei_ole_kunagi',
+        'viimane_pusti',
+        'tode_voi_tegu',
+        'kinnistu_deal',
+        'blitz',
+        'miljonar',
+      ]
+
+      const updatedCols: string[] = []
+
+      for (const colName of ['packs', 'game_sessions']) {
+        try {
+          const col: any = await pb.collections.getOne(colName)
+          let modified = false
+
+          // PocketBase >= 0.23: fields
+          if (Array.isArray(col.fields)) {
+            const field = col.fields.find((f: any) => f.name === 'game_type')
+            if (field) {
+              const current: string[] = Array.isArray(field.values) ? field.values : []
+              const missing = requiredGameTypes.filter((g) => !current.includes(g))
+              if (missing.length > 0) {
+                field.values = Array.from(new Set([...current, ...requiredGameTypes]))
+                modified = true
+              }
+            }
+          }
+
+          // PocketBase < 0.23: schema
+          if (Array.isArray(col.schema)) {
+            const field = col.schema.find((f: any) => f.name === 'game_type')
+            if (field) {
+              const current: string[] = (field.options && field.options.values) || field.values || []
+              const missing = requiredGameTypes.filter((g) => !current.includes(g))
+              if (missing.length > 0) {
+                const next = Array.from(new Set([...current, ...requiredGameTypes]))
+                if (field.options) field.options.values = next
+                field.values = next
+                modified = true
+              }
+            }
+          }
+
+          if (modified) {
+            await pb.collections.update(col.id, col)
+            updatedCols.push(colName)
+          }
+        } catch (err: any) {
+          console.warn(`[syncSchema] ${colName}:`, err)
+        }
+      }
+
+      if (updatedCols.length > 0) {
+        setMsg(
+          `✓ Andmebaasi skeem edukalt uuendatud! Lisati puuduvad mängutüübid (sh blitz) tabelitesse: ${updatedCols.join(
+            ', '
+          )}.`
+        )
+      } else {
+        setMsg('✓ Andmebaasi skeem on juba ajakohane (kõik mängutüübid k.a blitz on lubatud).')
+      }
+    } catch (err: any) {
+      setError('Skeemi uuendamine ebaõnnestus: ' + (err.message || String(err)))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const counts = useMemo(() => {
     const c: Record<string, number> = {}
     for (const g of GAME_TYPES) c[g] = 0
@@ -571,6 +649,16 @@ export default function Admin() {
                 />
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={syncDatabaseSchema}
+                  disabled={!!busy}
+                  className="btn-outline text-xs !py-2 !px-3 flex items-center gap-1.5 shrink-0 border-accent-cyan/40 text-accent-cyan hover:bg-accent-cyan/10"
+                  title="Kontrolli ja lisa puuduvad mängutüübid (blitz, miljonar jt) andmebaasi packs ja game_sessions tabelitesse"
+                >
+                  <Database size={14} />
+                  <span>{busy === 'sync-schema' ? 'Sünkroniseerin…' : 'Paranda PB skeem (blitz)'}</span>
+                </button>
                 <Link
                   to="/packs/create"
                   className="btn-gold text-xs !py-2 !px-3.5 flex items-center gap-1.5 shrink-0 font-semibold"
@@ -892,6 +980,30 @@ export default function Admin() {
                 <span className="text-emerald-400 font-mono">
                   {(pb.authStore.record as any)?.email || 'Aktiivne sessioon'}
                 </span>
+              </div>
+            </div>
+
+            {/* Database Schema Sync Card */}
+            <div className="p-4 rounded-xl bg-accent-cyan/10 border border-accent-cyan/30 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="text-sm font-semibold text-accent-cyan flex items-center gap-1.5">
+                    <Database size={16} />
+                    <span>Andmebaasi skeemi sünkroniseerimine (Automaatne parandus)</span>
+                  </div>
+                  <p className="text-white/60 text-xs leading-relaxed max-w-xl">
+                    Kontrollib PocketBase kollektsioone (<code>packs</code> ja <code>game_sessions</code>) ning lisab automaatselt puuduvad mängutüübid (nt <strong>blitz</strong>, <strong>miljonar</strong>, <strong>kinnistu_deal</strong>) select-välja lubatud väärtuste loetellu. Väldib <em>Invalid value blitz</em> vigu ilma olemasolevaid andmeid puudutamata.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={syncDatabaseSchema}
+                  disabled={!!busy}
+                  className="btn-gold text-xs !py-2.5 !px-4 shrink-0 font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap shadow-md"
+                >
+                  <Database size={14} />
+                  <span>{busy === 'sync-schema' ? 'Sünkroniseerin…' : 'Paranda andmebaasi skeem'}</span>
+                </button>
               </div>
             </div>
 
