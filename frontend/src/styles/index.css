@@ -851,3 +851,44 @@ a.card-panel, .group.card-panel {
     transition: none !important;
   }
 }
+
+/* Kinnistu Deal: an illustrated tabletop, shared by host, phones and TV. */
+.deal-table-surface {
+  background: radial-gradient(ellipse at 50% 30%, #173a38 0%, #091c23 55%, #040b12 100%);
+}
+.deal-table-center { display:flex; align-items:center; gap:14px; padding:12px 20px; border:1px solid #ffffff18; border-radius:18px; background:#02061755; font-size:14px; color:#cbd5e1; }
+.deal-deck-back { display:grid; place-items:center; width:34px; height:46px; flex-shrink:0; background:repeating-linear-gradient(45deg,#173a38,#173a38 4px,#24524c 4px,#24524c 6px); border:2px solid #dfb342; border-radius:5px; color:#dfb342; font-weight:900; box-shadow:3px 3px 0 #cbd5e1,5px 5px 0 #334155; }
+.property-city { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); }
+.property-city-compact { grid-template-columns:1fr; }
+.property-district { width:100%; min-width:0; text-align:left; border-radius:16px; border:1px solid #ffffff26; border-top:3px solid var(--district-color); background:linear-gradient(160deg,#1b3043,#091522); overflow:hidden; box-shadow:0 6px 16px #0003; }
+button.property-district:hover { border-color:#dfb342; }
+.district-complete { border-color:#dfb34299; background:linear-gradient(155deg,#314137,#0c1b22); }
+.district-selected { outline:3px solid #dfb342; }
+.district-heading,.district-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; font-size:12px; color:#cbd5e1; }
+.district-heading strong { color:#f8fafc; }
+.district-heading span { color:#fde68a; font-weight:800; }
+.district-street { display:flex; align-items:flex-end; padding:0 7px; background:radial-gradient(ellipse at 50% 100%,#50816a44,transparent 80%); }
+.district-lot { flex:1; min-width:0; text-align:center; }
+.district-building { width:100%; height:auto; max-height:105px; display:block; }
+.district-lot span { display:block; font-size:10px; line-height:1.25; color:#e2e8f0; overflow-wrap:anywhere; padding:0 2px 7px; min-height:32px; }
+.district-empty span { color:#7e8fa1; }
+.district-road { height:13px; background:repeating-linear-gradient(90deg,transparent 0 18px,#e2e8f088 18px 32px,transparent 32px 48px) center / 100% 2px no-repeat,#344458; border-block:2px solid #64748b; }
+.district-footer { font-size:11px; }
+.district-footer strong { color:#86efac; white-space:nowrap; }
+.district-city-empty { min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; font-size:12px; border:1px dashed #ffffff20; border-radius:16px; }
+.district-city-empty svg { width:85px; }
+.party-stage { position:relative; overflow:hidden; border:1px solid #ffffff24; border-radius:28px; background:radial-gradient(ellipse at 50% 0%,#374d7433,transparent 70%),linear-gradient(140deg,#17243a,#090f1e); box-shadow:0 20px 60px #0004; }
+.party-stage::before { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(130deg,#ffffff05,transparent 50%); }
+.round-timer { width:138px; height:138px; margin:0 auto; position:relative; display:grid; place-content:center; }
+.round-timer svg { position:absolute; inset:0; transform:rotate(-90deg); width:100%; height:100%; }
+.round-timer circle { fill:none; stroke-width:5; }
+.round-timer .timer-track { stroke:#ffffff12; }
+.round-timer .timer-progress { stroke:currentColor; stroke-linecap:round; transition:stroke-dashoffset .4s linear; }
+.party-score-card { border:1px solid #ffffff18; border-radius:18px; padding:16px; background:#0c1424; transition:border-color .2s,opacity .2s; }
+.party-score-card.active { border-color:#dfb342; background:linear-gradient(145deg,#dfb34218,#0c1424); }
+@media (prefers-reduced-motion: reduce) { .timer-progress,.party-score-card { transition:none !important; } }
+.host-extras summary::-webkit-details-marker { display:none; }
+.host-extras[open] summary { border-color:#dfb342; color:#dfb342; }
+.host-extras-menu { position:absolute; z-index:60; left:0; top:calc(100% + 8px); min-width:220px; max-width:min(320px,80vw); padding:12px; display:flex; flex-wrap:wrap; gap:8px; border:1px solid #dfb34255; border-radius:14px; background:#101827; box-shadow:0 12px 40px #0009; }
+/* Decorative glows must not create a hidden scroll container that moves on focus. */
+.game-show { overflow:clip; }

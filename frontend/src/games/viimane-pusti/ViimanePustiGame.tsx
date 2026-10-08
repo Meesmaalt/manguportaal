@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Trophy, Undo2 } from 'lucide-react'
 import type { ViimanePustiPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -15,6 +15,7 @@ export type ViimanePustiState = {
   index: number
   startingLives: number
   packData: ViimanePustiPackData
+  lastHit?: { index: number; player: Player }
   code?: string
 }
 
@@ -30,22 +31,26 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
   const { t } = useI18n()
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const standing = players.filter((p) => p.standing && p.lives > 0)
-  const winner = standing.length === 1 ? standing[0] : null
+  const winner = players.length > 1 && standing.length === 1 ? standing[0] : null
+  const over = players.length > 1 && standing.length <= 1
+  const exhausted = index >= statements.length
 
   function next() {
-    if (!isHost) return
-    update({ index: (index + 1) % statements.length })
+    if (!isHost || over || exhausted) return
+    update({ index: index + 1, lastHit: undefined })
   }
 
   function hit(i: number) {
-    if (!isHost) return
+    if (!isHost || over) return
     update((prev) => {
+      if (!prev.players[i]?.standing || prev.players[i].lives <= 0) return prev
+      const previousPlayer = prev.players[i]
       const players = prev.players.map((p, idx) => {
         if (idx !== i) return p
         const lives = Math.max(0, p.lives - 1)
         return { ...p, lives, standing: lives > 0 }
       })
-      return { ...prev, players }
+      return { ...prev, players, lastHit: { index: i, player: previousPlayer } }
     })
   }
 
@@ -60,11 +65,25 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
     }))
   }
 
+  function undoHit() {
+    if (!isHost) return
+    update(prev => prev.lastHit ? {
+      ...prev,
+      players: prev.players.map((p, i) => i === prev.lastHit!.index ? prev.lastHit!.player : p),
+      lastHit: undefined,
+    } : prev)
+  }
+
+  function resetGame() {
+    if (!isHost || !confirm(t('resetScoresConfirm'))) return
+    update(prev => ({ ...prev, index: 0, lastHit: undefined, players: prev.players.map(p => ({ ...p, lives: prev.startingLives, standing: true })) }))
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4">
       {isHost && <SessionCodeBadge code={sessionCode} />}
       {isHost && (
-        <GameToolbar
+        <GameToolbar onReset={resetGame}
           extra={
             <button
               type="button"
@@ -78,17 +97,18 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
         />
       )}
 
-      {winner ? (
-        <div className="card-panel p-10 text-center mb-6 border-gold shadow-gold">
-          <p className="text-gold font-display text-xl mb-2">{t('lastStanding')}</p>
-          <h2 className="text-4xl font-black text-white">{winner.name}</h2>
+      <div className="flex justify-between items-center text-sm text-white/50 mb-3"><span>{standing.length} / {players.length} mängijat püsti</span><span>Voor {Math.min(index + 1, statements.length)} / {statements.length}</span></div>
+      {over ? (
+        <div className="party-stage p-10 text-center mb-6 border-gold shadow-gold">
+          <Trophy className="mx-auto text-gold mb-4" size={48} /><p className="text-gold font-display text-xl mb-2">{winner ? t('lastStanding') : 'Kõik langesid välja'}</p>
+          <h2 className="text-4xl font-black text-white">{winner?.name || 'Viik!'}</h2>
         </div>
       ) : (
-        <div className="card-panel p-8 text-center mb-6">
+        <div className="party-stage p-8 sm:p-12 text-center mb-6">
           <p className="text-white/50 text-sm uppercase tracking-widest mb-3">{t('statement')}</p>
-          <h2 className="text-2xl font-bold text-white">{statements[index]}</h2>
+          <h2 className="text-2xl font-bold text-white">{exhausted ? 'Kõik väited mängitud!' : statements[index] || 'Lisa väited, et alustada'}</h2>
           {isHost && (
-            <button onClick={next} className="btn-gold mt-6">
+            <button disabled={exhausted || !statements.length || !players.length} onClick={next} className="btn-gold mt-6 disabled:opacity-40">
               {t('next')}
             </button>
           )}
@@ -99,16 +119,18 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
         {players.map((p, i) => (
           <button
             key={i}
-            disabled={!isHost || !p.standing}
+            disabled={!isHost || !p.standing || over}
             onClick={() => hit(i)}
-            className={`card-panel p-4 text-center ${!p.standing ? 'opacity-25' : 'hover:border-accent-red'}`}
+            aria-label={`${p.name}, ${p.lives} elu${isHost ? ', kaota üks elu' : ''}`}
+            className={`party-score-card text-center ${!p.standing ? 'opacity-40' : 'hover:border-accent-red'}`}
           >
             <div className="font-bold text-gold">{p.name}</div>
-            <div className="text-xl mt-1">{p.standing ? '❤️'.repeat(p.lives) : '❌'}</div>
+            <div className="flex justify-center gap-1 mt-3" aria-hidden="true">{Array.from({ length: startingLives }, (_, n) => <span key={n} className={`w-3 h-3 rounded-full ${n < p.lives ? 'bg-rose-400 shadow-[0_0_8px_#fb718555]' : 'bg-white/10'}`} />)}</div><div className="text-white/40 text-xs mt-2">{p.standing ? `${p.lives} elu` : 'Väljas'}</div>
           </button>
         ))}
       </div>
 
+      {isHost && state.lastHit && <button onClick={undoHit} className="btn-outline text-sm flex items-center gap-2 mx-auto mb-4"><Undo2 size={14} />Võta tagasi: {state.lastHit.player.name}</button>}
       {isHost && (
         <button onClick={addPlayer} className="btn-outline text-sm mx-auto block">
           {t('addPlayer')}
@@ -129,6 +151,7 @@ export default function ViimanePustiGame({ state, update, isHost = true, session
           update({
             statements: list,
             index: 0,
+            lastHit: undefined,
           })
         }}
         renderPreview={(list) => (

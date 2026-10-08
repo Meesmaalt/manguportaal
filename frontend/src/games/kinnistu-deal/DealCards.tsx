@@ -1,3 +1,4 @@
+import PropertyCity, { StreetBuilding } from './PropertyDistrict'
 import type { ActionKind, DealCard, PlayerBoard, PropColor } from './types'
 import { COLOR_STYLE, SET_SIZE, rentForSet, RENT_BY_COUNT, HOUSE_RENT_BONUS, HOTEL_RENT_BONUS } from './types'
 import {
@@ -20,19 +21,6 @@ import {
   Hotel,
   CheckCircle2,
 } from 'lucide-react'
-
-const PROP_ICON: Record<PropColor, typeof Home> = {
-  brown: Trees,
-  mint: Waves,
-  pink: Building2,
-  orange: Home,
-  red: Landmark,
-  yellow: Mountain,
-  green: Trees,
-  blue: Landmark,
-  rail: Train,
-  util: Zap,
-}
 
 const ACTION_META: Record<
   ActionKind,
@@ -207,7 +195,6 @@ export function CardFace({
   // 2. PROPERTY CARD
   if (card.kind === 'property') {
     const st = COLOR_STYLE[card.color]
-    const Icon = PROP_ICON[card.color]
     const rentTable = RENT_BY_COUNT[card.color] || []
 
     return (
@@ -240,10 +227,10 @@ export function CardFace({
         <div className="absolute inset-0 flex flex-col items-center justify-between p-2 pt-6 pb-2 z-[1]">
           {/* Icon Badge */}
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/30 shadow-md mt-1"
+            className="w-14 h-14 rounded-xl flex items-center justify-center border border-white/30 shadow-md"
             style={{ background: `linear-gradient(135deg, ${st.bg}88 0%, rgba(0,0,0,0.5) 100%)` }}
           >
-            <Icon size={large ? 22 : small ? 16 : 18} className="text-white drop-shadow" />
+            <StreetBuilding color={card.color} />
           </div>
 
           {/* Street Name */}
@@ -401,33 +388,7 @@ export function PlayerTableBoard({
   player: PlayerBoard
   compact?: boolean
 }) {
-  const colors = (Object.keys(SET_SIZE) as PropColor[]).filter(
-    (c) => (player.props[c] || []).length > 0
-  )
-
-  if (!colors.length) {
-    return <p className="text-white/35 text-xs italic py-1">Pole veel kinnistuid</p>
-  }
-
-  return (
-    <div className="space-y-2">
-      <ColorProgressGrid player={player} />
-      {!compact && (
-        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-          {colors.map((c) => (
-            <PropertySetRow
-              key={c}
-              color={c}
-              cards={player.props[c] || []}
-              building={player.buildings?.[c]}
-              showRent
-              owner={player}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  return <PropertyCity player={player} compact={compact} />
 }
 
 /** Color progress chip — big enough to read at party distance */

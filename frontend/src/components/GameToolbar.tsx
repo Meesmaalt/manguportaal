@@ -1,4 +1,4 @@
-import { useState, type ReactNode, useEffect } from 'react'
+import { useState, type ReactNode, useEffect, useRef } from 'react'
 import {
   Volume2,
   VolumeX,
@@ -87,6 +87,7 @@ export default function GameToolbar({
   const { t } = useI18n()
   const [activeFx, setActiveFx] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>(null)
+  const extrasRef = useRef<HTMLDetailsElement>(null)
   const [copiedKind, setCopiedKind] = useState<'tv' | 'buzz' | null>(null)
 
   const [fullscreen, setFullscreen] = useState(false)
@@ -184,7 +185,12 @@ export default function GameToolbar({
           {/* Left: Game Actions (Spikker, Piilu, AI, Finaal, Proov jne) */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {gameActions}
-            {extra}
+            {extra && <details ref={extrasRef} className="host-extras relative" onKeyDown={event => { if (event.key === 'Escape' && extrasRef.current) extrasRef.current.open = false }}>
+              <summary className="btn-outline text-xs !py-1.5 !px-3 cursor-pointer flex items-center gap-1.5"><SlidersHorizontal size={14} />Lisavalikud</summary>
+              <div className="host-extras-menu" onClick={(event) => {
+                if ((event.target as HTMLElement).closest('button') && extrasRef.current) extrasRef.current.open = false
+              }}>{extra}</div>
+            </details>}
           </div>
 
           {/* Right: Contextual Tabs */}

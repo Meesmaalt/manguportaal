@@ -1,6 +1,6 @@
 {
   "name": "ohtu-mangud-root",
-  "version": "3.32.0",
+  "version": "3.33.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -12,11 +12,16 @@
     "start": "NODE_ENV=production node --experimental-strip-types server.ts",
     "preview": "npm run preview --workspace=frontend",
     "lint": "npm run lint --workspace=frontend",
-    "pb:sync": "node scripts/sync-pb-schema.cjs"
+    "pb:sync": "node scripts/sync-pb-schema.cjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser-smoke.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.22.0",
     "express": "^5.2.1",
     "http-proxy-middleware": "^3.0.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }

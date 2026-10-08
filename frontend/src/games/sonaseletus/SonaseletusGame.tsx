@@ -1,5 +1,6 @@
+import { advanceWord } from './round'
 import { useEffect, useRef, useState } from 'react'
-import { RotateCcw, Sparkles } from 'lucide-react'
+import { Sparkles, Trophy, Pause } from 'lucide-react'
 import type { SonaseletusPackData } from '@/data/official-packs'
 import SessionCodeBadge from '@/components/SessionCodeBadge'
 import GameToolbar from '@/components/GameToolbar'
@@ -50,31 +51,22 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
   }, [running, isHost])
 
   function startRound() {
-    if (!isHost) return
-    update({ timeLeft: roundSeconds, running: true })
+    if (!isHost || !teams.length || wordIndex >= words.length) return
+    update({ timeLeft: timeLeft > 0 ? timeLeft : roundSeconds, running: true })
   }
 
   function correct() {
     if (!isHost || !running) return
-    update((prev) => ({
-      ...prev,
-      teams: prev.teams.map((t, i) =>
-        i === prev.activeTeam ? { ...t, score: t.score + 1 } : t
-      ),
-      wordIndex: (prev.wordIndex + 1) % prev.words.length,
-    }))
+    update(prev => advanceWord(prev, true))
   }
 
   function skip() {
     if (!isHost || !running) return
-    update((prev) => ({
-      ...prev,
-      wordIndex: (prev.wordIndex + 1) % prev.words.length,
-    }))
+    update(prev => advanceWord(prev, false))
   }
 
   function nextTeam() {
-    if (!isHost) return
+    if (!isHost || running || !teams.length) return
     update({
       activeTeam: (activeTeam + 1) % teams.length,
       running: false,
@@ -94,7 +86,11 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
     })
   }
 
+  const exhausted = wordIndex >= words.length
   const word = words[wordIndex] || '—'
+  const leaderScore = Math.max(0, ...teams.map(team => team.score))
+  const leaders = teams.filter(team => team.score === leaderScore)
+  const timerFraction = Math.max(0, Math.min(1, timeLeft / Math.max(1, roundSeconds)))
 
   return (
     <div className="max-w-2xl mx-auto px-4">
@@ -116,48 +112,44 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
         />
       )}
 
-      <div className="text-center mb-6">
-        <div className="text-white/50 text-sm uppercase tracking-widest mb-1">
-          {teams[activeTeam]?.name} · {t('round')}
+      <div className="party-stage p-6 sm:p-8 text-center mb-6">
+        <div className="text-white/60 text-sm uppercase tracking-widest mb-4">
+          {teams[activeTeam]?.name} · {running ? t('round') : exhausted ? 'Pakk läbi' : timeLeft === 0 ? 'Voor lõppenud' : 'Valmis?'}
         </div>
-        <div
-          className={`font-display text-6xl font-black tabular-nums ${
-            timeLeft <= 10 && running ? 'text-accent-red animate-pulse' : 'text-gold'
-          }`}
-        >
-          {timeLeft}
+        <div className={`round-timer ${timeLeft <= 10 && running ? 'text-accent-red' : 'text-gold'}`} role="timer" aria-label={`${timeLeft} ${t('seconds')}`}>
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle className="timer-track" cx="60" cy="60" r="54" /><circle className="timer-progress" cx="60" cy="60" r="54" strokeDasharray={339.3} strokeDashoffset={339.3 * (1-timerFraction)} /></svg>
+          <span className="font-display text-5xl font-black tabular-nums">{timeLeft}</span>
+          <span className="text-white/50 text-xs">{t('seconds')}</span>
         </div>
-        <div className="text-white/40 text-sm">{t('seconds')}</div>
-      </div>
-
-      <div className="card-panel p-10 text-center mb-6 min-h-[140px] flex items-center justify-center">
-        <h2 className="font-display text-4xl md:text-5xl text-white font-black">
-          {running || !isHost ? word : '—'}
-        </h2>
+        <div className="min-h-[150px] flex flex-col justify-center gap-3 py-6">
+          {exhausted ? <><Trophy className="mx-auto text-gold" size={36} /><h2 className="font-display text-3xl font-black">Kõik sõnad mängitud!</h2><p className="text-white/60">{leaders.map(team => team.name).join(' & ')} · {leaderScore} punkti</p></> :
+          <><h2 className="font-display text-4xl md:text-5xl text-white font-black break-words">{running ? word : timeLeft === 0 ? 'Aeg on läbi!' : 'Seleta. Arva. Võida.'}</h2>
+          {!running && <p className="text-white/50 text-sm">Sõna ilmub vooru alustamisel.</p>}</>}
+        </div>
+        <p className="text-white/40 text-xs">{Math.min(wordIndex, words.length)} / {words.length} sõna mängitud</p>
       </div>
 
       {isHost && (
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {!running ? (
-            <button onClick={startRound} className="btn-gold text-lg px-8">
-              {t('start')} ({roundSeconds}s)
+            <button disabled={exhausted || !words.length || !teams.length} onClick={startRound} className="btn-gold text-lg px-8 disabled:opacity-40">
+              {timeLeft > 0 && timeLeft < roundSeconds ? 'Jätka' : t('start')} ({timeLeft > 0 ? timeLeft : roundSeconds}s)
             </button>
           ) : (
             <>
               <button onClick={correct} className="btn-gold bg-accent-green border-0 text-lg px-6">
                 ✓ {t('correct')}
               </button>
+              <button onClick={() => update({ running: false })} className="btn-outline" aria-label="Peata voor"><Pause size={20} /></button>
               <button onClick={skip} className="btn-outline text-lg px-6">
                 → {t('skip')}
               </button>
             </>
           )}
-          <button onClick={nextTeam} className="btn-outline text-sm">
+          <button disabled={running || exhausted || !teams.length} onClick={nextTeam} className="btn-outline text-sm disabled:opacity-40">
             {t('nextTeam')}
           </button>
-          <button onClick={resetGame} className="btn-outline text-sm border-accent-red text-accent-red flex items-center gap-1">
-            <RotateCcw size={14} /> {t('resetState')}
-          </button>
+
         </div>
       )}
 
@@ -165,9 +157,7 @@ export default function SonaseletusGame({ state, update, isHost = true, sessionC
         {teams.map((t, i) => (
           <div
             key={i}
-            className={`card-panel p-4 text-center ${
-              i === activeTeam ? 'border-gold shadow-gold' : 'opacity-70'
-            }`}
+            className={`party-score-card text-center ${i === activeTeam ? 'active' : 'opacity-70'}`}
           >
             <div className="font-display text-gold font-bold">{t.name}</div>
             <div className="text-3xl font-display font-black">{t.score}</div>

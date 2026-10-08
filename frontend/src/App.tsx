@@ -1,28 +1,28 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import Layout from '@/components/Layout'
 import Home from '@/pages/Home'
-import Login from '@/pages/Login'
-import Dashboard from '@/pages/Dashboard'
-import PackSelect from '@/pages/PackSelect'
-import PlayKuldvillak from '@/pages/PlayKuldvillak'
-import PlayRoosidesoda from '@/pages/PlayRoosidesoda'
-import PlayGeneric from '@/pages/PlayGeneric'
-import Display from '@/pages/Display'
-import CreatePack from '@/pages/CreatePack'
-import Playlist from '@/pages/Playlist'
-import Buzzer from '@/pages/Buzzer'
-import DealPlayer from '@/pages/DealPlayer'
-import BlitzPlayer from '@/pages/BlitzPlayer'
-import MiljonarPlayer from '@/pages/MiljonarPlayer'
-import SharePack from '@/pages/SharePack'
-import PrintPack from '@/pages/PrintPack'
-import ImportPack from '@/pages/ImportPack'
-import EditPack from '@/pages/EditPack'
-import Admin from '@/pages/Admin'
-import Gallery from '@/pages/Gallery'
-import Changelog from '@/pages/Changelog'
+const Login = lazy(() => import('@/pages/Login'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const PackSelect = lazy(() => import('@/pages/PackSelect'))
+const PlayKuldvillak = lazy(() => import('@/pages/PlayKuldvillak'))
+const PlayRoosidesoda = lazy(() => import('@/pages/PlayRoosidesoda'))
+const PlayGeneric = lazy(() => import('@/pages/PlayGeneric'))
+const Display = lazy(() => import('@/pages/Display'))
+const CreatePack = lazy(() => import('@/pages/CreatePack'))
+const Playlist = lazy(() => import('@/pages/Playlist'))
+const Buzzer = lazy(() => import('@/pages/Buzzer'))
+const DealPlayer = lazy(() => import('@/pages/DealPlayer'))
+const BlitzPlayer = lazy(() => import('@/pages/BlitzPlayer'))
+const MiljonarPlayer = lazy(() => import('@/pages/MiljonarPlayer'))
+const SharePack = lazy(() => import('@/pages/SharePack'))
+const PrintPack = lazy(() => import('@/pages/PrintPack'))
+const ImportPack = lazy(() => import('@/pages/ImportPack'))
+const EditPack = lazy(() => import('@/pages/EditPack'))
+const Admin = lazy(() => import('@/pages/Admin'))
+const Gallery = lazy(() => import('@/pages/Gallery'))
+const Changelog = lazy(() => import('@/pages/Changelog'))
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
@@ -39,6 +39,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
+    <Suspense fallback={<div className="min-h-[60vh] grid place-items-center text-gold" role="status">Laadin mängu…</div>}>
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
@@ -83,5 +84,6 @@ export default function App() {
       <Route path="/buzz/:code" element={<Buzzer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }

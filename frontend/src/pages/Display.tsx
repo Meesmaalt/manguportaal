@@ -1,15 +1,15 @@
-import { useEffect, useState, useRef } from 'react'
+import { lazy, useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
-import KuldvillakBoard from '@/games/kuldvillak/KuldvillakBoard'
-import RoosidesodaHost from '@/games/roosidesoda/RoosidesodaHost'
-import SonaseletusGame from '@/games/sonaseletus/SonaseletusGame'
-import MaEiOleKunagiGame from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
-import ViimanePustiGame from '@/games/viimane-pusti/ViimanePustiGame'
-import TodeVoiTeguGame from '@/games/tode-voi-tegu/TodeVoiTeguGame'
-import KinnistuDealTv from '@/games/kinnistu-deal/KinnistuDealTv'
-import BlitzTv from '@/games/blitz/BlitzTv'
-import MiljonarTv from '@/games/miljonar/MiljonarTv'
+const KuldvillakBoard = lazy(() => import('@/games/kuldvillak/KuldvillakBoard'))
+const RoosidesodaHost = lazy(() => import('@/games/roosidesoda/RoosidesodaHost'))
+const SonaseletusGame = lazy(() => import('@/games/sonaseletus/SonaseletusGame'))
+const MaEiOleKunagiGame = lazy(() => import('@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'))
+const ViimanePustiGame = lazy(() => import('@/games/viimane-pusti/ViimanePustiGame'))
+const TodeVoiTeguGame = lazy(() => import('@/games/tode-voi-tegu/TodeVoiTeguGame'))
+const KinnistuDealTv = lazy(() => import('@/games/kinnistu-deal/KinnistuDealTv'))
+const BlitzTv = lazy(() => import('@/games/blitz/BlitzTv'))
+const MiljonarTv = lazy(() => import('@/games/miljonar/MiljonarTv'))
 import GameShowFrame from '@/components/GameShowFrame'
 import DisplayCornerTools from '@/components/DisplayCornerTools'
 import ConnectionChip from '@/components/ConnectionChip'

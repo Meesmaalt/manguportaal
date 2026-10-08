@@ -37,7 +37,7 @@ const GAME_METAS: GameMeta[] = [
     category: 'shows',
     emoji: '💰',
     players: '1 mängija + pealtvaatajad',
-    mode: '📺 TV + 3 oljavõimalust',
+    mode: '📺 TV + 3 õlekõrt',
     duration: '15–30 min',
     badge: '💎 1 000 000 €',
     badgeColor: 'border-emerald-400/60 text-emerald-300 bg-emerald-500/10',
