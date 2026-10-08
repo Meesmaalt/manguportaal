@@ -1,3 +1,17 @@
+## v3.33 — graafiline mängulaud ja selgem peoõhtu
+
+- Kinnistu Deal: illustreeritud linnaosad, vabad krundid, rongid, kommunaalid, majad ja hotellid; sama avalik laud telefonis, mängujuhil ja TV-s. Käes olevaid kaarte ei kuvata teleris.
+- Sõnaseletus: ajaring, paus/jätkamine, paki edenemine ja punktikokkuvõte. Viimane sõna lõpetab paki, mitte ei alusta automaatselt otsast.
+- Viimane püsti: selgem elude ja ellujäänute vaade, viimase elukaotuse tagasivõtmine ka pärast finaali, lähtestamine.
+- Tõde või tegu: juhuslik kaart ilma kordusteta, sessioonis säiliv kasutatud kaartide ajalugu, paki edenemine ja lähtestamine.
+- Ma ei ole kunagi: selgem kaardilava, edenemine ja paki lõpp; lähtestamine taastab kolm elu (mängu senine vaikeseade).
+- Mängujuhi lisavalikud on kokkuklapitavad. Kõik senised funktsioonid jäävad kättesaadavaks.
+- Lehed ja mängud laaditakse vajadusel; avaleht ei lae kõiki redaktoreid ega mänge.
+
+Kontroll: `npm run lint`, `npm test`, `npm run build`. Testid vajavad Node 22.18+ (TypeScripti tugi); tootmise käivitus kasutab samuti Node TypeScripti tuge. Andmebaasimigratsiooni pole vaja. Uued sessiooniväljad on vabatahtlikud ja ühilduvad vanade sessioonidega.
+
+Brauserikatsetus: `npx playwright install chromium` ja `npm run test:browser`. Test käivitab kohaliku Vite'i, kontrollib graafilist lauda 390/768/1920 px laiustel ning mängude paus/jätkamine, punktid, paki lõpp, tagasivõtmine ja värskendamise järel säiliv kaardiajalugu. Soovi korral määra `BROWSER_EXECUTABLE_PATH`. Katsetus kasutab kohalikke sessioone; PocketBase'i mitme seadme sünkroonimine vajab eraldi serverikatsetust.
+
 ## v3.21
 
 - TV panel auto-opens when connection is not LIVE

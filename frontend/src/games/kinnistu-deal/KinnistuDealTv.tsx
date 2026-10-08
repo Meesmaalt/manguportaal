@@ -1,14 +1,12 @@
 import { useEffect, useMemo } from 'react'
-import type { KinnistuDealState, PlayerBoard, PropColor } from './types'
+import type { KinnistuDealState, PlayerBoard } from './types'
 import {
-  SET_SIZE,
   COLOR_STYLE,
   completeSets,
   bankTotal,
   actionLabel,
-  rentForSet,
 } from './types'
-import { ColorProgressGrid, PropertySetRow } from './DealCards'
+import PropertyCity from './PropertyDistrict'
 import DealActionTheater from './DealActionTheater'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
@@ -111,7 +109,7 @@ export default function KinnistuDealTv({
               : 'from-white/5 to-transparent border-white/15'
 
   return (
-    <div className="min-h-screen bg-[#03070f] text-white px-3 md:px-6 py-4 md:py-6 flex flex-col">
+    <div className="min-h-screen deal-table-surface text-white px-3 md:px-6 py-4 md:py-6 flex flex-col">
       <DealActionTheater event={state.lastEvent} />
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 mb-4 max-w-7xl mx-auto w-full">
@@ -149,6 +147,13 @@ export default function KinnistuDealTv({
         )}
       </div>
 
+      {phase !== 'lobby' && <div className="deal-table-center max-w-7xl mx-auto w-full mb-4">
+        <span className="deal-deck-back" aria-hidden="true">KD</span>
+        <span><strong>{state.deck.length}</strong> kaarti pakis</span>
+        <span className="text-white/30">·</span>
+        <span><strong>{state.discard.length}</strong> kaarti maas</span>
+        <span className="ml-auto text-gold">Käik {(state.turnCount ?? 0) + 1}</span>
+      </div>}
       {/* Player boards */}
       <div
         className={`max-w-7xl mx-auto w-full flex-1 grid gap-3 md:gap-4 ${
@@ -219,9 +224,7 @@ function TvPlayerCard({
 }) {
   const sets = completeSets(player)
   const bank = bankTotal(player)
-  const colors = (Object.keys(SET_SIZE) as PropColor[]).filter(
-    (c) => (player.props[c] || []).length > 0
-  )
+
 
   let ring = 'border-white/12 bg-black/40'
   if (isWinner) ring = 'border-gold bg-gold/15 shadow-[0_0_40px_rgba(223,179,66,0.35)]'
@@ -255,26 +258,10 @@ function TvPlayerCard({
         </div>
       </div>
 
-      <div className="mb-2">
-        <ColorProgressGrid player={player} />
+      <div className="flex gap-1 mb-3" aria-label={`${sets} komplekti ${winSets}-st`}>
+        {Array.from({ length: winSets }, (_, n) => <span key={n} className={`h-1.5 flex-1 rounded-full ${n < sets ? 'bg-gold' : 'bg-white/10'}`} />)}
       </div>
-
-      {colors.length > 0 ? (
-        <div className="space-y-1.5 flex-1 overflow-hidden">
-          {colors.map((c) => (
-            <PropertySetRow
-              key={c}
-              color={c}
-              cards={player.props[c] || []}
-              building={player.buildings?.[c]}
-              showRent
-              owner={player}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-white/25 text-sm flex-1 flex items-center">Pole veel kinnistuid</p>
-      )}
+      <PropertyCity player={player} />
     </div>
   )
 }

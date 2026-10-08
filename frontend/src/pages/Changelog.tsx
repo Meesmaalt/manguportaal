@@ -5,6 +5,16 @@ import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
   {
+    v: '3.33.0',
+    items: [
+      'Kinnistu Deal: graafilised linnaosad, hooned, vabad krundid ja majade/hotellide vaade telefonis ning TV-s',
+      'Sõnaseletus: ajaring, paus ja jätkamine, paki edenemine ning finaali punktikokkuvõte',
+      'Viimane püsti: selgem elude vaade ja viimase elukaotuse tagasivõtmine',
+      'Tõde või tegu: kaardid ilma kordusteta; peomängudes nähtav paki lõpp ja lähtestamine',
+      'Mängujuhi lisavalikud on kokku klapitud; mängud ja redaktorid laaditakse vajadusel',
+    ],
+  },
+  {
     v: '3.32.0',
     items: [
       'Struktureeritud ja kontekstipõhine mängujuhi (Host) juhtpaneel (Kuldvillak, Rooside sõda jt mängud)',

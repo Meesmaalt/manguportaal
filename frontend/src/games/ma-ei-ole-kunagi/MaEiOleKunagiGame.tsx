@@ -28,11 +28,12 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
   const { players, statements, index } = state
   const { t } = useI18n()
   const [aiModalOpen, setAiModalOpen] = useState(false)
-  const current = statements[index]
+  const exhausted = index >= statements.length
+  const current = exhausted ? 'Kõik väited mängitud!' : statements[index] || 'Lisa väited, et alustada'
 
   function next() {
-    if (!isHost) return
-    update({ index: (index + 1) % statements.length })
+    if (!isHost || exhausted) return
+    update({ index: index + 1 })
   }
 
   function loseLife(i: number) {
@@ -57,7 +58,7 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
     <div className="max-w-2xl mx-auto px-4">
       {isHost && <SessionCodeBadge code={sessionCode} />}
       {isHost && (
-        <GameToolbar
+        <GameToolbar onReset={() => { if (confirm(t('resetScoresConfirm'))) update({ index: 0, players: players.map(p => ({ ...p, lives: 3 })) }) }}
           extra={
             <button
               type="button"
@@ -71,16 +72,17 @@ export default function MaEiOleKunagiGame({ state, update, isHost = true, sessio
         />
       )}
 
-      <div className="card-panel p-8 text-center mb-6">
+      <div className="party-stage p-8 sm:p-12 text-center mb-6">
         <p className="text-white/50 text-sm uppercase tracking-widest mb-3">{t('statement')}</p>
         <h2 className="text-2xl md:text-3xl font-bold text-white leading-snug">{current}</h2>
         {isHost && (
-          <button onClick={next} className="btn-gold mt-6">
+          <button disabled={exhausted || !statements.length} onClick={next} className="btn-gold mt-6 disabled:opacity-40">
             {t('nextStatement')}
           </button>
         )}
       </div>
 
+      <p className="text-center text-white/40 text-xs mb-3">{Math.min(index + 1, statements.length)} / {statements.length} väidet</p>
       <p className="text-center text-white/50 text-sm mb-4">
         {t('whoDidIt')}
       </p>

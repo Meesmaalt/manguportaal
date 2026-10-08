@@ -1,3 +1,4 @@
+import { drawUnused } from '../shared/draw'
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import type { TodeVoiTeguPackData } from '@/data/official-packs'
@@ -16,6 +17,8 @@ export type TodeVoiTeguState = {
   dares: string[]
   currentCard: { type: 'truth' | 'dare'; text: string } | null
   packData: TodeVoiTeguPackData
+  usedTruths?: number[]
+  usedDares?: number[]
   code?: string
 }
 
@@ -33,14 +36,18 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
   const player = players[currentPlayer]
 
   function draw(type: 'truth' | 'dare') {
-    if (!isHost) return
-    const pool = type === 'truth' ? truths : dares
-    const text = pool[Math.floor(Math.random() * pool.length)] || '—'
-    update({ currentCard: { type, text } })
+    if (!isHost || !players.length || currentCard) return
+    update(prev => {
+      const pool = type === 'truth' ? prev.truths : prev.dares
+      const used = type === 'truth' ? prev.usedTruths || [] : prev.usedDares || []
+      const index = drawUnused(pool, used)
+      if (index == null) return prev
+      return { ...prev, currentCard: { type, text: pool[index] }, [type === 'truth' ? 'usedTruths' : 'usedDares']: [...used, index] }
+    })
   }
 
   function nextPlayer() {
-    if (!isHost) return
+    if (!isHost || !players.length) return
     update({
       currentPlayer: (currentPlayer + 1) % players.length,
       currentCard: null,
@@ -67,7 +74,7 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
     <div className="max-w-2xl mx-auto px-4">
       {isHost && <SessionCodeBadge code={sessionCode} />}
       {isHost && (
-        <GameToolbar
+        <GameToolbar onReset={() => { if (confirm(t('resetScoresConfirm'))) update({ usedTruths: [], usedDares: [], currentCard: null, currentPlayer: 0 }) }}
           extra={
             <button
               type="button"
@@ -87,7 +94,7 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
       </div>
 
       {currentCard ? (
-        <div className="card-panel p-8 text-center mb-6 border-gold/50">
+        <div className="party-stage p-8 sm:p-12 text-center mb-6 border-gold/50">
           <p className="text-gold text-sm font-bold uppercase tracking-widest mb-3">
             {currentCard.type === 'truth' ? t('truth') : t('dare')}
           </p>
@@ -101,16 +108,18 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
       ) : (
         isHost && (
           <div className="flex justify-center gap-4 mb-8">
-            <button onClick={() => draw('truth')} className="btn-gold text-lg px-8 py-4">
+            <button disabled={!players.length || (state.usedTruths?.length || 0) >= truths.length} onClick={() => draw('truth')} className="btn-gold text-lg px-8 py-4 disabled:opacity-40">
               Tõde
             </button>
-            <button onClick={() => draw('dare')} className="btn-outline text-lg px-8 py-4 border-accent-red text-accent-red hover:bg-accent-red hover:text-white">
+            <button disabled={!players.length || (state.usedDares?.length || 0) >= dares.length} onClick={() => draw('dare')} className="btn-outline text-lg px-8 py-4 disabled:opacity-40 border-accent-red text-accent-red hover:bg-accent-red hover:text-white">
               Tegu
             </button>
           </div>
         )
       )}
 
+      <p className="text-center text-white/50 text-xs mb-5">Tõed: {state.usedTruths?.length || 0}/{truths.length} · Teod: {state.usedDares?.length || 0}/{dares.length}</p>
+      {!currentCard && (state.usedTruths?.length || 0) >= truths.length && (state.usedDares?.length || 0) >= dares.length && <p className="text-center text-gold mb-4">Kõik kaardid mängitud. Alusta uut pakki lisavalikutest.</p>}
       <div className="flex flex-wrap justify-center gap-2 mb-4">
         {players.map((p, i) =>
           isHost ? (
@@ -156,6 +165,8 @@ export default function TodeVoiTeguGame({ state, update, isHost = true, sessionC
             truths: data.truths || [],
             dares: data.dares || [],
             currentCard: null,
+            usedTruths: [],
+            usedDares: [],
           })
         }}
         renderPreview={(data) => (

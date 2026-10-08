@@ -1,14 +1,18 @@
-import { useState } from 'react'
+import { lazy, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useGameSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import { ArrowLeft, HelpCircle, LogOut, SkipForward } from 'lucide-react'
-import SonaseletusGame, { type SonaseletusState } from '@/games/sonaseletus/SonaseletusGame'
-import MaEiOleKunagiGame, { type MaEiOleKunagiState } from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
-import ViimanePustiGame, { type ViimanePustiState } from '@/games/viimane-pusti/ViimanePustiGame'
-import TodeVoiTeguGame, { type TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
-import KinnistuDealGame from '@/games/kinnistu-deal/KinnistuDealGame'
-import BlitzHost from '@/games/blitz/BlitzHost'
-import MiljonarHost from '@/games/miljonar/MiljonarHost'
+import type { SonaseletusState } from '@/games/sonaseletus/SonaseletusGame'
+const SonaseletusGame = lazy(() => import('@/games/sonaseletus/SonaseletusGame'))
+import type { MaEiOleKunagiState } from '@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'
+const MaEiOleKunagiGame = lazy(() => import('@/games/ma-ei-ole-kunagi/MaEiOleKunagiGame'))
+import type { ViimanePustiState } from '@/games/viimane-pusti/ViimanePustiGame'
+const ViimanePustiGame = lazy(() => import('@/games/viimane-pusti/ViimanePustiGame'))
+import type { TodeVoiTeguState } from '@/games/tode-voi-tegu/TodeVoiTeguGame'
+const TodeVoiTeguGame = lazy(() => import('@/games/tode-voi-tegu/TodeVoiTeguGame'))
+const KinnistuDealGame = lazy(() => import('@/games/kinnistu-deal/KinnistuDealGame'))
+const BlitzHost = lazy(() => import('@/games/blitz/BlitzHost'))
+const MiljonarHost = lazy(() => import('@/games/miljonar/MiljonarHost'))
 import type { BlitzState } from '@/games/blitz/types'
 import type { KinnistuDealState } from '@/games/kinnistu-deal/types'
 import type { MiljonarState } from '@/games/miljonar/types'

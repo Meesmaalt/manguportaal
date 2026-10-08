@@ -63,6 +63,8 @@ export function startGame(s: KinnistuDealState): KinnistuDealState {
     discard: [],
     current: 0,
     playsLeft: 3,
+    turnCount: 0,
+    lastEvent: null,
     phase: 'turn',
     pending: null,
     winner: undefined,
