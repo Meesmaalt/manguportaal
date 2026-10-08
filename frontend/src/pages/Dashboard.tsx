@@ -16,6 +16,7 @@ const ORDER: GameType[] = [
   'roosidesoda',
   'blitz',
   'kinnistu_deal',
+  'uno_flex',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
@@ -30,6 +31,7 @@ const EMOJI: Record<GameType, string> = {
   ma_ei_ole_kunagi: '🙅',
   viimane_pusti: '🧍',
   tode_voi_tegu: '🎲',
+  uno_flex: '🃏',
   kinnistu_deal: '🏠',
   blitz: '⚡',
 }

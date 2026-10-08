@@ -1,4 +1,5 @@
 import { lazy, useState } from 'react'
+const UnoFlexGame = lazy(() => import('@/games/uno-flex/UnoFlexGame'))
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useGameSession, clearRememberedHostSession } from '@/hooks/useGameSession'
 import { ArrowLeft, HelpCircle, LogOut, SkipForward } from 'lucide-react'
@@ -28,7 +29,7 @@ import { recordGameEnd } from '@/lib/stats'
 
 export default function PlayGeneric() {
   const { gameType, sessionId } = useParams<{ gameType: string; sessionId: string }>()
-  const { session, state, update, loading, error } = useGameSession<any>(sessionId!)
+  const { session, state, update, receiveState, loading, error } = useGameSession<any>(sessionId!)
   const meta = GAME_META[gameType as GameType]
   const { t } = useI18n()
   const navigate = useNavigate()
@@ -114,7 +115,7 @@ export default function PlayGeneric() {
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto mb-1 relative z-10">
+        {gameType !== 'uno_flex' && <div className="max-w-3xl mx-auto mb-1 relative z-10">
           <ThemeStudio
             bgMedia={state.bgMedia || null}
             onBgMedia={(m) => update({ bgMedia: m })}
@@ -123,9 +124,10 @@ export default function PlayGeneric() {
             compact
             defaultOpen={false}
           />
-        </div>
+        </div>}
         <SessionBgLayer media={state.bgMedia} />
         <div className="relative z-10">
+        {gameType === 'uno_flex' && <UnoFlexGame state={state as any} sessionId={sessionId!} isHost onState={receiveState} />}
         {gameType === 'sonaseletus' && (
           <SonaseletusGame state={state as SonaseletusState} update={update} isHost sessionCode={code} />
         )}
@@ -155,7 +157,7 @@ export default function PlayGeneric() {
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
         publicShown={!!state.publicGuide}
-        onTogglePublic={() => update({ publicGuide: !state.publicGuide })}
+        onTogglePublic={gameType === 'uno_flex' ? undefined : () => update({ publicGuide: !state.publicGuide })}
       />
     </GameShowFrame>
   )

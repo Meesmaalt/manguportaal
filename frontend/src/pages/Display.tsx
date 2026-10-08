@@ -1,4 +1,5 @@
 import { lazy, useEffect, useState, useRef } from 'react'
+const UnoFlexGame = lazy(() => import('@/games/uno-flex/UnoFlexGame'))
 import { useParams, useNavigate } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
 const KuldvillakBoard = lazy(() => import('@/games/kuldvillak/KuldvillakBoard'))
@@ -74,7 +75,14 @@ export default function Display() {
             setConnection('live')
             lastBeat.current = Date.now()
           }
-        })
+        }).catch(() => { setConnection('reconnecting'); return () => {} })
+        if (rec.game_type === 'uno_flex') {
+          poll = window.setInterval(() => {
+            pb.collection('game_sessions').getOne<GameSession>(rec.id, { requestKey: null })
+              .then((record) => { setSession(record); setState(record.state); setConnection('live') })
+              .catch(() => setConnection('reconnecting'))
+          }, 3000)
+        }
       } catch {
         // local fallback
         let found = false
@@ -270,13 +278,14 @@ export default function Display() {
         {gt === 'blitz' && (
           <BlitzTv state={state as any} sessionCode={session.code || state.code} />
         )}
+        {gt === 'uno_flex' && <UnoFlexGame state={state} isTv />}
         {gt === 'kinnistu_deal' && (
           <KinnistuDealTv state={state as any} sessionCode={session.code || state.code} />
         )}
         {gt === 'miljonar' && (
           <MiljonarTv state={state as any} sessionCode={session.code || state.code} />
         )}
-        {gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && gt !== 'miljonar' && (
+        {gt !== 'uno_flex' && gt !== 'kuldvillak' && gt !== 'roosidesoda' && gt !== 'kinnistu_deal' && gt !== 'blitz' && gt !== 'miljonar' && (
           <GameShowFrame display title={title} hasSessionBg={!!state.bgMedia?.dataUrl}>
             {gt === 'sonaseletus' && <SonaseletusGame state={state} update={noop} isHost={false} />}
             {gt === 'ma_ei_ole_kunagi' && (

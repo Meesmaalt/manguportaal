@@ -13,6 +13,7 @@ const Display = lazy(() => import('@/pages/Display'))
 const CreatePack = lazy(() => import('@/pages/CreatePack'))
 const Playlist = lazy(() => import('@/pages/Playlist'))
 const Buzzer = lazy(() => import('@/pages/Buzzer'))
+const FlexPlayer = lazy(() => import('@/pages/FlexPlayer'))
 const DealPlayer = lazy(() => import('@/pages/DealPlayer'))
 const BlitzPlayer = lazy(() => import('@/pages/BlitzPlayer'))
 const MiljonarPlayer = lazy(() => import('@/pages/MiljonarPlayer'))
@@ -78,6 +79,7 @@ export default function App() {
       <Route path="/ekraan" element={<Display />} />
       <Route path="/ekraan/:code" element={<Display />} />
       <Route path="/buzzer/:code" element={<Buzzer />} />
+      <Route path="/flex/:code/:token" element={<FlexPlayer />} />
       <Route path="/deal/:code/:token" element={<DealPlayer />} />
       <Route path="/blitz/:code" element={<BlitzPlayer />} />
       <Route path="/miljonar/:code" element={<MiljonarPlayer />} />

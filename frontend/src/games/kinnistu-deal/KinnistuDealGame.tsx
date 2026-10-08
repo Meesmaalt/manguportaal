@@ -1,3 +1,4 @@
+import DealArena from './DealArena'
 import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
 import { SET_SIZE, completeSets, bankTotal, makeToken, type PropColor } from './types'
@@ -330,7 +331,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
       )}
 
       {/* Players table */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+      {phase !== 'lobby' ? <DealArena state={state} /> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         {players.map((p, i) => {
           const sets = completeSets(p)
           const active = phase !== 'lobby' && phase !== 'over' && i === current
@@ -415,7 +416,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
             </div>
           )
         })}
-      </div>
+      </div>}
 
       {phase === 'lobby' && isHost && (
         <div className="text-center space-y-3 mb-6">

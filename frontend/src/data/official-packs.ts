@@ -677,6 +677,9 @@ export const OFFICIAL_PACKS = [
     is_public: true,
   },
   {
+    slug: 'uno-flex-klassika', name: 'UNO Flex – Kaardiareen', description: '2–8 mängijat. 7 kaarti, Flex-jõud, sihitud kaardid ja UNO.', game_type: 'uno_flex' as const, data: { startHand: 7 }, is_official: true, is_public: true,
+  },
+  {
     slug: 'kinnistu-deal-klassika',
     name: 'Kinnistu Deal – Klassika',
     description: '3 komplekti võiduks. Eesti kinnistud, raha ja tegevuskaardid.',

@@ -1,3 +1,22 @@
+## v3.34 — kaardiareen ja Uno Flex
+
+Kinnistu Deal kasutab kaardiareeni: vastaste portreed ja kinnistud ülal, aktiivne mängija all, pakk ning viimane kaart laua keskel. Oma telefonis näeb mängija kaardikätt ning valib rendi, vastase ja kinnistu laualt. Kaardid, kristallid ja hotellimärgid kasutavad koodiga loodud originaalset kujundust.
+
+UNO Flex on uus 2–8 mängija voorumäng: 104 kaarti, 7 algkaarti, Flex-värvid ja eritegevused, jõukaardi pööramine, UNO teatamine/tabamine ning +4 vaidlustamine. Esimesena tühja käega mängija võidab vooru; 500 punktini koondarvestust pole. Mängujuht jagab telefonilingid ja alustab vooru, teler kuvab avalikku lauda. Kohalik varurežiim töötab sama brauseri sakkides; mitme seadme jaoks on vaja PocketBase’i. Telefonivaade peidab teiste käed kasutajaliideses, kuid senine avaliku sessioonikirje mudel ei taga kaartide saladust API päringute eest.
+
+Uno käigud valideeritakse serveris ühe andmebaasitehinguna. Päringu ID väldib korduva käigu rakendamist, valed käigud ja tokenid lükatakse tagasi. Mängujuhi ühenduse pulss uuendab ainult viimast serverikirjet, säilitades kaardiseisu.
+
+### Paigaldamine
+
+- Ehita `npm run build`; see genereerib ka PocketBase’i reeglimooduli `pb/pb_hooks/uno-flex-rules.cjs`.
+- Uuenda **nii veebirakendus kui PocketBase**: `docker compose up -d --build --force-recreate frontend pocketbase` (kasuta oma Compose’i teenusenimesid). Hooks-kaust on Compose’is ühendatud ja PocketBase käivitatakse `--hooksDir=/pb_hooks`.
+- Käivitumisel lisab migratsioon `uno_flex` mängutüübi ja ametliku stardipaki. Olemasolevad sessioonid ja pakid jäävad alles.
+- Eraldi PocketBase’i paigalduses kopeeri `pb/pb_hooks` ning `pb/pb_migrations` ja määra vastavad `--hooksDir` ja `--migrationsDir` lipud. Ainult veebirakenduse uuendamisest Uno jaoks ei piisa.
+
+Kontroll: `npm run lint`, `npm test`, `npm run build`, `npm run test:browser` (Playwright Chromium). Päris PocketBase’i integratsioonikatsetus: `POCKETBASE_BIN=/path/pocketbase npm run test:server`. See loob ajutise andmebaasi ja kontrollib migratsiooni, samaaegseid korduspäringuid, käiguõigust, otsese seisumuudatuse tõkestamist ning ühenduse pulssi. Katsetatud PocketBase 0.40.4-ga.
+
+Reeglite allikas: [Matteli UNO Flex juhend](https://service.mattel.com/instruction_sheets/HMY99-GERMAN.pdf). Kaardikujundus ja digitaalne pakijaotus on selle projekti teostus.
+
 ## v3.33 — graafiline mängulaud ja selgem peoõhtu
 
 - Kinnistu Deal: illustreeritud linnaosad, vabad krundid, rongid, kommunaalid, majad ja hotellid; sama avalik laud telefonis, mängujuhil ja TV-s. Käes olevaid kaarte ei kuvata teleris.

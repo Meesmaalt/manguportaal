@@ -180,6 +180,18 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     const id = window.setInterval(async () => {
       const current = stateRef.current
       if (!current) return
+      if (current.game_type === 'uno_flex') {
+        try {
+          if (isLocal) {
+            const raw = localStorage.getItem(`session_${sessionId}`)
+            if (raw) localStorage.setItem(`session_${sessionId}`, JSON.stringify({ ...JSON.parse(raw), hostBeat: Date.now() }))
+          } else {
+            await pb.send(`/api/uno-flex/${sessionId}/heartbeat`, { method: 'POST', body: { token: current.hostToken }, requestKey: null })
+          }
+          markSync(isLocal ? 'local' : 'live')
+        } catch { setConnection('reconnecting') }
+        return
+      }
       const beat = Date.now()
       beatRef.current = beat
 
@@ -241,6 +253,13 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     [sessionId, isLocal, markSync]
   )
 
+  // Apply a server-confirmed command result without issuing a generic state update.
+  const receiveState = useCallback((next: T) => {
+    stateRef.current = next
+    setState(next)
+    markSync(isLocal ? 'local' : 'live')
+  }, [isLocal, markSync])
+
   const retry = useCallback(() => {
     setConnection('reconnecting')
     load()
@@ -254,6 +273,7 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     error,
     connection,
     lastSync,
+    receiveState,
     reload: load,
     retry,
   }

@@ -4,6 +4,11 @@ import { useI18n } from '@/i18n/I18nContext'
 import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
+  { v: '3.34.0', items: [
+    'Kinnistu Deal: kaardiareeni laud, portreed, käigukristallid ja kinnistukaartide rivistus',
+    'UNO Flex: graafiline laud, privaatne telefonikäsi, Flex-jõud, UNO tabamine ja +4 vaidlustamine',
+    'Uno käigud valideeritakse PocketBase’is tehinguna; korduv päring ei rakendu kaks korda',
+  ] },
   {
     v: '3.33.0',
     items: [

@@ -18,6 +18,7 @@ const ALL: GameType[] = [
   'roosidesoda',
   'blitz',
   'kinnistu_deal',
+  'uno_flex',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
@@ -32,6 +33,7 @@ const EMOJI: Record<GameType, string> = {
   ma_ei_ole_kunagi: '🙅',
   viimane_pusti: '🧍',
   tode_voi_tegu: '🎲',
+  uno_flex: '🃏',
   kinnistu_deal: '🏠',
   blitz: '⚡',
 }
@@ -41,6 +43,7 @@ const GAME_DURATIONS: Record<GameType, number> = {
   miljonar: 20,
   roosidesoda: 25,
   blitz: 15,
+  uno_flex: 15,
   kinnistu_deal: 25,
   sonaseletus: 20,
   ma_ei_ole_kunagi: 20,

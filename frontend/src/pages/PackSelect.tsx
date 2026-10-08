@@ -1,3 +1,4 @@
+import { initialFlex } from '@/games/uno-flex/rules'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { pb, generateCode, formatPbError, type Pack } from '@/lib/pocketbase'
@@ -118,6 +119,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
       }
     }
+    case 'uno_flex': return initialFlex(code, crypto.randomUUID(), [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()], packData.startHand || 7)
     case 'kinnistu_deal': {
       const tok = () => Math.random().toString(36).slice(2, 10)
       return {
@@ -219,6 +221,7 @@ export default function PackSelect() {
     'viimane_pusti',
     'tode_voi_tegu',
     'kinnistu_deal',
+    'uno_flex',
     'blitz',
     'miljonar',
   ].includes(gameType || '')
@@ -233,6 +236,7 @@ export default function PackSelect() {
         viimane_pusti: '🧍',
         tode_voi_tegu: '🎲',
         kinnistu_deal: '🏠',
+        uno_flex: '🃏',
         blitz: '⚡',
         miljonar: '💰',
       } as Record<string, string>

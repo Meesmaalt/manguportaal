@@ -32,6 +32,7 @@ const TYPES: GameType[] = [
   'roosidesoda',
   'blitz',
   'kinnistu_deal',
+  'uno_flex',
   'sonaseletus',
   'ma_ei_ole_kunagi',
   'viimane_pusti',
@@ -272,6 +273,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
           shuffleOnStart: true,
           preCountdownSeconds: 3,
         }
+      case 'uno_flex': return { startHand: 7 }
       case 'kinnistu_deal':
         return {
           winSets: 3,
@@ -1007,6 +1009,7 @@ Vasta AINULT puhta JSON massiivina (ilma markdown jutumärkideta):
           />
         )}
 
+        {gameType === 'uno_flex' && <div className="card-panel p-5 text-white/70">UNO Flexi pakk kasutab 7 algkaarti ja 2–8 mängijat. Kaardipaki ning Flex-reeglid loob mäng automaatselt.</div>}
         {gameType === 'kinnistu_deal' && (
           <div className="card-panel border-white/10 p-4 text-sm text-white/60 space-y-2">
             <p>
