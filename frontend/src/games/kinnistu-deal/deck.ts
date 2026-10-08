@@ -1,4 +1,4 @@
-import type { ActionKind, DealCard, PropColor } from './types'
+import type { ActionKind, DealCard, PropColor } from './types.ts'
 
 let seq = 0
 function id(prefix: string) {

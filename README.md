@@ -1,3 +1,17 @@
+## v3.35 — Deali vastused, käigulõpp ja lendavad kaardid
+
+- Kõik sihtmärgid saavad sama neutraalse vastuseakna. Avalik faas ja logi ei sõltu „Ei, aitäh“ kaardi olemasolust. Kaart avaldub selle mängimisel; vastane võib tühistusele oma sama kaardiga vastata. Reaktsioonid ei kuluta kolme kaardikäigu limiiti.
+- Üle 7 kaardi korral valib mängija ise täpse ülejäägi ja kinnitab äraviskamise. Enne seda järgmisele mängijale käiku ei anta. Kolmanda kaardikäigu või tühjaks saanud käe järel ilmub ühine 5 sekundi tähtaeg; pooleliolevad vastused ja maksed lahendatakse enne. Loendus säilib värskendamisel.
+- Kaardid liiguvad tegelike kaardiridade ja portreede vahel koos valgusjälje ning maandumisefektiga. Teade on väike ja ei takista klikke. Vähendatud liikumise eelistust arvestatakse.
+- Tühja käega käigu alguses võetakse 5 kaarti. Makseks saab kasutada ka täiskomplekti vara; puudujäägi korral antakse olemasolev vara, nullvara puhul saab makse lõpetada. Vahetus nõuab mõlemapoolset kinnistut. Komplekti vargus säilitab saaja senised sama värvi kinnistud. Tegevuskaarte saab panna panka; raudteele ja kommunaalidele maju/hotelle ei ehitata.
+- Telefoni käigud ja käigulõpu kontroll kasutavad viimast serveriseisu andmebaasitehingus. Korduv päring ei mängi kaarti teist korda; korraga tehtud kellakontrollid ei jäta mängijat vahele. Hostipulss ei kirjuta telefonikäike vana koopiaga üle.
+
+**Paigaldamisel uuenda ka PocketBase’i:** `docker compose up -d --build --force-recreate frontend pocketbase`. Build genereerib `pb/pb_hooks/kinnistu-deal-rules.cjs`; lisatud hooks-fail peab jõudma serverisse. Skeemimigratsiooni pole vaja. Vanad sessioonid saavad uued vabatahtlikud väljad järgmistel käikudel. Automaatset kellakontrolli juhib avatud mängujuhi või aktiivse mängija leht; suletud lehtedega toimub tähtaja kontroll nende taasavamisel. Kohalik režiim töötab sama brauseri sakkides.
+
+Kontrollid: `npm run lint`, `npm test`, `npm run build`, `npm run test:browser`, `POCKETBASE_BIN=/path/pocketbase npm run test:server`. Serverikatse kasutab PocketBase 0.40.4 ajutises andmebaasis. Portaali senine avaliku sessiooni API ei eralda kaardikäsi API tasemel; see uuendus eemaldab kasutajaliidese kaitsekaardi lekke, mitte ei muuda kogu portaali õiguste mudelit.
+
+Reeglikontroll: [Hasbro: tühi käsi](https://hasbro-new.custhelp.com/app/answers/detail/a_id/934/), [Hasbro: seitsme kaardi piir](https://hasbro-new.custhelp.com/app/answers/detail/a_id/932/), [Hasbro: tühistusele vastamine](https://hasbro-new.custhelp.com/app/answers/detail/a_id/952/), [Hasbro: reaktsioon ei kuluta kaardikäiku](https://hasbro-new.custhelp.com/app/answers/detail/a_id/953/). Viiesekundiline automaatne lõpp ja ühtlane vastuseaken on portaali kasutuslahendus; digitaalne kaardipakk jääb projekti peoversiooniks.
+
 ## v3.34 — kaardiareen ja Uno Flex
 
 Kinnistu Deal kasutab kaardiareeni: vastaste portreed ja kinnistud ülal, aktiivne mängija all, pakk ning viimane kaart laua keskel. Oma telefonis näeb mängija kaardikätt ning valib rendi, vastase ja kinnistu laualt. Kaardid, kristallid ja hotellimärgid kasutavad koodiga loodud originaalset kujundust.

@@ -141,7 +141,7 @@ export default function PlayGeneric() {
           <BlitzHost state={state as BlitzState} update={update} isHost sessionCode={code} />
         )}
         {gameType === 'kinnistu_deal' && (
-          <KinnistuDealGame state={state as KinnistuDealState} update={update} isHost sessionCode={code} />
+          <KinnistuDealGame state={state as KinnistuDealState} update={update} isHost sessionCode={code} sessionId={sessionId} receiveState={receiveState} />
         )}
         {gameType === 'miljonar' && (
           <MiljonarHost state={state as MiljonarState} update={update} isHost sessionCode={code} />

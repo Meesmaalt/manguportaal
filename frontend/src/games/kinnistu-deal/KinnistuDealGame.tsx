@@ -1,3 +1,5 @@
+import DealTurnStatus from './DealTurnStatus'
+import { useDealTurnClock } from './useDealTurnClock'
 import DealArena from './DealArena'
 import { useState, useEffect } from 'react'
 import type { KinnistuDealState } from './types'
@@ -21,10 +23,13 @@ type Props = {
   state: KinnistuDealState
   update: (p: Partial<KinnistuDealState> | ((s: KinnistuDealState) => KinnistuDealState)) => void
   isHost?: boolean
+  sessionId?: string
+  receiveState?: (s: KinnistuDealState) => void
   sessionCode?: string
 }
 
-export default function KinnistuDealGame({ state, update, isHost = true, sessionCode }: Props) {
+export default function KinnistuDealGame({ state, update, isHost = true, sessionCode, sessionId, receiveState }: Props) {
+  const clockError = useDealTurnClock(state, sessionId, receiveState, isHost)
   const { t } = useI18n()
   const { players, phase, current, log, winner, deck, playsLeft } = state
   const winSets = state.packData?.winSets ?? 3
@@ -88,11 +93,11 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
   function hostSkipDefend() {
     if (!isHost || phase !== 'defend' || state.pending?.target == null) return
     playFx('tick', { prefer: 'deal_rent' })
-    update((s) => skipDefend(s, s.pending!.target!))
+    update((s) => skipDefend(s, s.pending!.responseIndex ?? s.pending!.target!))
   }
 
   function hostCancelPending() {
-    if (!isHost || phase === 'lobby' || phase === 'turn' || phase === 'over') return
+    if (!isHost || phase === 'lobby' || phase === 'turn' || phase === 'discard_hand' || phase === 'over') return
     playFx('wrong', { prefer: 'deal_rent' })
     update({
       phase: 'turn',
@@ -111,12 +116,16 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
       discard: [],
       current: 0,
       playsLeft: 0,
+      turnEndAt: undefined,
+      lastEvent: null,
+      paySelected: [],
       pending: null,
       winner: undefined,
       players: players.map((p) => ({
         ...p,
         token: p.token || makeToken(),
         hand: [],
+        buildings: {},
         bank: [],
         props: {},
       })),
@@ -175,7 +184,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
                     Jäta kaitse vahele
                   </button>
                 )}
-                {phase !== 'turn' && (
+                {phase !== 'turn' && phase !== 'discard_hand' && (
                   <button type="button" className="btn-outline text-xs text-accent-red/80" onClick={hostCancelPending}>
                     Tühista tegevus
                   </button>
@@ -283,7 +292,7 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
             <div>
               <div className="text-xs uppercase tracking-widest text-rose-400 font-semibold mb-1">Kaitse või lepi</div>
               <p className="text-xl font-display font-black text-rose-200">
-                {players[state.pending.target]?.name} — võib öelda „Ei, aitäh“ või lubada efekti
+                {players[state.pending.responseIndex ?? state.pending.target]?.name} vastab tegevusele
               </p>
             </div>
           )}
@@ -317,8 +326,8 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
           <ol className="text-white/75 text-xs space-y-0.5 list-decimal list-inside">
             <li>Võta 2 kaarti pakist (käigu alguses).</li>
             <li>Mängi kuni 3 kaarti: raha → pank, kinnistu → rida, tegevus → vali sihtmärk.</li>
-            <li>Käe lõpuks max 7 kaarti — ülejääk ära viska / panka.</li>
-            <li>Host: „Lõpeta käik“ kui mängija on valmis.</li>
+            <li>Käe lõpuks max 7 kaarti — vali ise, millised ülejäägist ära viskad.</li>
+            <li>Kolmanda kaardi järel lõpeb käik 5 sekundi pärast; pooleliolev vastus või makse tuleb enne lahendada.</li>
           </ol>
           <button
             type="button"
@@ -330,6 +339,8 @@ export default function KinnistuDealGame({ state, update, isHost = true, session
         </div>
       )}
 
+      <DealTurnStatus state={state}/>
+      {clockError && <p role="alert" className="text-amber-200 text-sm mb-3">{clockError}</p>}
       {/* Players table */}
       {phase !== 'lobby' ? <DealArena state={state} /> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         {players.map((p, i) => {

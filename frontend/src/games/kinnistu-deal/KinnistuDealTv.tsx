@@ -1,3 +1,4 @@
+import DealTurnStatus from './DealTurnStatus'
 import DealArena from './DealArena'
 import { useEffect, useMemo } from 'react'
 import type { KinnistuDealState } from './types'
@@ -62,7 +63,7 @@ export default function KinnistuDealTv({
       }
     if (phase === 'defend' && pending?.target != null)
       return {
-        title: `${players[pending.target]?.name} — kaitse?`,
+        title: `${players[pending.responseIndex ?? pending.target]?.name} vastab`,
         sub: `${players[pending.from]?.name}: ${actionLabel(pending.action)}`,
         tone: 'danger' as const,
       }
@@ -145,7 +146,7 @@ export default function KinnistuDealTv({
         )}
       </div>
 
-      <div className="max-w-[1600px] mx-auto w-full"><DealArena state={state}/></div>
+      <div className="max-w-[1600px] mx-auto w-full"><DealTurnStatus state={state}/><DealArena state={state}/></div>
 
       {/* Footer log ticker */}
       {phase !== 'lobby' && log.length > 1 && (

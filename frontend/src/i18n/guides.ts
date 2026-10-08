@@ -32,9 +32,9 @@ Pinge kasvab voor voorult. Sobib peole, kus tahad dramaatilist lõppu.`,
     uno_flex: `UNO Flex: 2–8 mängijat, igaühel 7 kaarti. Mängi sobiva värvi, arvu või sümboliga kaart. Roheline jõud lubab Flex-värvi või Flex-tegevuse; kasutatud jõud pöördub punaseks. Numbrikaart ↻ pöörab sinu jõu, jõujoker kõigi jõu. Kui kõik jõud on punased, taastuvad need. Flexiga sobitamise järel jätkub mäng kaardi põhivärviga. Teata UNO ühe kaardi juures. Tõmbekaarte ei kuhjata; +4 saab vaidlustada. Esimesena kõik kaardid mänginud mängija võidab. Mängijad kasutavad oma linke; teler näitab ainult avalikku lauda.`,
     kinnistu_deal: `Kinnistu Deal — kinnisvarakaardid peoks.
 
-Eesmärk: kogu 3 täielikku kinnistukomplekti (värvid). Iga käik: võta 2 kaarti, mängi kuni 3, limiit 7 käes.
+Eesmärk: kogu 3 täielikku kinnistukomplekti (värvid). Iga käik: võta 2 kaarti (tühja käega 5), mängi kuni 3. Kõigi kaardikäikude järel lõpeb käik 5 sekundi pärast. Üle 7 käes oleva kaardi korral vali ise ülejääk ära viskamiseks. Vastused ja maksed tuleb enne lahendada.
 
-Raha → panka, kinnistu → oma reale, tegevused (üür, vargus, tehingumurdja…) → vali vastane. Host juhib; TV näitab lauda.
+Raha → panka, kinnistu → oma reale, tegevused (üür, vargus, tehingumurdja…) → vali vastane. Kõik tegevuse sihtmärgid saavad sama vastuseakna; „Ei, aitäh“ kaardile saab vastata oma sama kaardiga. Võlga maksad ainult laual oleva varaga, vajadusel kogu olemasoleva varaga; käes olevaid kaarte ei kasutata maksmiseks. Tegevuskaarte saab oma käigul panna panka. Host juhib; TV näitab lauda.
 
 Ei ole Hasbro toode — peo versioon eesti kinnistunimedega.`,
     blitz: `Blitz — kiire trivia show.

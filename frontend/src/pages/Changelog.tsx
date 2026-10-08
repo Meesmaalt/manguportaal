@@ -4,6 +4,12 @@ import { useI18n } from '@/i18n/I18nContext'
 import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
+  { v: '3.35.0', items: [
+    'Kinnistu Deal: ühesugune vastuseaken ei reeda kaitsekaarti; tühistusele saab vastata oma kaitsekaardiga',
+    'Üle seitsme kaardi puhul valib mängija ise ülejäägi; viimase kaardikäigu järel 5 sekundi automaatne käigulõpp',
+    'Kaardid lendavad käest lauale ja mängijate vahel; teated jätavad laua nähtavaks',
+    'Parandatud maksmine, tühja käe täitmine, tegevuskaartide pangastamine ja kinnistute vahetus',
+  ] },
   { v: '3.34.0', items: [
     'Kinnistu Deal: kaardiareeni laud, portreed, käigukristallid ja kinnistukaartide rivistus',
     'UNO Flex: graafiline laud, privaatne telefonikäsi, Flex-jõud, UNO tabamine ja +4 vaidlustamine',

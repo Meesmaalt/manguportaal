@@ -76,7 +76,7 @@ export default function Display() {
             lastBeat.current = Date.now()
           }
         }).catch(() => { setConnection('reconnecting'); return () => {} })
-        if (rec.game_type === 'uno_flex') {
+        if (rec.game_type === 'uno_flex' || rec.game_type === 'kinnistu_deal') {
           poll = window.setInterval(() => {
             pb.collection('game_sessions').getOne<GameSession>(rec.id, { requestKey: null })
               .then((record) => { setSession(record); setState(record.state); setConnection('live') })
