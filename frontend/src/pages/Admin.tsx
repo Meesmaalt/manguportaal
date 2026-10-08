@@ -43,6 +43,7 @@ const GAME_TYPES: GameType[] = [
   'viimane_pusti',
   'tode_voi_tegu',
   'kinnistu_deal',
+  'uno_flex',
   'blitz',
 ]
 
@@ -303,6 +304,7 @@ export default function Admin() {
         'viimane_pusti',
         'tode_voi_tegu',
         'kinnistu_deal',
+  'uno_flex',
         'blitz',
         'miljonar',
       ]

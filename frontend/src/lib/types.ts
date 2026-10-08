@@ -6,6 +6,7 @@ export type GameType =
   | 'viimane_pusti'
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
+  | 'uno_flex'
   | 'blitz'
   | 'miljonar'
 
@@ -55,6 +56,7 @@ export const GAME_META: Record<
     description: 'Kogu 3 komplekti. Raha, kinnistud, tegevuskaardid. Host + TV.',
     emoji: '🏠',
   },
+  uno_flex: { title: 'UNO Flex', subtitle: 'Värvid ja Flex-jõud', description: 'Graafiline kaardilaud, privaatne telefonikäsi ja Flex-tegevused. 2–8 mängijat.', emoji: '🃏' },
   blitz: {
     title: 'Blitz',
     subtitle: 'Kiire trivia',

@@ -1,3 +1,4 @@
+import { initialFlex } from '@/games/uno-flex/rules'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { pb, generateCode, type Pack } from '@/lib/pocketbase'
@@ -117,6 +118,7 @@ function buildInitialState(gameType: string, packData: any, code: string) {
         packData,
       }
     }
+    case 'uno_flex': return initialFlex(code, crypto.randomUUID(), [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()], packData?.startHand || 7)
     case 'kinnistu_deal': {
       const tok = () => Math.random().toString(36).slice(2, 10)
       return {
@@ -205,6 +207,7 @@ function getPackStats(pack: Pack): string {
       const qs = d.questions?.length || 0
       return `${qs} tasemeküsimust`
     }
+    case 'uno_flex': return '104 kaarti · Flex-jõud · 2–8 mängijat'
     case 'kinnistu_deal': {
       return 'Klassikaline 106-kaardiline pakk'
     }

@@ -6,3 +6,5 @@ dist/
 pb/pb_data/
 *.log
 .qa/
+
+/node_modules

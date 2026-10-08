@@ -1,12 +1,10 @@
+import DealArena from './DealArena'
 import { useEffect, useMemo } from 'react'
-import type { KinnistuDealState, PlayerBoard } from './types'
+import type { KinnistuDealState } from './types'
 import {
-  COLOR_STYLE,
-  completeSets,
-  bankTotal,
+  COLOR_STYLE, completeSets, bankTotal,
   actionLabel,
 } from './types'
-import PropertyCity from './PropertyDistrict'
 import DealActionTheater from './DealActionTheater'
 import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
@@ -131,12 +129,12 @@ export default function KinnistuDealTv({
 
       {/* Hero moment */}
       <div
-        className={`max-w-7xl mx-auto w-full rounded-3xl border-2 bg-gradient-to-br ${toneClass} px-5 py-6 md:px-10 md:py-8 mb-5 text-center shadow-2xl`}
+        className={`max-w-7xl mx-auto w-full rounded-3xl border-2 bg-gradient-to-br ${toneClass} px-5 py-3 md:px-8 md:py-4 mb-4 text-center shadow-2xl`}
       >
         {headline.tone === 'win' && <Trophy className="inline-block text-gold mb-2" size={48} />}
         {headline.tone === 'pay' && <Coins className="inline-block text-emerald-300 mb-2" size={40} />}
         {headline.tone === 'danger' && <Swords className="inline-block text-rose-300 mb-2" size={40} />}
-        <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight tracking-tight">
+        <h1 className="font-display font-black text-2xl sm:text-3xl md:text-4xl leading-tight tracking-tight">
           {headline.title}
         </h1>
         {headline.sub && (
@@ -147,41 +145,7 @@ export default function KinnistuDealTv({
         )}
       </div>
 
-      {phase !== 'lobby' && <div className="deal-table-center max-w-7xl mx-auto w-full mb-4">
-        <span className="deal-deck-back" aria-hidden="true">KD</span>
-        <span><strong>{state.deck.length}</strong> kaarti pakis</span>
-        <span className="text-white/30">·</span>
-        <span><strong>{state.discard.length}</strong> kaarti maas</span>
-        <span className="ml-auto text-gold">Käik {(state.turnCount ?? 0) + 1}</span>
-      </div>}
-      {/* Player boards */}
-      <div
-        className={`max-w-7xl mx-auto w-full flex-1 grid gap-3 md:gap-4 ${
-          players.length <= 2
-            ? 'grid-cols-1 md:grid-cols-2'
-            : players.length === 3
-              ? 'grid-cols-1 md:grid-cols-3'
-              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-        }`}
-      >
-        {players.map((p, i) => (
-          <TvPlayerCard
-            key={p.token || i}
-            player={p}
-            index={i}
-            winSets={winSets}
-            isTurn={phase === 'turn' && i === current}
-            isLeader={i === leaderIdx && phase !== 'lobby'}
-            isPaying={phase === 'pay' && i === payFrom}
-            isDefending={phase === 'defend' && pending?.target === i}
-            isAttacker={
-              (phase === 'pick_target' || phase === 'defend' || phase === 'pay') &&
-              pending?.from === i
-            }
-            isWinner={phase === 'over' && winner === i}
-          />
-        ))}
-      </div>
+      <div className="max-w-[1600px] mx-auto w-full"><DealArena state={state}/></div>
 
       {/* Footer log ticker */}
       {phase !== 'lobby' && log.length > 1 && (
@@ -197,71 +161,6 @@ export default function KinnistuDealTv({
           Mängijad on telefonis · teler näitab lauda
         </p>
       )}
-    </div>
-  )
-}
-
-function TvPlayerCard({
-  player,
-  index,
-  winSets,
-  isTurn,
-  isLeader,
-  isPaying,
-  isDefending,
-  isAttacker,
-  isWinner,
-}: {
-  player: PlayerBoard
-  index: number
-  winSets: number
-  isTurn: boolean
-  isLeader: boolean
-  isPaying: boolean
-  isDefending: boolean
-  isAttacker: boolean
-  isWinner: boolean
-}) {
-  const sets = completeSets(player)
-  const bank = bankTotal(player)
-
-
-  let ring = 'border-white/12 bg-black/40'
-  if (isWinner) ring = 'border-gold bg-gold/15 shadow-[0_0_40px_rgba(223,179,66,0.35)]'
-  else if (isPaying) ring = 'border-emerald-400/60 bg-emerald-950/40 shadow-[0_0_28px_rgba(16,185,129,0.25)]'
-  else if (isDefending) ring = 'border-rose-400/60 bg-rose-950/40 shadow-[0_0_28px_rgba(244,63,94,0.25)]'
-  else if (isTurn) ring = 'border-cyan-400/55 bg-cyan-950/30 shadow-[0_0_24px_rgba(34,211,238,0.2)]'
-  else if (isAttacker) ring = 'border-amber-400/50 bg-amber-950/25'
-
-  return (
-    <div className={`rounded-2xl border-2 p-3 md:p-4 flex flex-col min-h-[12rem] ${ring}`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0">
-          <div className="font-display font-black text-lg md:text-xl text-gold truncate flex items-center gap-1.5">
-            {isTurn && <span className="text-cyan-300 text-sm">▶</span>}
-            {isWinner && <Trophy size={18} className="text-gold shrink-0" />}
-            {player.name}
-          </div>
-          <div className="text-xs text-white/40 mt-0.5">
-            {isPaying && <span className="text-emerald-300 font-bold">MAKSE · </span>}
-            {isDefending && <span className="text-rose-300 font-bold">KAITSE · </span>}
-            {isLeader && !isWinner && <span className="text-gold/70">liider · </span>}
-            {player.hand?.length ?? 0} kaarti käes
-          </div>
-        </div>
-        <div className="text-right shrink-0">
-          <div className="font-display font-black text-2xl md:text-3xl text-gold leading-none">
-            {sets}
-            <span className="text-white/35 text-lg">/{winSets}</span>
-          </div>
-          <div className="text-emerald-300 font-bold text-sm mt-0.5">{bank}M</div>
-        </div>
-      </div>
-
-      <div className="flex gap-1 mb-3" aria-label={`${sets} komplekti ${winSets}-st`}>
-        {Array.from({ length: winSets }, (_, n) => <span key={n} className={`h-1.5 flex-1 rounded-full ${n < sets ? 'bg-gold' : 'bg-white/10'}`} />)}
-      </div>
-      <PropertyCity player={player} />
     </div>
   )
 }

@@ -892,3 +892,68 @@ button.property-district:hover { border-color:#dfb342; }
 .host-extras-menu { position:absolute; z-index:60; left:0; top:calc(100% + 8px); min-width:220px; max-width:min(320px,80vw); padding:12px; display:flex; flex-wrap:wrap; gap:8px; border:1px solid #dfb34255; border-radius:14px; background:#101827; box-shadow:0 12px 40px #0009; }
 /* Decorative glows must not create a hidden scroll container that moves on focus. */
 .game-show { overflow:clip; }
+
+/* Card arenas: carved tabletop, portraits, resources and physical card lanes. */
+.card-arena { position:relative; border:2px solid #725a39; border-radius:34px; padding:20px; background:radial-gradient(ellipse at 50% 50%,#594f3d55,transparent 65%),repeating-linear-gradient(5deg,#1b262a 0 2px,#192328 2px 9px); box-shadow:inset 0 0 0 5px #141416,inset 0 0 75px #0008,0 16px 45px #0006; }
+.card-arena::before { content:''; pointer-events:none; position:absolute; inset:9px; border:1px solid #b99b5e44; border-radius:24px; }
+.arena-opponents { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr)); gap:14px; }
+.arena-player-lane { min-width:0; border:1px solid #ffffff12; border-radius:20px; padding:12px; background:linear-gradient(140deg,#060a10bb,#18303644); }
+.arena-home-lane { margin-top:12px; border-color:#c5ab6b88; background:radial-gradient(ellipse at 50% 100%,#304d3e77,#071017aa); }
+.lane-threatened { border-color:#fb7185; box-shadow:0 0 24px #fb718533; }
+.arena-seat { display:flex; align-items:center; width:100%; gap:10px; min-width:0; padding:5px; position:relative; text-align:left; }
+.arena-portrait { display:grid; place-items:center; position:relative; width:55px; height:65px; flex-shrink:0; background:radial-gradient(ellipse at 50% 35%,#285775,#0c1a28); border:3px ridge #a78750; border-radius:45% 45% 40% 40%; box-shadow:0 3px 12px #0008; filter:hue-rotate(var(--seat-hue,0deg)); }
+.arena-portrait svg { opacity:.3; position:absolute; width:38px; height:42px; }.arena-portrait b { font:800 24px Georgia,serif; }
+.arena-seat-info { min-width:0; display:flex; flex-direction:column; gap:4px; }.arena-seat-info strong { overflow-wrap:anywhere; color:#f2dc99; }.arena-seat-info>span { display:flex; align-items:center; gap:4px; font-size:11px; color:#acbdcb; }
+.arena-hand-count { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; }
+.mini-card-back { width:18px; height:25px; background:repeating-linear-gradient(45deg,#253b5d 0 3px,#38618c 3px 5px); border:1px solid #9baec9; border-radius:3px; }
+.seat-active .arena-portrait,.seat-active .flex-avatar { box-shadow:0 0 20px #f7d88788; border-color:#f7d887; }
+.arena-turn-gems { display:flex; gap:3px; position:absolute; bottom:-4px; right:3px; }.arena-turn-gems i { display:block; width:11px; height:11px; rotate:45deg; border:1px solid #458caf; background:#0b1c28; }.arena-turn-gems .gem-lit { background:#5ee9fc; box-shadow:0 0 8px #5ee9fc; }
+.arena-target { cursor:pointer; outline:2px solid #62e9f8; box-shadow:0 0 15px #62e9f844; border-radius:12px; }.arena-target:hover { outline-color:#f7d887; }
+.arena-property-row { display:flex; align-items:flex-start; gap:14px; overflow-x:auto; padding:14px 4px 8px; }
+.arena-set { flex-shrink:0; position:relative; border-bottom:3px solid var(--set-color); border-radius:8px; padding-bottom:3px; }
+.arena-set-complete { filter:drop-shadow(0 0 8px #f0ca5733); }
+.arena-set-cards { display:flex; padding:5px; }.arena-property-card { transform:rotate(var(--card-tilt)); transition:transform .2s; }.arena-property-card+.arena-property-card { margin-left:-43px; }.arena-property-card:hover { transform:translateY(-8px) rotate(0); position:relative; z-index:3; }
+.arena-set-label { width:100%; display:flex; flex-direction:column; align-items:center; padding:7px 5px; font-size:10px; color:#e5d6ad; }.arena-set-label strong { color:#86efac; }.arena-set-label:disabled { cursor:default; }
+.arena-building-medal { position:absolute; right:-6px; top:-1px; z-index:5; border-radius:8px; background:#dfb342; padding:2px 5px; color:#22190c; font-size:9px; font-weight:900; }
+.arena-empty-slot { width:100%; min-height:110px; border:1px dashed #cab47733; border-radius:14px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; color:#a79b80; font-size:11px; }
+.arena-table-line { display:flex; justify-content:center; align-items:center; gap:22px; padding:20px 4px; min-height:100px; }.arena-deck { position:relative; display:grid; place-content:center; width:60px; height:82px; flex-shrink:0; border:3px ridge #bd9d65; border-radius:10px; background:repeating-radial-gradient(ellipse,#243e60 0 5px,#172b40 5px 8px); color:#ebd797; font:900 18px Georgia; box-shadow:3px 3px #182534,6px 6px #887755; text-align:center; }.arena-deck small { font:700 12px sans-serif; padding-top:5px; }.arena-discard { rotate:7deg; transform:scale(.65); width:60px; height:82px; flex-shrink:0; }
+.arena-moment { display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center; max-width:600px; color:#ecd999; font-size:13px; }.arena-moment>span { color:#9aabbb; font-size:10px; }
+.arena-hand-dock { border:2px solid #9e835355; border-radius:24px; padding:18px 14px; background:linear-gradient(170deg,#202c3f,#090f1b); box-shadow:0 -8px 35px #1b77c118; margin-top:16px; }
+.arena-card-hand { display:flex; align-items:flex-end; gap:8px; overflow-x:auto; padding:14px 8px 20px; min-height:175px; scroll-snap-type:x proximity; }.arena-card-hand>button { scroll-snap-align:center; }.arena-card-hand>button:hover { z-index:4; }
+/* UNO Flex — original card artwork, with text labels alongside colors. */
+.flex-arena { border-color:#4a547e; background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--active-ink) 18%,#0b1020),#090f1f 72%); }
+.flex-opponents { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+.flex-seat { display:flex; flex-wrap:wrap; align-items:center; gap:8px; border:1px solid #ffffff22; border-radius:18px; padding:12px; background:#080f1ccc; max-width:400px; margin:auto; color:#cbd5e1; font-size:12px; }.flex-seat strong { color:#fff; }.flex-seat.seat-active { border-color:#f0d48a; }
+.flex-avatar { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; border:2px solid #586488; background:linear-gradient(135deg,#3b507d,#172234); color:#fff; font-weight:900; }
+.flex-power { display:flex; align-items:center; gap:3px; border-radius:12px; font-size:10px; padding:4px 8px; background:#b03e571a; color:#eea8b8; }.power-ready { background:#2cb99022; color:#7de5c9; }
+.flex-table-mid { display:flex; justify-content:center; align-items:center; gap:clamp(15px,4vw,70px); padding:34px 0 12px; }.flex-draw-pile,.flex-play-pile { display:flex; align-items:center; flex-direction:column; gap:10px; flex-shrink:0; font-size:10px; color:#8c9bb0; }.flex-draw-pile .flex-card { rotate:-6deg; box-shadow:4px 4px #535e86,8px 8px #273451,0 12px 30px #0008; }.flex-play-pile .flex-card { rotate:6deg; }
+.flex-match-info { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; color:#fff; }.flex-match-info>span:last-child { font-size:11px; color:#8c9bb0; }.flex-active-color { color:#0c1621; padding:7px 12px; border-radius:20px; font-size:12px; font-weight:900; }
+.flex-card { position:relative; width:104px; height:152px; flex-shrink:0; border:5px solid #eee8dc; border-radius:15px; background:var(--card-ink); box-shadow:0 7px 12px #0005,inset 0 0 18px #0003; overflow:hidden; color:white; transition:transform .2s,box-shadow .2s; text-align:center; }
+button.flex-card:hover:not(:disabled) { transform:translateY(-10px) rotate(-3deg); }.flex-card-selected { box-shadow:0 0 0 3px #7ff7ee,0 0 30px #7ff7ee77; transform:translateY(-9px); }.flex-card-disabled { filter:saturate(.6); opacity:.65; }
+.flex-corner { position:absolute; left:6px; top:4px; font-size:16px; font-weight:900; text-shadow:0 1px 3px #0006; }.flex-card-oval { position:absolute; inset:27px 5px 30px; border-radius:50%; background:#fffc; color:var(--card-ink); transform:rotate(-22deg); display:grid; place-items:center; font-size:40px; font-weight:900; letter-spacing:-3px; }.flex-card-label { position:absolute; left:0; right:0; bottom:21px; font-size:9px; font-weight:900; text-shadow:0 1px 2px #000; }.flex-alt { position:absolute; bottom:0; right:0; left:0; min-height:19px; background:#0005; font-size:9px; font-weight:900; padding:3px; }
+.flex-card-back { display:flex; align-items:center; justify-content:center; flex-direction:column; background:repeating-linear-gradient(35deg,#232e56 0 5px,#303f71 5px 8px); border-color:#abb4d4; }.flex-card-back span { border:2px solid #abb4d4; border-radius:50%; rotate:-20deg; padding:9px; font-size:20px; font-weight:900; }.flex-card-back small { font-size:24px; }
+.flex-card-choice { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px; padding:16px; border:1px solid #ffffff26; border-radius:15px; margin-top:8px; }.flex-color-pick { border:2px solid transparent; color:#07111e; border-radius:10px; padding:8px 10px; font-size:11px; font-weight:800; }.color-picked { border-color:white; box-shadow:0 0 0 2px #ffffff66; }.flex-event { text-align:center; min-height:24px; padding:12px 0; color:#e2cb96; font-size:13px; animation:questionReveal .3s ease-out; }
+@media(max-width:600px) { .card-arena { padding:12px; border-radius:24px; }.arena-opponents { grid-template-columns:1fr; }.arena-property-card+.arena-property-card { margin-left:-48px; }.flex-card { width:86px; height:130px; }.flex-card-oval { font-size:32px; }.flex-table-mid { gap:12px; }.flex-match-info { font-size:12px; }.flex-active-color { padding:6px 8px; }.arena-table-line { gap:12px; }.arena-opponents .arena-property-row { max-height:205px; } }
+@media(prefers-reduced-motion:reduce) { .arena-property-card,.flex-card { transition:none; }.flex-event { animation:none; } }
+
+.flex-seat strong { min-width:0; overflow-wrap:anywhere; max-width:100%; }
+
+.arena-property-row { justify-content:safe center; }
+.arena-property-card>button { width:104px; height:146px; }
+.arena-property-card+ .arena-property-card { margin-left:-48px; }
+.arena-property-card>button>div:last-child>span { flex-shrink:0; min-height:22px; font-size:10px; }
+.flex-event { animation:arenaEvent .3s ease-out; }
+@keyframes arenaEvent { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+@media(min-width:1000px) {
+ .flex-tv-view .flex-arena { min-height:70vh; display:flex; flex-direction:column; }
+ .flex-tv-view .flex-table-mid { flex:1; }
+ .flex-tv-view .flex-card { width:156px; height:228px; border-width:7px; }
+ .flex-tv-view .flex-card-oval { inset:40px 9px 46px; font-size:65px; }
+ .flex-tv-view .flex-card-label { font-size:14px; bottom:32px; }
+ .flex-tv-view .flex-alt { min-height:29px; font-size:14px; }
+ .flex-tv-view .flex-seat { font-size:16px; max-width:500px; }
+ .flex-tv-view .flex-power { font-size:13px; }
+ .flex-tv-view .flex-event,.flex-tv-view .flex-match-info { font-size:20px; }
+ .flex-tv-view .flex-opponents { margin-bottom:15px; }
+}
+@media(prefers-reduced-motion:reduce) { .flex-event { animation:none; } }

@@ -1,3 +1,4 @@
+import DealArena from '@/games/kinnistu-deal/DealArena'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
@@ -11,7 +12,6 @@ import {
   fullSetColors,
   actionLabel,
   colorsWithAny,
-  rentForSet,
 } from '@/games/kinnistu-deal/types'
 import {
   playCard,
@@ -26,7 +26,7 @@ import {
   togglePayCard,
   confirmSelectedPay,
 } from '@/games/kinnistu-deal/logic'
-import { CardFace, PlayerTableBoard, PropertySetRow, BankStrip } from '@/games/kinnistu-deal/DealCards'
+import { CardFace, BankStrip } from '@/games/kinnistu-deal/DealCards'
 import DealActionTheater from '@/games/kinnistu-deal/DealActionTheater'
 import { Landmark, Loader2 } from 'lucide-react'
 import { confettiBurst } from '@/lib/confettiBurst'
@@ -269,7 +269,7 @@ export default function DealPlayer() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#050c18] to-[#02060e] text-white pb-20">
       <DealActionTheater event={state.lastEvent} compact />
-      <div className="max-w-lg mx-auto px-3 pt-4">
+      <div className="max-w-6xl mx-auto px-3 pt-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 text-gold font-display font-bold text-lg">
             <Landmark size={20} /> Kinnistu Deal
@@ -343,109 +343,10 @@ export default function DealPlayer() {
           )}
         </div>
 
-        {/* Table */}
-        <div className="space-y-3 mb-5">
-          {state.players.map((p, i) => (
-            <div
-              key={p.token}
-              className={`rounded-2xl border p-3 transition ${
-                i === state.current && state.phase !== 'lobby' && state.phase !== 'over'
-                  ? 'border-gold/60 bg-gold/10'
-                  : i === playerIdx
-                    ? 'border-accent-cyan/40 bg-cyan-950/25'
-                    : 'border-white/10 bg-black/30'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="text-sm font-bold text-gold truncate flex items-center gap-1">
-                  {i === playerIdx && <span className="text-accent-cyan">●</span>}
-                  {p.name}
-                </div>
-                <div className="text-xs text-white/45 shrink-0">
-                  {completeSets(p)}/{winSets} · <span className="text-emerald-300">{bankTotal(p)}M</span>
-                </div>
-              </div>
-              <PlayerTableBoard player={p} />
-            </div>
-          ))}
-        </div>
-
-        {/* Interactive prompts */}
-        
-        {needPickRent && state.pending && (
-          <div className="card-panel border-amber-400/40 p-3 mb-4">
-            <p className="text-amber-100 text-sm text-center mb-3 font-medium">
-              {state.pending.action === 'rent'
-                ? 'Vali komplekt, millelt üüri nõuad'
-                : state.pending.action === 'hotel'
-                  ? 'Vali komplekt hotellile'
-                  : 'Vali komplekt majale'}
-            </p>
-            <div className="space-y-2">
-              {(state.pending.action === 'rent'
-                ? colorsWithAny(me)
-                : state.pending.action === 'hotel'
-                  ? fullSetColors(me).filter((c) => me.buildings?.[c] === 'house')
-                  : fullSetColors(me).filter((c) => !me.buildings?.[c])
-              ).map((c) => (
-                <PropertySetRow
-                  key={c}
-                  color={c}
-                  cards={me.props[c] || []}
-                  building={me.buildings?.[c]}
-                  showRent={state.pending?.action === 'rent'}
-                  owner={me}
-                  highlight
-                  onClick={() => onPickRent(c)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {needTarget && (
-          <div className="mb-4 space-y-3">
-            <div className="flex flex-wrap gap-2 justify-center">
-              {state.players.map((p, i) =>
-                i === playerIdx ? null : (
-                  <button
-                    key={p.token}
-                    type="button"
-                    className="btn-gold text-sm"
-                    disabled={busy}
-                    onClick={() => onTarget(i)}
-                  >
-                    {p.name}
-                  </button>
-                )
-              )}
-            </div>
-            {state.pending?.action === 'rent' && (
-              <div className="text-center">
-                <button
-                  type="button"
-                  className="btn-outline text-sm border-amber-400/40 text-amber-100"
-                  disabled={busy}
-                  onClick={onRentAll}
-                >
-                  Nõua üüri kõigilt
-                </button>
-                <p className="text-[10px] text-white/35 mt-1">Iga vastane maksab eraldi sama summa</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {needPickProp && (
-          <div className="card-panel border-amber-400/30 p-3 mb-4">
-            <p className="text-amber-100 text-xs text-center mb-2">Puuduta kinnistut, mida soovid</p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {pickOptions.map((c) => (
-                <CardFace key={c.id} card={c} onClick={() => onPickProp(c.id)} disabled={busy} />
-              ))}
-            </div>
-          </div>
-        )}
+        <DealArena state={state} viewer={playerIdx} busy={busy} targetMode={needTarget} onTarget={onTarget}
+          propertyIds={pickOptions.map(c=>c.id)} onProperty={onPickProp} onColor={onPickRent}
+          colors={needPickRent ? state.pending?.action === 'rent' ? colorsWithAny(me) : state.pending?.action === 'hotel' ? fullSetColors(me).filter(c=>me.buildings?.[c]==='house') : fullSetColors(me).filter(c=>!me.buildings?.[c]) : []} />
+        {needTarget && state.pending?.action === 'rent' && <button type="button" className="btn-outline mx-auto block my-3" disabled={busy} onClick={onRentAll}>Nõua üüri kõigilt</button>}
 
         {needDefend && (
           <div className="flex flex-wrap gap-2 justify-center mb-4">
@@ -505,12 +406,12 @@ export default function DealPlayer() {
         )}
 
         {/* Hand */}
-        <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0f1c30] to-[#080e18] p-3 shadow-xl">
+        <div className="arena-hand-dock">
           <h3 className="text-gold font-display text-sm mb-3 flex items-center justify-between">
             <span>Sinu käsi</span>
             <span className="text-[10px] text-white/35 font-sans font-normal">privaatne</span>
           </h3>
-          <div className="flex flex-wrap gap-2 justify-center min-h-[11rem]">
+          <div className="arena-card-hand">
             {me.hand.map((c) => (
               <CardFace
                 key={c.id}

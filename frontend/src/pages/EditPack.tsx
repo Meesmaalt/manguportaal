@@ -406,6 +406,7 @@ export default function EditPack() {
         ...(roosideFinal.length > 0 ? { finalRound: roosideFinal } : {}),
       }
     }
+    if (pack.game_type === 'uno_flex') return { startHand: Number((pack.data as any)?.startHand) || 7 }
     if (pack.game_type === 'kinnistu_deal') {
       return {
         winSets: dealWinSets,

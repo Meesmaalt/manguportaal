@@ -21,6 +21,7 @@ interface GameMeta {
 }
 
 const GAME_METAS: GameMeta[] = [
+  {type:'uno_flex',category:'tabletop',emoji:'🃏',players:'2–8 mängijat',mode:'📱 Oma käsi + 📺 kaardilaud',duration:'10–25 min',badge:'↯ Flex-jõud',badgeColor:'border-cyan-400/60 text-cyan-300 bg-cyan-500/10',accentColor:'from-cyan-500/20 via-violet-900/10 to-transparent'},
   {
     type: 'kuldvillak',
     category: 'shows',

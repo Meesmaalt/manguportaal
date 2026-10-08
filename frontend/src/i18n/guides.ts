@@ -29,6 +29,7 @@ Kerge, sotsiaalne, hea jäämurdja. Reeglite rangekus on teie otsustada.`,
 Igaühel on elud. Kui väide kehtib sinu kohta, kaotad elu. Elud otsas — välja. Viimane püsti jäänu võidab.
 
 Pinge kasvab voor voorult. Sobib peole, kus tahad dramaatilist lõppu.`,
+    uno_flex: `UNO Flex: 2–8 mängijat, igaühel 7 kaarti. Mängi sobiva värvi, arvu või sümboliga kaart. Roheline jõud lubab Flex-värvi või Flex-tegevuse; kasutatud jõud pöördub punaseks. Numbrikaart ↻ pöörab sinu jõu, jõujoker kõigi jõu. Kui kõik jõud on punased, taastuvad need. Flexiga sobitamise järel jätkub mäng kaardi põhivärviga. Teata UNO ühe kaardi juures. Tõmbekaarte ei kuhjata; +4 saab vaidlustada. Esimesena kõik kaardid mänginud mängija võidab. Mängijad kasutavad oma linke; teler näitab ainult avalikku lauda.`,
     kinnistu_deal: `Kinnistu Deal — kinnisvarakaardid peoks.
 
 Eesmärk: kogu 3 täielikku kinnistukomplekti (värvid). Iga käik: võta 2 kaarti, mängi kuni 3, limiit 7 käes.
@@ -87,6 +88,7 @@ Light, social, a great icebreaker. Strictness is up to you.`,
 Everyone has lives. If a statement applies to you, you lose a life. No lives left — you're out. Last one standing wins.
 
 Tension builds every round — perfect for a dramatic party finish.`,
+    uno_flex: `UNO Flex: 2–8 players, seven cards each. Match the color, number or symbol. Green power permits the Flex color or action, then turns red. A number-card flip changes your power; the flip wild changes everyone’s. All red powers reset to green. After a Flex color match, continue with the primary color. Call UNO at one card; draw penalties never stack. A regular +4 may be challenged. Empty your hand to win the round. Each player opens a private phone view; TV shows the public board.`,
     kinnistu_deal: `Property Deal — party property card game.
 
 Goal: collect 3 complete color sets. Each turn: draw 2, play up to 3, hand limit 7.
@@ -145,6 +147,7 @@ Players can walk away at any time before locking in an answer and take home thei
 У всех есть жизни. Фраза про вас — минус жизнь. Без жизней — вылет. Последний побеждает.
 
 Напряжение растёт с каждым раундом.`,
+    uno_flex: `UNO Flex: 2–8 игроков, по семь карт. Совпадение по цвету, числу или символу. Зелёная сила разрешает Flex-цвет или действие, после чего становится красной. Символ переворота меняет вашу силу; джокер — силу всех игроков. Когда все силы красные, они восстанавливаются. После совпадения по Flex-цвету игра продолжается по основному цвету карты. Объявите UNO, оставшись с одной картой. Штрафы не складываются; обычную +4 можно оспорить. Избавьтесь от всех карт, чтобы выиграть раунд. Игроки открывают свои ссылки на телефоне, телевизор показывает общий стол.`,
     kinnistu_deal: `Сделка за недвижимость — карточная вечеринка.
 
 Цель: 3 полных цветовых набора. Ход: взять 2, сыграть до 3, лимит руки 7.
@@ -183,6 +186,7 @@ export type GuideGame =
   | 'viimane_pusti'
   | 'tode_voi_tegu'
   | 'kinnistu_deal'
+  | 'uno_flex'
   | 'blitz'
   | 'miljonar'
 

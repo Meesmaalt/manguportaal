@@ -27,6 +27,7 @@ const REQUIRED_GAME_TYPES = [
   'viimane_pusti',
   'tode_voi_tegu',
   'kinnistu_deal',
+  'uno_flex',
   'blitz',
   'miljonar'
 ]
