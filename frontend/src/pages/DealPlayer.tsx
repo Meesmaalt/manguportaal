@@ -1,5 +1,10 @@
+import DealHandCard from '@/games/kinnistu-deal/DealHandCard'
+import { sendDealCommand } from '@/games/kinnistu-deal/session'
+import type { DealCommand } from '@/games/kinnistu-deal/logic'
+import DealTurnStatus from '@/games/kinnistu-deal/DealTurnStatus'
+import { useDealTurnClock } from '@/games/kinnistu-deal/useDealTurnClock'
 import DealArena from '@/games/kinnistu-deal/DealArena'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { pb, type GameSession } from '@/lib/pocketbase'
 import type { KinnistuDealState, DealCard } from '@/games/kinnistu-deal/types'
@@ -13,19 +18,7 @@ import {
   actionLabel,
   colorsWithAny,
 } from '@/games/kinnistu-deal/types'
-import {
-  playCard,
-  pickTarget,
-  resolvePay,
-  endTurn,
-  defendWithNo,
-  skipDefend,
-  pickProperty,
-  pickRentColor,
-  startRentAll,
-  togglePayCard,
-  confirmSelectedPay,
-} from '@/games/kinnistu-deal/logic'
+
 import { CardFace, BankStrip } from '@/games/kinnistu-deal/DealCards'
 import DealActionTheater from '@/games/kinnistu-deal/DealActionTheater'
 import { Landmark, Loader2 } from 'lucide-react'
@@ -41,7 +34,10 @@ export default function DealPlayer() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [actionError,setActionError]=useState('')
+  const actionLock=useRef(false)
   const [nameEdit, setNameEdit] = useState('')
+  const [discardSelected, setDiscardSelected] = useState<string[]>([])
   const [showTutorial, setShowTutorial] = useState(() => {
     try {
       return localStorage.getItem('deal-tutorial-v1') !== '1'
@@ -55,39 +51,27 @@ export default function DealPlayer() {
     return state.players.findIndex((p) => p.token === token)
   }, [state, token])
 
+  const clockError = useDealTurnClock(state, sessionId, setState, playerIdx >= 0 && state?.current === playerIdx)
+  const needDiscard = state?.phase === 'discard_hand' && state.current === playerIdx
+  useEffect(() => { setDiscardSelected([]) }, [state?.phase, state?.turnCount])
+
   const me = playerIdx >= 0 ? state!.players[playerIdx] : null
   const isMyTurn = state?.phase === 'turn' && state.current === playerIdx
   const needTarget = state?.phase === 'pick_target' && state.pending?.from === playerIdx
   const needPay = state?.phase === 'pay' && state.payFrom === playerIdx
-  const needDefend = state?.phase === 'defend' && state.pending?.target === playerIdx
+  const needDefend = state?.phase === 'defend' && (state.pending?.responseIndex ?? state.pending?.target) === playerIdx
   const needPickRent =
     state?.phase === 'pick_rent_color' && state.pending?.from === playerIdx
   const needPickProp =
     state?.phase === 'pick_property' && state.pending?.from === playerIdx && state.pending.target != null
 
-  const pushState = useCallback(
-    async (next: KinnistuDealState) => {
-      if (!sessionId) return
-      setBusy(true)
-      try {
-        if (sessionId.startsWith('local-')) {
-          localStorage.setItem(`session_${sessionId}`, JSON.stringify(next))
-          setState(next)
-        } else {
-          const rec = await pb.collection('game_sessions').getOne<GameSession>(sessionId)
-          const server = rec.state as KinnistuDealState
-          const merged = { ...server, ...next, hostBeat: Date.now() }
-          await pb.collection('game_sessions').update(sessionId, { state: merged })
-          setState(merged)
-        }
-      } catch (e: any) {
-        setError(e?.message || 'Salvestamine ebaõnnestus')
-      } finally {
-        setBusy(false)
-      }
-    },
-    [sessionId]
-  )
+  const act = useCallback(async (command: DealCommand) => {
+    if (!sessionId || !token || actionLock.current) return
+    actionLock.current=true;setBusy(true);setActionError('')
+    try { setState(await sendDealCommand(sessionId,token,command)) }
+    catch(e:any){setActionError(e.message)}
+    finally {actionLock.current=false;setBusy(false)}
+  },[sessionId,token])
 
   useEffect(() => {
     if (!code || !token) {
@@ -97,6 +81,7 @@ export default function DealPlayer() {
     }
     let unsub: (() => void) | null = null
     let cancelled = false
+    let remotePoll: number | undefined
 
     async function find() {
       setLoading(true)
@@ -115,8 +100,12 @@ export default function DealPlayer() {
         if (idx < 0) throw new Error('See link ei kuulu selle mängu mängijatele')
         setNameEdit(st.players[idx].name)
         unsub = await pb.collection('game_sessions').subscribe<GameSession>(rec.id, (e) => {
-          if (e.action === 'update') setState(e.record.state as KinnistuDealState)
-        })
+          if (!cancelled && e.action === 'update') setState(e.record.state as KinnistuDealState)
+        }).catch(() => () => {})
+        if (cancelled) { unsub?.(); return }
+        remotePoll=window.setInterval(()=>{
+          pb.collection('game_sessions').getOne<GameSession>(rec.id,{requestKey:null}).then(r=>{if(!cancelled)setState(r.state as KinnistuDealState)}).catch(()=>{})
+        },3000)
       } catch (e: any) {
         let found = false
         for (let i = 0; i < localStorage.length; i++) {
@@ -149,6 +138,7 @@ export default function DealPlayer() {
     return () => {
       cancelled = true
       unsub?.()
+      if (remotePoll) clearInterval(remotePoll)
     }
   }, [code, token])
 
@@ -165,66 +155,62 @@ export default function DealPlayer() {
 
   async function saveName() {
     if (!state || playerIdx < 0 || !nameEdit.trim()) return
-    await pushState({
-      ...state,
-      players: state.players.map((p, i) => (i === playerIdx ? { ...p, name: nameEdit.trim() } : p)),
-    })
+    await act({type:'rename',name:nameEdit.trim()})
   }
 
-  async function onPlay(cardId: string) {
+  async function onPlay(cardId: string, asBank = false) {
     if (!state || playerIdx < 0 || !isMyTurn || busy) return
-    const next = playCard(state, playerIdx, cardId)
-    playFx(next !== state ? 'click' : 'wrong')
-    await pushState(next)
+    playFx('click')
+    await act({type:'play',cardId,bank:asBank})
   }
 
   async function onTarget(ti: number) {
     if (!state || !needTarget || busy) return
     playFx('tick')
-    await pushState(pickTarget(state, ti))
+    await act({type:'target',target:ti})
   }
 
   async function onRentAll() {
     if (!state || !needTarget || busy || state.pending?.action !== 'rent') return
     playFx('tick')
-    await pushState(startRentAll(state))
+    await act({type:'rent_all'})
   }
 
   async function onPay() {
     if (!state || !needPay || busy) return
     playFx('correct')
-    await pushState(confirmSelectedPay(state))
+    await act({type:'pay'})
   }
 
   async function onTogglePay(cardId: string) {
     if (!state || !needPay || busy || playerIdx < 0) return
-    await pushState(togglePayCard(state, playerIdx, cardId))
+    await act({type:'toggle_pay',cardId})
   }
 
   async function onEndTurn() {
     if (!state || !isMyTurn || busy) return
     playFx('reveal')
-    await pushState(endTurn(state))
+    await act({type:'end'})
   }
 
   async function onDefend() {
     if (!state || !needDefend || busy) return
-    await pushState(defendWithNo(state, playerIdx))
+    await act({type:'defend'})
   }
 
   async function onAcceptHit() {
     if (!state || !needDefend || busy) return
-    await pushState(skipDefend(state, playerIdx))
+    await act({type:'accept'})
   }
 
   async function onPickProp(id: string) {
     if (!state || !needPickProp || busy) return
-    await pushState(pickProperty(state, id))
+    await act({type:'property',cardId:id})
   }
 
   async function onPickRent(color: PropColor) {
     if (!state || !needPickRent || busy) return
-    await pushState(pickRentColor(state, color))
+    await act({type:'rent_color',color})
   }
 
   if (loading) {
@@ -336,16 +322,19 @@ export default function DealPlayer() {
           {needPickRent && (state.pending?.action === 'rent' ? 'Vali üüri värv' : 'Vali komplekt majale/hotellile')}
           {needPickProp && 'Vali kinnistu / komplekt'}
           {needDefend &&
-            `${state.players[state.pending!.from]?.name} ründab sind (${actionLabel(state.pending!.action)})`}
+            (state.pending?.cancelled ? 'Tegevus tühistati — vasta või nõustu tühistusega' : `${state.players[state.pending!.from]?.name} · ${actionLabel(state.pending!.action)} — vasta või lase toimuda`)}
           {needPay && `Maksad ${state.payAmount}M → ${state.players[state.pending!.from]?.name}`}
           {state.phase === 'pick_target' && state.pending?.from !== playerIdx && (
             <span> {state.players[state.pending!.from]?.name} valib sihtmärki…</span>
           )}
         </div>
 
-        <DealArena state={state} viewer={playerIdx} busy={busy} targetMode={needTarget} onTarget={onTarget}
+        {actionError && <p role="alert" className="text-rose-200 p-3 border border-rose-400 rounded-xl mb-3">{actionError}</p>}
+        {(!isMyTurn || !state.turnEndAt) && <DealTurnStatus state={state}/>}
+        {clockError && <p role="alert" className="text-amber-200 text-sm mb-3">{clockError}</p>}
+        <DealArena state={state} viewer={playerIdx} busy={busy} targetMode={needTarget} targetIndices={state.players.map((p,i)=>i!==playerIdx && (state.pending?.action==='deal_breaker' ? fullSetColors(p).length>0 : state.pending?.action==='sly_deal'||state.pending?.action==='forced_deal' ? looseProperties(p).length>0 : true) ? i : -1).filter(i=>i>=0)} onTarget={onTarget}
           propertyIds={pickOptions.map(c=>c.id)} onProperty={onPickProp} onColor={onPickRent}
-          colors={needPickRent ? state.pending?.action === 'rent' ? colorsWithAny(me) : state.pending?.action === 'hotel' ? fullSetColors(me).filter(c=>me.buildings?.[c]==='house') : fullSetColors(me).filter(c=>!me.buildings?.[c]) : []} />
+          colors={needPickRent ? state.pending?.action === 'rent' ? colorsWithAny(me) : state.pending?.action === 'hotel' ? fullSetColors(me).filter(c=>c!=='rail'&&c!=='util'&&me.buildings?.[c]==='house') : fullSetColors(me).filter(c=>c!=='rail'&&c!=='util'&&!me.buildings?.[c]) : []} />
         {needTarget && state.pending?.action === 'rent' && <button type="button" className="btn-outline mx-auto block my-3" disabled={busy} onClick={onRentAll}>Nõua üüri kõigilt</button>}
 
         {needDefend && (
@@ -358,7 +347,7 @@ export default function DealPlayer() {
               <p className="text-white/40 text-xs w-full text-center">Sul pole „Ei, aitäh“ kaarti</p>
             )}
             <button type="button" className="btn-outline text-sm" disabled={busy} onClick={onAcceptHit}>
-              Lase efektil toimuda
+              {state.pending?.cancelled ? 'Nõustu tühistusega' : 'Lase efektil toimuda'}
             </button>
           </div>
         )}
@@ -366,7 +355,7 @@ export default function DealPlayer() {
         {needPay && (
           <div className="card-panel border-emerald-400/40 p-3 mb-4">
             <p className="text-emerald-100 text-sm text-center font-medium mb-2">
-              Vali kaardid, millega maksad ≥ {state.payAmount}M
+              Vali makseks {state.payAmount}M väärtuses vara. Kui varast ei piisa, anna kogu laual olev vara.
             </p>
             <p className="text-[10px] text-white/40 text-center mb-2">Pank</p>
             <div className="flex flex-wrap gap-2 justify-center mb-3">
@@ -406,27 +395,28 @@ export default function DealPlayer() {
         )}
 
         {/* Hand */}
-        <div className="arena-hand-dock">
+        <div className="arena-hand-dock" data-deal-hand={playerIdx}>
           <h3 className="text-gold font-display text-sm mb-3 flex items-center justify-between">
             <span>Sinu käsi</span>
             <span className="text-[10px] text-white/35 font-sans font-normal">privaatne</span>
           </h3>
           <div className="arena-card-hand">
             {me.hand.map((c) => (
-              <CardFace
-                key={c.id}
-                card={c}
-                large
-                onClick={() => onPlay(c.id)}
-                disabled={!isMyTurn || busy || state.playsLeft <= 0}
-              />
+              <DealHandCard key={c.id} card={c} discarding={needDiscard}
+                selected={needDiscard && discardSelected.includes(c.id)}
+                disabled={busy || (!needDiscard && (!isMyTurn || state.playsLeft <= 0))}
+                onSelect={() => setDiscardSelected(ids => ids.includes(c.id) ? ids.filter(id=>id!==c.id) : ids.length < me.hand.length-7 ? [...ids,c.id] : ids)}
+                onPlay={bank => onPlay(c.id,bank)}/>
+
             ))}
             {!me.hand.length && <p className="text-white/35 text-sm self-center">Käsi on tühi</p>}
           </div>
+          {needDiscard && <div className="text-center mt-4"><p className="text-amber-200 mb-3">Valitud {discardSelected.length}/{me.hand.length-7} kaarti ära viskamiseks</p><button className="btn-gold" disabled={busy || discardSelected.length !== me.hand.length-7} onClick={()=>act({type:'discard',ids:discardSelected})}>Viska valitud kaardid ära</button></div>}
+          {isMyTurn && state.turnEndAt != null && <DealTurnStatus state={state}/>}
           {isMyTurn && (
             <div className="mt-4 text-center">
               <button type="button" className="btn-outline text-sm px-6" disabled={busy} onClick={onEndTurn}>
-                Lõpeta käik
+                {state.turnEndAt ? 'Lõpeta kohe' : 'Lõpeta käik'}
               </button>
               <p className="text-[10px] text-white/40 mt-2 leading-relaxed max-w-xs mx-auto">
                 Kuni 3 kaarti: raha → panka · kinnistu → reale · tegevus → vastane. Lõpus max 7 käes.

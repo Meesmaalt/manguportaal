@@ -30,5 +30,24 @@ try{
  assert.equal((await api(`/api/uno-flex/${id}/heartbeat`,{token:'host'})).status,200)
  const after=await fetch(`http://127.0.0.1:8197/api/collections/game_sessions/records/${id}`).then(r=>r.json())
  assert.equal(after.state.players[0].hand.length,8);assert.equal(after.state.revision,2);assert(after.state.hostBeat)
- console.log('PASS: migrations, seeded pack, transactional actions, concurrent duplicate requests, token/turn validation, direct-update rejection, heartbeat on real PocketBase')
+ const deal={game_type:'kinnistu_deal',code:'DEAL',phase:'turn',current:0,playsLeft:0,turnEndAt:Date.now()-1,turnCount:0,players:[{name:'A',token:'a',hand:[],bank:[],props:{}},{name:'B',token:'b',hand:[],bank:[],props:{}}],deck:Array.from({length:12},(_,i)=>({id:`d${i}`,kind:'money',value:1})),discard:[],log:[]}
+ const dealRecord=await api('/api/collections/game_sessions/records',{code:'DEAL',game_type:'kinnistu_deal',state:deal,status:'playing'})
+ assert.equal(dealRecord.status,200)
+ const tickPath=`/api/kinnistu-deal/${dealRecord.data.id}/tick`
+ const ticks=await Promise.all([api(tickPath,{}),api(tickPath,{}),api(tickPath,{})])
+ assert(ticks.every(r=>r.status===200),JSON.stringify(ticks));assert.equal(ticks.filter(r=>r.data.changed).length,1)
+ const dealt=await fetch(`http://127.0.0.1:8197/api/collections/game_sessions/records/${dealRecord.data.id}`).then(r=>r.json())
+ assert.equal(dealt.state.current,1);assert.equal(dealt.state.turnCount,1);assert.equal(dealt.state.players[1].hand.length,5)
+ const actionPath=`/api/kinnistu-deal/${dealRecord.data.id}/action`
+ const move={token:'b',command:{type:'play',cardId:dealt.state.players[1].hand[0].id},requestId:'deal-once'}
+ const plays=await Promise.all([api(actionPath,move),api(actionPath,move)]);assert(plays.every(r=>r.status===200),JSON.stringify(plays))
+ const afterPlay=plays[0].data.state;assert.equal(afterPlay.players[1].bank.length,1);assert.equal(afterPlay.players[1].hand.length,4);assert.equal(afterPlay.playsLeft,2)
+ assert.equal((await api(actionPath,{token:'a',command:{type:'end'},requestId:'wrong-player'})).status,400)
+ await api(`/api/kinnistu-deal/${dealRecord.data.id}/heartbeat`,{})
+ const heart=await fetch(`http://127.0.0.1:8197/api/collections/game_sessions/records/${dealRecord.data.id}`).then(r=>r.json());assert.equal(heart.state.players[1].bank.length,1)
+ const pending={...dealt.state,phase:'defend',playsLeft:0,pending:{from:0,target:1,action:'debt'},turnEndAt:Date.now()-1}
+ await api(`/api/collections/game_sessions/records/${dealRecord.data.id}`,{state:pending},'PATCH')
+ await api(tickPath,{})
+ const waiting=await fetch(`http://127.0.0.1:8197/api/collections/game_sessions/records/${dealRecord.data.id}`).then(r=>r.json());assert.equal(waiting.state.phase,'defend');assert.equal(waiting.state.turnCount,1)
+ console.log('PASS: migrations, seeded pack, transactional actions, concurrent duplicate requests, token/turn validation, direct-update rejection, heartbeat and simultaneous Deal turn deadlines on real PocketBase')
 }catch(e){console.error(logs);throw e}finally{server.kill();await new Promise(r=>server.on('exit',r));rmSync(dir,{recursive:true,force:true})}

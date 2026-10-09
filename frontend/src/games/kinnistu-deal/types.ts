@@ -45,6 +45,7 @@ export type DealPhase =
   | 'pick_property'
   | 'pay'
   | 'defend'
+  | 'discard_hand' // select excess cards at the end of the turn
   | 'over'
 
 export type PendingAction = {
@@ -57,6 +58,8 @@ export type PendingAction = {
   rentTargets?: number[]
   rentMode?: 'one' | 'all'
   /** forced_deal: choosing own property to give */
+  responseIndex?: number
+  cancelled?: boolean
   giveStep?: boolean
 }
 
@@ -73,6 +76,8 @@ export type DealEventKind =
   | 'just_say_no'
   | 'house_built'
   | 'hotel_built'
+  | 'card_played'
+  | 'hand_discarded'
   | 'pay_completed'
 
 export type DealEventAnimation = {
@@ -82,6 +87,7 @@ export type DealEventAnimation = {
   actorIndex: number
   targetName?: string
   targetIndex?: number
+  cards?: DealCard[]
   card?: DealCard
   amount?: number
   propName?: string
@@ -91,6 +97,8 @@ export type DealEventAnimation = {
 }
 
 export type KinnistuDealState = {
+  processedMoves?: string[]
+  turnEndAt?: number
   coachDismissed?: boolean
   turnCount?: number
   players: PlayerBoard[]

@@ -2,6 +2,21 @@
 
 Eesmärk: ekraanil on mäng ja selle olukord; telefonis on hetkel vajalikud tegevused. Pakihaldus, AI ja seadistamine ei tohi mängu üle võtta.
 
+## Valmis v3.36
+
+1. Kaardi eraldi haaramiskoht ja mängu/panka lohistamise alad; katkestus, laua kõrvale laskmine ja tavavajutus säilivad.
+2. Sihtimise valgusjoon nii hiire kui klaviatuurifookusega; kinnistute ja portreede saabumishelendus.
+3. Valgustatud lauapind, katsutavad latern ja hammasratas, töölaual ülekattega kaardilehvik.
+4. Brauseritest kontrollib lohistuse katkestust, mõlemat maandumisala, käigukulu ja sihtimist.
+
+## Valmis v3.35
+
+1. Ühtlane Deali vastuseaken, tühistuste ahel ja valitav käe ülejääk.
+2. Viiesekundiline ühine tähtaeg pärast tegevuste lõplikku lahendamist; andmebaasitehing väldib topelt käigulõppu.
+3. Kaardi liikumine tegeliku lähtekoha ja sihtmärgi vahel, väiksed teated.
+4. Makse-, vahetus-, komplekti varguse ning tühja käe reegliparandused; telefoni käigud tehingupõhisel serveriteenusel.
+5. Reeglitestid, telefonivood, vastused/tühistused, värskendamisel säiliv loendus ning päris serveri samaaegsed päringud.
+
 ## Valmis v3.34
 
 1. Kinnistu Deal on kaardiareeni vormis: vastaste portreed ülal, oma kinnistud all, pakk ning sündmus laua keskel. Rent, sihtmärk ja kinnistu valitakse otse areenilt. Senine kaitse- ja maksevoog säilib.

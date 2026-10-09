@@ -174,12 +174,36 @@ export function useGameSession<T extends Record<string, unknown>>(sessionId: str
     }
   }, [sessionId, isLocal, load, markSync])
 
+  // Keep card games current when a realtime connection is temporarily unavailable.
+  useEffect(() => {
+    if (isLocal) return
+    const id=window.setInterval(async()=>{
+      if (stateRef.current?.game_type !== 'kinnistu_deal' || pushingRef.current) return
+      try {
+        const rec=await pb.collection('game_sessions').getOne<GameSession>(sessionId,{requestKey:null})
+        if (!pushingRef.current) { setSession(rec); setState(rec.state as T); markSync('live') }
+      } catch { setConnection('reconnecting') }
+    },3000)
+    return()=>clearInterval(id)
+  },[sessionId,isLocal,markSync])
+
   // Light heartbeat: merge hostBeat into *server* state so large fields aren't resent from a stale client
   useEffect(() => {
     if (loading) return
     const id = window.setInterval(async () => {
       const current = stateRef.current
       if (!current) return
+      if (current.game_type === 'kinnistu_deal') {
+        try {
+          if (isLocal) {
+            const raw=localStorage.getItem(`session_${sessionId}`)
+            if (raw) localStorage.setItem(`session_${sessionId}`,JSON.stringify({...JSON.parse(raw),hostBeat:Date.now()}))
+          } else await pb.send(`/api/kinnistu-deal/${sessionId}/heartbeat`, { method: 'POST', requestKey: null })
+          markSync(isLocal?'local':'live')
+        }
+        catch { setConnection('reconnecting') }
+        return
+      }
       if (current.game_type === 'uno_flex') {
         try {
           if (isLocal) {
