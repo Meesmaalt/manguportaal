@@ -4,6 +4,11 @@ import { useI18n } from '@/i18n/I18nContext'
 import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
+  { v: '3.36.0', items: [
+    'Kinnistu Deal: lohista kaart mängualale või panka, telefoni kerimist segamata',
+    'Sihtimise valgusjoon, tegelikust kaardist algav lend ja helendavad maandumised',
+    'Nikerdatud mängulaud, interaktiivne latern ja hammasratas, töölaual kaardilehvik',
+  ] },
   { v: '3.35.0', items: [
     'Kinnistu Deal: ühesugune vastuseaken ei reeda kaitsekaarti; tühistusele saab vastata oma kaitsekaardiga',
     'Üle seitsme kaardi puhul valib mängija ise ülejäägi; viimase kaardikäigu järel 5 sekundi automaatne käigulõpp',

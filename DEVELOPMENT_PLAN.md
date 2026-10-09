@@ -2,6 +2,13 @@
 
 Eesmärk: ekraanil on mäng ja selle olukord; telefonis on hetkel vajalikud tegevused. Pakihaldus, AI ja seadistamine ei tohi mängu üle võtta.
 
+## Valmis v3.36
+
+1. Kaardi eraldi haaramiskoht ja mängu/panka lohistamise alad; katkestus, laua kõrvale laskmine ja tavavajutus säilivad.
+2. Sihtimise valgusjoon nii hiire kui klaviatuurifookusega; kinnistute ja portreede saabumishelendus.
+3. Valgustatud lauapind, katsutavad latern ja hammasratas, töölaual ülekattega kaardilehvik.
+4. Brauseritest kontrollib lohistuse katkestust, mõlemat maandumisala, käigukulu ja sihtimist.
+
 ## Valmis v3.35
 
 1. Ühtlane Deali vastuseaken, tühistuste ahel ja valitav käe ülejääk.

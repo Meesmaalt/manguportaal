@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import DealTableEffects from './DealTableEffects'
 import DealCardFlight from './DealCardFlight'
 import { Coins, Crown, Landmark, Shield, Sparkles } from 'lucide-react'
 import type { KinnistuDealState, PlayerBoard, PropColor } from './types'
@@ -39,6 +40,7 @@ export default function DealArena({ state, viewer, busy=false, targetMode=false,
   </section>
  }
  return <div ref={arena} className="card-arena deal-arena">
+   <DealTableEffects arena={arena} state={state} aiming={targetMode}/>
    <DealCardFlight event={state.lastEvent} arena={arena}/>
    <div className="arena-opponents">{state.players.map((p,i)=>i===focus?null:lane(p,i))}</div>
    <div className="arena-table-line"><span className="arena-deck" aria-label={`${state.deck.length} kaarti pakis`}>KD<small>{state.deck.length}</small></span><div className="arena-moment"><Sparkles size={16}/><strong>{state.phase==='over'?`${state.players[state.winner??0]?.name} võitis!`:state.log[0]||'Kogu kinnistukomplekte'}</strong><span>Käik {(state.turnCount??0)+1} · {state.discard.length} kaarti maas</span></div><span className="arena-discard">{state.discard.length? <CardFace card={state.discard[state.discard.length-1]} small/>:<span>↺</span>}</span></div>

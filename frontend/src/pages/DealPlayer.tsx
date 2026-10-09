@@ -1,3 +1,4 @@
+import DealHandCard from '@/games/kinnistu-deal/DealHandCard'
 import { sendDealCommand } from '@/games/kinnistu-deal/session'
 import type { DealCommand } from '@/games/kinnistu-deal/logic'
 import DealTurnStatus from '@/games/kinnistu-deal/DealTurnStatus'
@@ -401,16 +402,12 @@ export default function DealPlayer() {
           </h3>
           <div className="arena-card-hand">
             {me.hand.map((c) => (
-              <div className="deal-hand-card" key={c.id}><CardFace
-                key={c.id}
-                card={c}
-                large
+              <DealHandCard key={c.id} card={c} discarding={needDiscard}
                 selected={needDiscard && discardSelected.includes(c.id)}
-                onClick={() => { if (needDiscard) setDiscardSelected(ids => ids.includes(c.id) ? ids.filter(id=>id!==c.id) : ids.length < me.hand.length-7 ? [...ids,c.id] : ids); else onPlay(c.id) }}
                 disabled={busy || (!needDiscard && (!isMyTurn || state.playsLeft <= 0))}
-              />
-              {c.kind === 'action' && isMyTurn && state.playsLeft > 0 && <button disabled={busy} className="deal-bank-choice" onClick={()=>onPlay(c.id,true)}>Panka · {c.value}M</button>}
-              </div>
+                onSelect={() => setDiscardSelected(ids => ids.includes(c.id) ? ids.filter(id=>id!==c.id) : ids.length < me.hand.length-7 ? [...ids,c.id] : ids)}
+                onPlay={bank => onPlay(c.id,bank)}/>
+
             ))}
             {!me.hand.length && <p className="text-white/35 text-sm self-center">Käsi on tühi</p>}
           </div>
