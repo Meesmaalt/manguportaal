@@ -1045,3 +1045,13 @@ button.flex-card:hover:not(:disabled) { transform:translateY(-10px) rotate(-3deg
 .deal-tv .arena-moment strong { font-size:clamp(16px,1.6vw,26px); }
 @keyframes deal-tv-pulse { 0%,100% { box-shadow:0 0 0 2px #f7d88755,0 0 22px #f7d88722; } 50% { box-shadow:0 0 0 3px #f7d887aa,0 0 42px #f7d88755; } }
 @media(prefers-reduced-motion:reduce) { .deal-tv .seat-active { animation:none; } }
+
+.deal-tv-scoreboard { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:14px; }
+.deal-tv-score { display:flex; align-items:center; gap:12px; padding:8px 16px; border:1px solid #ffffff22; border-radius:999px; background:#02061788; font-size:clamp(14px,1.3vw,22px); }
+.deal-tv-score strong { color:#f2dc99; }
+.deal-tv-score-lead { border-color:#dfb342aa; background:linear-gradient(90deg,#dfb34233,#02061788); }
+.deal-tv-score-turn { box-shadow:0 0 0 2px #67e8f988; }
+.deal-tv-pips { display:flex; gap:5px; }
+.deal-tv-pips i { width:14px; height:14px; border-radius:50%; border:2px solid #dfb34288; }
+.deal-tv-pips i.pip-on { background:#dfb342; box-shadow:0 0 10px #dfb342aa; }
+.deal-tv-bank { display:flex; align-items:center; gap:4px; color:#86efac; font-weight:700; }

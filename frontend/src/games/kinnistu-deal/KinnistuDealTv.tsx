@@ -146,6 +146,22 @@ export default function KinnistuDealTv({
         )}
       </div>
 
+      {phase !== 'lobby' && (
+        <div className="deal-tv-scoreboard max-w-[1600px] mx-auto w-full" aria-label="Edetabel">
+          {players.map((p, i) => ({ p, i }))
+            .sort((a, b) => completeSets(b.p) * 100 + bankTotal(b.p) - (completeSets(a.p) * 100 + bankTotal(a.p)))
+            .map(({ p, i }) => (
+              <div key={p.token} className={`deal-tv-score ${i === leaderIdx ? 'deal-tv-score-lead' : ''} ${i === current && phase !== 'over' ? 'deal-tv-score-turn' : ''}`}>
+                <strong>{i === leaderIdx && '👑 '}{p.name}</strong>
+                <span className="deal-tv-pips" aria-label={`${completeSets(p)} / ${winSets} komplekti`}>
+                  {Array.from({ length: winSets }, (_, n) => <i key={n} className={n < completeSets(p) ? 'pip-on' : ''} />)}
+                </span>
+                <span className="deal-tv-bank"><Coins size={14} />{bankTotal(p)}M</span>
+              </div>
+            ))}
+        </div>
+      )}
+
       <div className="max-w-[1600px] mx-auto w-full"><DealTurnStatus state={state}/><DealArena state={state}/></div>
 
       {/* Footer log ticker */}
