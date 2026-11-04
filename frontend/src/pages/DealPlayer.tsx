@@ -17,6 +17,7 @@ import {
   fullSetColors,
   actionLabel,
   colorsWithAny,
+  buildingAssets,
 } from '@/games/kinnistu-deal/types'
 
 import { CardFace, BankStrip } from '@/games/kinnistu-deal/DealCards'
@@ -386,6 +387,29 @@ export default function DealPlayer() {
                 ))
               )}
             </div>
+            {buildingAssets(me).length > 0 && (
+              <>
+                <p className="text-[10px] text-white/40 text-center mb-2">Majad ja hotellid (maja 3M · hotell 4M)</p>
+                <div className="flex flex-wrap gap-2 justify-center mb-3">
+                  {buildingAssets(me).map((b) => {
+                    const on = (state.paySelected || []).includes(b.id)
+                    return (
+                      <button key={b.id} type="button" disabled={busy} onClick={() => onTogglePay(b.id)}
+                        className={`px-3 py-2 rounded-xl border-2 text-sm font-bold ${on ? 'border-gold bg-gold/20 text-gold' : 'border-white/20 bg-white/5 text-white/80'}`}>
+                        {b.kind === 'hotel' ? '♜ Hotell' : '⌂ Maja'} · {b.value}M
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+            <p className="text-xs text-center text-white/60 mb-2">
+              Valitud: <strong className="text-gold">{(() => {
+                const sel = new Set(state.paySelected || [])
+                const cards = [...me.bank, ...Object.values(me.props).flatMap((c) => c || [])]
+                return cards.filter((c) => sel.has(c.id)).reduce((t, c) => t + c.value, 0) + buildingAssets(me).filter((b) => sel.has(b.id)).reduce((t, b) => t + b.value, 0)
+              })()}M</strong> / {state.payAmount}M
+            </p>
             <div className="text-center">
               <button type="button" className="btn-gold px-8" disabled={busy} onClick={onPay}>
                 Kinnita makse

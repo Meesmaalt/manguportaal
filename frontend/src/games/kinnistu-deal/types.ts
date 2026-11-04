@@ -228,3 +228,14 @@ export function actionLabel(a: ActionKind): string {
   }
   return map[a]
 }
+
+/** Maja = 3M, hotell = 4M; neid saab maksta üürina/võlana. Id kujul `bld:<värv>`. */
+export const BUILDING_VALUE = { house: 3, hotel: 4 } as const
+export function buildingAssets(p: PlayerBoard): { id: string; color: PropColor; kind: 'house' | 'hotel'; value: number }[] {
+  const out: { id: string; color: PropColor; kind: 'house' | 'hotel'; value: number }[] = []
+  for (const col of Object.keys(SET_SIZE) as PropColor[]) {
+    const b = p.buildings?.[col]
+    if (b) out.push({ id: `bld:${col}`, color: col, kind: b, value: BUILDING_VALUE[b] })
+  }
+  return out
+}

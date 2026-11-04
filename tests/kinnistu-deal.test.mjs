@@ -48,7 +48,7 @@ test('payment can exhaust all assets below debt or pay zero; full sets may pay; 
  assert.equal(confirmSelectedPay(s).phase,'turn')
  s.players[1].bank=[cash('one')];s.players[1].props={brown:[prop('a'),prop('b')]};s.players[1].buildings={brown:'hotel'}
  s.payAmount=10;s.paySelected=['one','a'];assert.equal(confirmSelectedPay(s).phase,'pay')
- s.paySelected=['one','a','b'];let paid=confirmSelectedPay(s);assert.equal(paid.phase,'turn');assert.equal(paid.players[1].bank.length,0);assert.equal(paid.players[0].props.brown.length,2);assert(!paid.players[1].buildings.brown)
+ s.paySelected=['one','a','b'];let paid=confirmSelectedPay(s);assert.equal(paid.phase,'turn');assert.equal(paid.players[1].bank.length,1);assert.equal(paid.players[1].bank[0].value,4);assert.equal(paid.players[0].props.brown.length,2);assert(!paid.players[1].buildings.brown)
  paid=resolvePay(s);assert.equal(paid.players[0].props.brown.length,2);assert.equal(paid.players[1].props.brown.length,0)
 })
 test('deal breaker appends properties; forced deal needs an actual swap; invalid choices do not steal',()=>{
@@ -76,4 +76,15 @@ test('buildings require street sets, a prior house for hotels, and a real color'
  const built=pickRentColor(s,'brown');assert.equal(built.players[0].buildings.brown,'house')
  s.pending.action='hotel';assert.equal(pickRentColor(s,'brown'),s)
  s.players[0].buildings.brown='house';assert.equal(pickRentColor(s,'brown').players[0].buildings.brown,'hotel')
+})
+
+test('houses and hotels can pay a debt; orphaned buildings are banked instead of vanishing',()=>{
+ let s=fixture();s.phase='pay';s.payFrom=1;s.payAmount=4;s.pending={from:0,target:1,action:'debt',cardId:'debt'}
+ s.players[1].props={brown:[prop('a'),prop('b')]};s.players[1].buildings={brown:'hotel'}
+ s.paySelected=['bld:brown'];let paid=confirmSelectedPay(s)
+ assert.equal(paid.phase,'turn');assert.equal(paid.players[0].bank.reduce((t,c)=>t+c.value,0),4)
+ assert(!paid.players[1].buildings.brown);assert.equal(paid.players[1].props.brown.length,2)
+ s.payAmount=2;s.paySelected=['a'];paid=confirmSelectedPay(s)
+ assert.equal(paid.players[1].bank.reduce((t,c)=>t+c.value,0),4);assert(!paid.players[1].buildings.brown)
+ s.payAmount=5;s.paySelected=['a'];assert.equal(confirmSelectedPay(s).phase,'pay')
 })
