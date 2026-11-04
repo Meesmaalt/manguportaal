@@ -419,7 +419,7 @@ export default function DealPlayer() {
                 {state.turnEndAt ? 'Lõpeta kohe' : 'Lõpeta käik'}
               </button>
               <p className="text-[10px] text-white/40 mt-2 leading-relaxed max-w-xs mx-auto">
-                Kuni 3 kaarti: raha → panka · kinnistu → reale · tegevus → vastane. Lõpus max 7 käes.
+                Vajuta kaarti ja vali „Mängi“ või „Panka“. Kuni 3 kaarti käigus. Lõpus max 7 käes.
               </p>
             </div>
           )}

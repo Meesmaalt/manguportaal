@@ -108,7 +108,7 @@ export default function KinnistuDealTv({
               : 'from-white/5 to-transparent border-white/15'
 
   return (
-    <div className="min-h-screen deal-table-surface text-white px-3 md:px-6 py-4 md:py-6 flex flex-col">
+    <div className="min-h-screen deal-tv deal-table-surface text-white px-3 md:px-6 py-4 md:py-6 flex flex-col">
       <DealActionTheater event={state.lastEvent} />
       {/* Top bar */}
       <div className="flex items-center justify-between gap-3 mb-4 max-w-7xl mx-auto w-full">
@@ -145,6 +145,22 @@ export default function KinnistuDealTv({
           <p className="mt-3 text-sm md:text-base text-gold/80 max-w-2xl mx-auto">{log[0]}</p>
         )}
       </div>
+
+      {phase !== 'lobby' && (
+        <div className="deal-tv-scoreboard max-w-[1600px] mx-auto w-full" aria-label="Edetabel">
+          {players.map((p, i) => ({ p, i }))
+            .sort((a, b) => completeSets(b.p) * 100 + bankTotal(b.p) - (completeSets(a.p) * 100 + bankTotal(a.p)))
+            .map(({ p, i }) => (
+              <div key={p.token} className={`deal-tv-score ${i === leaderIdx ? 'deal-tv-score-lead' : ''} ${i === current && phase !== 'over' ? 'deal-tv-score-turn' : ''}`}>
+                <strong>{i === leaderIdx && '👑 '}{p.name}</strong>
+                <span className="deal-tv-pips" aria-label={`${completeSets(p)} / ${winSets} komplekti`}>
+                  {Array.from({ length: winSets }, (_, n) => <i key={n} className={n < completeSets(p) ? 'pip-on' : ''} />)}
+                </span>
+                <span className="deal-tv-bank"><Coins size={14} />{bankTotal(p)}M</span>
+              </div>
+            ))}
+        </div>
+      )}
 
       <div className="max-w-[1600px] mx-auto w-full"><DealTurnStatus state={state}/><DealArena state={state}/></div>
 

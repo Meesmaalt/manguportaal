@@ -1,58 +1,48 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Grip } from 'lucide-react'
+import { Landmark, Coins, X } from 'lucide-react'
 import { CardFace } from './DealCards'
 import type { DealCard } from './types'
 import { rememberFlightOrigin } from './flightOrigin'
 
-/** Dedicated grip keeps swiping the hand and tapping cards predictable on phones. */
+/** Vajuta kaarti → avaneb suur eelvaade nuppudega „Mängi“ / „Panka“. Lohistamist pole vaja. */
 export default function DealHandCard({ card, disabled, selected, discarding, onSelect, onPlay }: {
   card: DealCard; disabled: boolean; selected: boolean; discarding: boolean;
   onSelect: () => void; onPlay: (bank?: boolean) => void;
 }) {
   const root = useRef<HTMLDivElement>(null)
-  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
-  const position = useRef<{ x: number; y: number } | null>(null)
-  const moved = useRef(false)
-  const start = useRef({ x: 0, y: 0 })
-  function cancel() { position.current = null; setDrag(null) }
-  useEffect(() => { if (disabled || discarding) { position.current = null; setDrag(null) } }, [disabled, discarding])
+  const [open, setOpen] = useState(false)
+  useEffect(() => { if (disabled || discarding) setOpen(false) }, [disabled, discarding])
   useEffect(() => {
-    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') cancel() }
+    if (!open) return
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', escape)
     return () => window.removeEventListener('keydown', escape)
-  }, [])
-  function play(bank = false, point?: { x: number; y: number }) {
+  }, [open])
+  function play(bank: boolean) {
     const r = root.current?.getBoundingClientRect()
-    if (point || r) rememberFlightOrigin(card.id, point ?? { x: r!.left + r!.width / 2, y: r!.top + 90 })
+    if (r) rememberFlightOrigin(card.id, { x: r.left + r.width / 2, y: r.top + 90 })
+    setOpen(false)
     onPlay(bank)
   }
-  function begin(e: PointerEvent<HTMLButtonElement>) {
-    if (disabled || discarding || e.button !== 0) return
-    e.currentTarget.setPointerCapture(e.pointerId)
-    start.current = { x: e.clientX, y: e.clientY }; moved.current = false
-    position.current = start.current; setDrag(start.current)
-  }
-  function move(e: PointerEvent<HTMLButtonElement>) {
-    if (!position.current) return
-    if (Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y) > 10) moved.current = true
-    position.current = { x: e.clientX, y: e.clientY }; setDrag(position.current)
-  }
-  function drop(e: PointerEvent<HTMLButtonElement>) {
-    if (!position.current) return
-    const point = { x: e.clientX, y: e.clientY }
-    const zone = document.elementFromPoint(point.x, point.y)?.closest('[data-deal-drop]')?.getAttribute('data-deal-drop')
-    const table = document.elementFromPoint(point.x, point.y)?.closest('.deal-arena')
-    cancel()
-    if (moved.current && !disabled && (zone || table)) play(zone === 'bank', point)
-  }
-  return <div ref={root} className={`deal-hand-card ${drag ? 'deal-card-dragging' : ''}`} data-deal-hand-card={card.id}>
-    <CardFace card={card} large selected={selected} disabled={disabled} onClick={() => discarding ? onSelect() : play()}/>
-    {!discarding && <button type="button" className="deal-drag-grip" disabled={disabled} aria-label="Lohista kaart mängu või panka" onPointerDown={begin} onPointerMove={move} onPointerUp={drop} onPointerCancel={cancel}><Grip size={14}/> Lohista</button>}
-    {card.kind === 'action' && !discarding && !disabled && <button className="deal-bank-choice" onClick={() => play(true)}>Panka · {card.value}M</button>}
-    {drag && createPortal(<div className="deal-drag-layer">
-      <div className="deal-drag-ghost" style={{ left: drag.x, top: drag.y }}><CardFace card={card}/></div>
-      <div className="deal-drop-tray"><div data-deal-drop="play">✦ Mängi kaart</div><div data-deal-drop="bank">◈ Panka · {card.value}M</div></div>
+  const isMoney = card.kind === 'money'
+  const isAction = card.kind === 'action'
+  return <div ref={root} className="deal-hand-card" data-deal-hand-card={card.id}>
+    <CardFace card={card} large selected={selected} disabled={disabled} onClick={() => discarding ? onSelect() : setOpen(true)}/>
+    {open && createPortal(<div className="deal-sheet-backdrop" role="dialog" aria-modal="true" aria-label="Vali kaardi käik" onClick={() => setOpen(false)}>
+      <div className="deal-sheet" onClick={e => e.stopPropagation()}>
+        <button type="button" className="deal-sheet-close" aria-label="Sulge" onClick={() => setOpen(false)}><X size={18}/></button>
+        <div className="deal-sheet-card"><CardFace card={card} large/></div>
+        <div className="deal-sheet-actions">
+          {isMoney
+            ? <button type="button" className="deal-sheet-btn deal-sheet-bank" onClick={() => play(true)}><Coins size={18}/> Pane panka · {card.value}M</button>
+            : <>
+              <button type="button" className="deal-sheet-btn deal-sheet-play" onClick={() => play(false)}><Landmark size={18}/> {isAction ? 'Mängi tegevus' : 'Pane lauale'}</button>
+              {isAction && <button type="button" className="deal-sheet-btn deal-sheet-bank" onClick={() => play(true)}><Coins size={18}/> Panka · {card.value}M</button>}
+            </>}
+          <button type="button" className="deal-sheet-btn deal-sheet-cancel" onClick={() => setOpen(false)}>Tühista</button>
+        </div>
+      </div>
     </div>, document.body)}
   </div>
 }
