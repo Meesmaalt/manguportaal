@@ -9,6 +9,8 @@ import {
   actionLabel,
   rentForSet,
   colorsWithAny,
+  buildingAssets,
+  BUILDING_VALUE,
 } from './types.ts'
 import { buildDeck, drawFrom } from './deck.ts'
 
@@ -756,10 +758,12 @@ function confirmSelectedPayCore(s: KinnistuDealState): KinnistuDealState {
   const payerI = s.payFrom
   const recvI = s.pending.from
   const selected = new Set(s.paySelected || [])
+  const buildingList = buildingAssets(s.players[payerI])
   const assets = [...s.players[payerI].bank, ...Object.values(s.players[payerI].props).flatMap(cards => cards || [])]
-  if ([...selected].some(id => !assets.some(c => c.id === id))) return s
-  const sum = assets.filter(c => selected.has(c.id)).reduce((total,c) => total+c.value,0)
-  const total = assets.reduce((total,c) => total+c.value,0)
+  if ([...selected].some(id => !assets.some(c => c.id === id) && !buildingList.some(b => b.id === id))) return s
+  const buildingSum = buildingList.filter(b => selected.has(b.id)).reduce((total,b) => total+b.value,0)
+  const sum = assets.filter(c => selected.has(c.id)).reduce((total,c) => total+c.value,0) + buildingSum
+  const total = assets.reduce((total,c) => total+c.value,0) + buildingList.reduce((t,b) => t+b.value,0)
   const required = Math.min(s.payAmount, total)
   if (sum < required) return { ...s, log: [`⚠️ Vali vähemalt ${required}M väärtuses vara`, ...s.log].slice(0,16) }
 
@@ -772,6 +776,13 @@ function confirmSelectedPayCore(s: KinnistuDealState): KinnistuDealState {
   const payerProps: PlayerBoard['props'] = {}
   const payerBuildings = { ...(s.players[payerI].buildings || {}) }
   const recvProps = { ...s.players[recvI].props }
+  // Makstud majad/hotellid lähevad saaja panka; katkise komplekti maja/hotell ei kao, vaid läheb maksja panka.
+  for (const b of buildingList) {
+    if (selected.has(b.id)) {
+      delete payerBuildings[b.color]
+      recvBank.push({ id: `${b.kind}-${b.color}-${Math.random().toString(36).slice(2, 8)}`, kind: 'money', value: b.value })
+    }
+  }
   for (const col of Object.keys(SET_SIZE) as PropColor[]) {
     const stay: DealCard[] = []
     for (const c of s.players[payerI].props[col] || []) {
@@ -780,7 +791,11 @@ function confirmSelectedPayCore(s: KinnistuDealState): KinnistuDealState {
       } else stay.push(c)
     }
     if (stay.length) payerProps[col] = stay
-    if (stay.length < SET_SIZE[col]) delete payerBuildings[col]
+    if (stay.length < SET_SIZE[col] && payerBuildings[col]) {
+      const orphan = payerBuildings[col] as 'house' | 'hotel'
+      payerBank.push({ id: `${orphan}-${col}-${Math.random().toString(36).slice(2, 8)}`, kind: 'money', value: BUILDING_VALUE[orphan] })
+      delete payerBuildings[col]
+    }
   }
 
   const payer: PlayerBoard = {
@@ -937,8 +952,9 @@ function resolvePayCore(s: KinnistuDealState): KinnistuDealState {
     props[prop.color] = (props[prop.color] || []).filter((c) => c.id !== prop.id)
     if ((props[prop.color] || []).length < SET_SIZE[prop.color]) {
       const b = { ...(payer.buildings || {}) }
+      const orphan = b[prop.color]
       delete b[prop.color]
-      payer = { ...payer, props, buildings: b }
+      payer = { ...payer, props, buildings: b, bank: orphan ? [...payer.bank, { id: `${orphan}-${prop.color}-${Math.random().toString(36).slice(2, 8)}`, kind: 'money', value: BUILDING_VALUE[orphan] }] : payer.bank }
     } else {
       payer = { ...payer, props }
     }
@@ -1037,7 +1053,7 @@ export type DealCommand =
   | { type: 'property' | 'toggle_pay'; cardId: string }
   | { type: 'discard'; ids: string[] }
   | { type: 'rename'; name: string }
-  | { type: 'end' | 'defend' | 'accept' | 'pay' | 'rent_all' }
+  | { type: 'end' | 'defend' | 'accept' | 'pay' | 'pay_auto' | 'rent_all' }
 
 /** Player commands always use the latest record, not a stale phone snapshot. */
 export function applyDealCommand(s: KinnistuDealState, token: string, command: DealCommand, requestId: string): KinnistuDealState {
@@ -1055,6 +1071,7 @@ export function applyDealCommand(s: KinnistuDealState, token: string, command: D
     case 'defend': next = defendWithNo(s,actor); break
     case 'accept': next = skipDefend(s,actor); break
     case 'pay': if (s.payFrom === actor) next = confirmSelectedPay(s); break
+    case 'pay_auto': if (s.payFrom === actor) next = resolvePay(s); break
     case 'toggle_pay': next = togglePayCard(s,actor,command.cardId); break
     case 'discard': next = discardHand(s,actor,command.ids); break
     case 'end': if (s.current === actor) next = endTurn(s); break

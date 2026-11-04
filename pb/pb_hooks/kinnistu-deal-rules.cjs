@@ -136,6 +136,16 @@ function actionLabel(a) {
   };
   return map[a];
 }
+var BUILDING_VALUE = { house: 3, hotel: 4 };
+function buildingAssets(p) {
+  var _a;
+  const out = [];
+  for (const col of Object.keys(SET_SIZE)) {
+    const b = (_a = p.buildings) == null ? void 0 : _a[col];
+    if (b) out.push({ id: `bld:${col}`, color: col, kind: b, value: BUILDING_VALUE[b] });
+  }
+  return out;
+}
 
 // frontend/src/games/kinnistu-deal/deck.ts
 var seq = 0;
@@ -990,10 +1000,12 @@ function confirmSelectedPayCore(s) {
   const payerI = s.payFrom;
   const recvI = s.pending.from;
   const selected = new Set(s.paySelected || []);
+  const buildingList = buildingAssets(s.players[payerI]);
   const assets = [...s.players[payerI].bank, ...Object.values(s.players[payerI].props).flatMap((cards) => cards || [])];
-  if ([...selected].some((id2) => !assets.some((c) => c.id === id2))) return s;
-  const sum = assets.filter((c) => selected.has(c.id)).reduce((total2, c) => total2 + c.value, 0);
-  const total = assets.reduce((total2, c) => total2 + c.value, 0);
+  if ([...selected].some((id2) => !assets.some((c) => c.id === id2) && !buildingList.some((b) => b.id === id2))) return s;
+  const buildingSum = buildingList.filter((b) => selected.has(b.id)).reduce((total2, b) => total2 + b.value, 0);
+  const sum = assets.filter((c) => selected.has(c.id)).reduce((total2, c) => total2 + c.value, 0) + buildingSum;
+  const total = assets.reduce((total2, c) => total2 + c.value, 0) + buildingList.reduce((t, b) => t + b.value, 0);
   const required = Math.min(s.payAmount, total);
   if (sum < required) return { ...s, log: [`\u26A0\uFE0F Vali v\xE4hemalt ${required}M v\xE4\xE4rtuses vara`, ...s.log].slice(0, 16) };
   const payerBank = s.players[payerI].bank.filter((c) => !selected.has(c.id));
@@ -1004,6 +1016,12 @@ function confirmSelectedPayCore(s) {
   const payerProps = {};
   const payerBuildings = { ...s.players[payerI].buildings || {} };
   const recvProps = { ...s.players[recvI].props };
+  for (const b of buildingList) {
+    if (selected.has(b.id)) {
+      delete payerBuildings[b.color];
+      recvBank.push({ id: `${b.kind}-${b.color}-${Math.random().toString(36).slice(2, 8)}`, kind: "money", value: b.value });
+    }
+  }
   for (const col of Object.keys(SET_SIZE)) {
     const stay = [];
     for (const c of s.players[payerI].props[col] || []) {
@@ -1012,7 +1030,11 @@ function confirmSelectedPayCore(s) {
       } else stay.push(c);
     }
     if (stay.length) payerProps[col] = stay;
-    if (stay.length < SET_SIZE[col]) delete payerBuildings[col];
+    if (stay.length < SET_SIZE[col] && payerBuildings[col]) {
+      const orphan = payerBuildings[col];
+      payerBank.push({ id: `${orphan}-${col}-${Math.random().toString(36).slice(2, 8)}`, kind: "money", value: BUILDING_VALUE[orphan] });
+      delete payerBuildings[col];
+    }
   }
   const payer = {
     ...s.players[payerI],
@@ -1155,8 +1177,9 @@ function resolvePayCore(s) {
     props2[prop.color] = (props2[prop.color] || []).filter((c) => c.id !== prop.id);
     if ((props2[prop.color] || []).length < SET_SIZE[prop.color]) {
       const b = { ...payer.buildings || {} };
+      const orphan = b[prop.color];
       delete b[prop.color];
-      payer = { ...payer, props: props2, buildings: b };
+      payer = { ...payer, props: props2, buildings: b, bank: orphan ? [...payer.bank, { id: `${orphan}-${prop.color}-${Math.random().toString(36).slice(2, 8)}`, kind: "money", value: BUILDING_VALUE[orphan] }] : payer.bank };
     } else {
       payer = { ...payer, props: props2 };
     }
@@ -1268,6 +1291,9 @@ function applyDealCommand(s, token, command, requestId) {
       break;
     case "pay":
       if (s.payFrom === actor) next = confirmSelectedPay(s);
+      break;
+    case "pay_auto":
+      if (s.payFrom === actor) next = resolvePay(s);
       break;
     case "toggle_pay":
       next = togglePayCard(s, actor, command.cardId);
