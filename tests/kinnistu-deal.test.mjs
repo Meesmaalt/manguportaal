@@ -48,7 +48,7 @@ test('payment can exhaust all assets below debt or pay zero; full sets may pay; 
  assert.equal(confirmSelectedPay(s).phase,'turn')
  s.players[1].bank=[cash('one')];s.players[1].props={brown:[prop('a'),prop('b')]};s.players[1].buildings={brown:'hotel'}
  s.payAmount=10;s.paySelected=['one','a'];assert.equal(confirmSelectedPay(s).phase,'pay')
- s.paySelected=['one','a','b'];let paid=confirmSelectedPay(s);assert.equal(paid.phase,'turn');assert.equal(paid.players[1].bank.length,1);assert.equal(paid.players[1].bank[0].value,4);assert.equal(paid.players[0].props.brown.length,2);assert(!paid.players[1].buildings.brown)
+ s.paySelected=['one','a','b'];assert.equal(confirmSelectedPay(s).phase,'pay');s.paySelected=['one','a','b','bld:brown'];let paid=confirmSelectedPay(s);assert.equal(paid.phase,'turn');assert.equal(paid.players[1].bank.length,0);assert.equal(paid.players[0].props.brown.length,2);assert(!paid.players[1].buildings.brown)
  paid=resolvePay(s);assert.equal(paid.players[0].props.brown.length,2);assert.equal(paid.players[1].props.brown.length,0)
 })
 test('deal breaker appends properties; forced deal needs an actual swap; invalid choices do not steal',()=>{
