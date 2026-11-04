@@ -1,3 +1,7 @@
+## Paigaldus ja uuendus (automaatne)
+
+`git pull` ja seejärel redeploy (`docker compose up -d --build`). PocketBase ehitatakse nüüd `pb/Dockerfile` järgi: hooks (`pb/pb_hooks`), migratsioonid ja mängureeglite moodulid genereeritakse image'i sees värskest koodist. Käsitsi samme (hooksi kopeerimine, eraldi konteineri taaskäivitus, reeglifaili ehitus) pole vaja. Kui hostid PocketBase'i eraldi (mitte selle compose'iga), ehita see sama `pb/Dockerfile`-iga.
+
 ## v3.35 — Deali vastused, käigulõpp ja lendavad kaardid
 
 - Kõik sihtmärgid saavad sama neutraalse vastuseakna. Avalik faas ja logi ei sõltu „Ei, aitäh“ kaardi olemasolust. Kaart avaldub selle mängimisel; vastane võib tühistusele oma sama kaardiga vastata. Reaktsioonid ei kuluta kolme kaardikäigu limiiti.
