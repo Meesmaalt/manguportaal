@@ -353,14 +353,32 @@ export default function Admin() {
         }
       }
 
-      if (updatedCols.length > 0) {
-        setMsg(
-          `✓ Andmebaasi skeem edukalt uuendatud! Lisati puuduvad mängutüübid (sh blitz) tabelitesse: ${updatedCols.join(
-            ', '
-          )}.`
+      const schemaMsg =
+        updatedCols.length > 0
+          ? `✓ Andmebaasi skeem uuendatud (${updatedCols.join(', ')}).`
+          : '✓ Andmebaasi skeem on ajakohane.'
+      // Hooks (mängude serveriosa) ei uuene brauserist: kontrolli, kas marsruudid on PocketBase'is olemas.
+      const hookRoutes: Array<[string, string]> = [
+        ['Kinnistu Deal', 'kinnistu-deal'],
+        ['UNO Flex', 'uno-flex'],
+      ]
+      const missing: string[] = []
+      for (const [label, route] of hookRoutes) {
+        try {
+          const res = await fetch(`${String(pb.baseUrl).replace(/\/$/, '')}/api/${route}/probe/action`, { method: 'GET' })
+          if (res.status === 404) missing.push(label)
+        } catch {
+          /* võrguviga ei tähenda puuduvat marsruuti */
+        }
+      }
+      if (missing.length) {
+        setError(
+          `${schemaMsg}\nServeriosa puudub: ${missing.join(', ')}. PocketBase'i konteiner ei näe pb_hooks kausta. ` +
+            'Käivita serveris: docker compose up -d --force-recreate pocketbase (kaust ./pb/pb_hooks peab olema konteineris /pb_hooks ja käivitus --hooksDir=/pb_hooks).'
         )
+        setMsg('')
       } else {
-        setMsg('✓ Andmebaasi skeem on juba ajakohane (kõik mängutüübid k.a blitz on lubatud).')
+        setMsg(`${schemaMsg} Mängude serveriosa (hooks) töötab.`)
       }
     } catch (err: any) {
       setError('Skeemi uuendamine ebaõnnestus: ' + (err.message || String(err)))
@@ -656,10 +674,10 @@ export default function Admin() {
                   onClick={syncDatabaseSchema}
                   disabled={!!busy}
                   className="btn-outline text-xs !py-2 !px-3 flex items-center gap-1.5 shrink-0 border-accent-cyan/40 text-accent-cyan hover:bg-accent-cyan/10"
-                  title="Kontrolli ja lisa puuduvad mängutüübid (blitz, miljonar jt) andmebaasi packs ja game_sessions tabelitesse"
+                  title="Lisa puuduvad mängutüübid andmebaasi ning kontrolli, kas PocketBase'is on Deali/UNO serveriosa (hooks) olemas"
                 >
                   <Database size={14} />
-                  <span>{busy === 'sync-schema' ? 'Sünkroniseerin…' : 'Paranda PB skeem (blitz)'}</span>
+                  <span>{busy === 'sync-schema' ? 'Sünkroniseerin…' : 'Kontrolli serveriosa ja skeemi'}</span>
                 </button>
                 <Link
                   to="/packs/create"
