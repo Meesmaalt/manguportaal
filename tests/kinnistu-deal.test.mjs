@@ -88,3 +88,9 @@ test('houses and hotels can pay a debt; orphaned buildings are banked instead of
  assert.equal(paid.players[1].bank.reduce((t,c)=>t+c.value,0),4);assert(!paid.players[1].buildings.brown)
  s.payAmount=5;s.paySelected=['a'];assert.equal(confirmSelectedPay(s).phase,'pay')
 })
+test('debt flow works end to end through commands, including automatic payment',()=>{
+ let s=fixture();s.players[0].hand=[action('debt','debt')];s.players[1].bank=[cash('x',3),cash('y',4)]
+ s=applyDealCommand(s,'Anna',{type:'play',cardId:'debt'},'1');s=applyDealCommand(s,'Anna',{type:'target',target:1},'2')
+ s=applyDealCommand(s,'Mart',{type:'accept'},'3');assert.equal(s.phase,'pay')
+ s=applyDealCommand(s,'Mart',{type:'pay_auto'},'4');assert.equal(s.phase,'turn');assert(s.players[0].bank.reduce((t,c)=>t+c.value,0)>=5)
+})

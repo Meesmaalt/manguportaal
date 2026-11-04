@@ -414,6 +414,9 @@ export default function DealPlayer() {
               <button type="button" className="btn-gold px-8" disabled={busy} onClick={onPay}>
                 Kinnita makse
               </button>
+              <button type="button" className="btn-outline text-xs ml-2" disabled={busy} onClick={() => act({ type: 'pay_auto' })}>
+                Maksa automaatselt
+              </button>
             </div>
           </div>
         )}

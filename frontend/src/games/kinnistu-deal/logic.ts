@@ -1053,7 +1053,7 @@ export type DealCommand =
   | { type: 'property' | 'toggle_pay'; cardId: string }
   | { type: 'discard'; ids: string[] }
   | { type: 'rename'; name: string }
-  | { type: 'end' | 'defend' | 'accept' | 'pay' | 'rent_all' }
+  | { type: 'end' | 'defend' | 'accept' | 'pay' | 'pay_auto' | 'rent_all' }
 
 /** Player commands always use the latest record, not a stale phone snapshot. */
 export function applyDealCommand(s: KinnistuDealState, token: string, command: DealCommand, requestId: string): KinnistuDealState {
@@ -1071,6 +1071,7 @@ export function applyDealCommand(s: KinnistuDealState, token: string, command: D
     case 'defend': next = defendWithNo(s,actor); break
     case 'accept': next = skipDefend(s,actor); break
     case 'pay': if (s.payFrom === actor) next = confirmSelectedPay(s); break
+    case 'pay_auto': if (s.payFrom === actor) next = resolvePay(s); break
     case 'toggle_pay': next = togglePayCard(s,actor,command.cardId); break
     case 'discard': next = discardHand(s,actor,command.ids); break
     case 'end': if (s.current === actor) next = endTurn(s); break

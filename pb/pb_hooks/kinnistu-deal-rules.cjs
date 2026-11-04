@@ -1292,6 +1292,9 @@ function applyDealCommand(s, token, command, requestId) {
     case "pay":
       if (s.payFrom === actor) next = confirmSelectedPay(s);
       break;
+    case "pay_auto":
+      if (s.payFrom === actor) next = resolvePay(s);
+      break;
     case "toggle_pay":
       next = togglePayCard(s, actor, command.cardId);
       break;
