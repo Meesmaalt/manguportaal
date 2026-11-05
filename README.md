@@ -1,5 +1,7 @@
 ## Paigaldus ja uuendus (automaatne)
 
+> Turvalisus: vaikimisi PocketBase'i administraator on `admin@ohtu.local` / `ohtu123456`. Määra tootmises `.env` failis oma `PB_ADMIN_EMAIL` ja `PB_ADMIN_PASSWORD`.
+
 `git pull` ja seejärel redeploy (`docker compose up -d --build`). PocketBase ehitatakse nüüd `pb/Dockerfile` järgi: hooks (`pb/pb_hooks`), migratsioonid ja mängureeglite moodulid genereeritakse image'i sees värskest koodist. Käsitsi samme (hooksi kopeerimine, eraldi konteineri taaskäivitus, reeglifaili ehitus) pole vaja. Kui hostid PocketBase'i eraldi (mitte selle compose'iga), ehita see sama `pb/Dockerfile`-iga.
 
 ## v3.35 — Deali vastused, käigulõpp ja lendavad kaardid

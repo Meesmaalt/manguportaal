@@ -4,6 +4,14 @@ import { useI18n } from '@/i18n/I18nContext'
 import { ArrowLeft } from 'lucide-react'
 
 const ENTRIES: { v: string; items: string[] }[] = [
+  { v: '3.37.0', items: [
+    'Kinnistu Deal telefonis: vajuta kaarti ja vali „Mängi“ või „Panka“; lohistamist pole vaja',
+    'Majade ja hotellidega saab maksta; katkise komplekti hoone läheb panka, mitte ei kao. Lisatud „Maksa automaatselt“',
+    'Märguanne (värin, heli, kuma), kui on sinu käik, vastus või makse; käsi on sorditud',
+    'Teleri edetabeliriba, suuremad portreed ja aktiivse mängija esiletõst',
+    'Käigulõpu kell talub ajutisi vigu; adminis „Kontrolli serveriosa ja skeemi“',
+    'PocketBase’i image sisaldab hooks’i ja migratsioone: uuendus = git pull + redeploy',
+  ] },
   { v: '3.36.0', items: [
     'Kinnistu Deal: lohista kaart mängualale või panka, telefoni kerimist segamata',
     'Sihtimise valgusjoon, tegelikust kaardist algav lend ja helendavad maandumised',
