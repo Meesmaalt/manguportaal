@@ -1055,3 +1055,13 @@ button.flex-card:hover:not(:disabled) { transform:translateY(-10px) rotate(-3deg
 .deal-tv-pips i { width:14px; height:14px; border-radius:50%; border:2px solid #dfb34288; }
 .deal-tv-pips i.pip-on { background:#dfb342; box-shadow:0 0 10px #dfb342aa; }
 .deal-tv-bank { display:flex; align-items:center; gap:4px; color:#86efac; font-weight:700; }
+
+/* Deal: meeldivam mäng */
+.deal-attention { animation:deal-attention 2.2s ease-in-out infinite; }
+@keyframes deal-attention { 0%,100% { box-shadow:0 0 0 0 #67e8f900; } 50% { box-shadow:0 0 0 6px #67e8f933,0 0 24px #67e8f955; } }
+.deal-hand-card { animation:deal-card-in .28s cubic-bezier(.2,.9,.3,1) backwards; }
+.deal-hand-card:nth-child(2) { animation-delay:.04s; }.deal-hand-card:nth-child(3) { animation-delay:.08s; }.deal-hand-card:nth-child(4) { animation-delay:.12s; }.deal-hand-card:nth-child(5) { animation-delay:.16s; }.deal-hand-card:nth-child(n+6) { animation-delay:.2s; }
+@keyframes deal-card-in { from { opacity:0; transform:translateY(22px) scale(.94); } to { opacity:1; transform:none; } }
+.arena-card-hand { scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
+.deal-sheet-btn,.arena-seat,.arena-set-label { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+@media(prefers-reduced-motion:reduce) { .deal-attention,.deal-hand-card { animation:none; } }

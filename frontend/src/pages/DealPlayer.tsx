@@ -27,6 +27,11 @@ import { confettiBurst } from '@/lib/confettiBurst'
 import { playFx } from '@/lib/audio'
 import { recordGameEnd } from '@/lib/stats'
 
+/** Käsi: kinnistud, siis tegevused, siis raha; samas grupis väärtuse järgi. */
+function handRank(c: DealCard) {
+  return (c.kind === 'property' ? 0 : c.kind === 'action' ? 100 : 200) + (c.kind === 'property' ? c.color.charCodeAt(0) / 1000 : -c.value)
+}
+
 export default function DealPlayer() {
   const { code: codeParam, token } = useParams<{ code: string; token: string }>()
   const code = (codeParam || '').toUpperCase()
@@ -57,6 +62,19 @@ export default function DealPlayer() {
   useEffect(() => { setDiscardSelected([]) }, [state?.phase, state?.turnCount])
 
   const me = playerIdx >= 0 ? state!.players[playerIdx] : null
+
+  // Anna märku, kui on sinu kord või pead vastama/maksma: õrn värin + heli (ainult kord signaali kohta).
+  const attention = playerIdx < 0 || !state ? '' :
+    state.phase === 'turn' && state.current === playerIdx ? `turn-${state.turnCount ?? 0}` :
+    state.phase === 'defend' && (state.pending?.responseIndex ?? state.pending?.target) === playerIdx ? `defend-${state.log[0]}` :
+    state.phase === 'pay' && state.payFrom === playerIdx ? `pay-${state.log[0]}` : ''
+  const lastAttention = useRef('')
+  useEffect(() => {
+    if (!attention || attention === lastAttention.current) { if (!attention) lastAttention.current = ''; return }
+    lastAttention.current = attention
+    try { navigator.vibrate?.(attention.startsWith('turn') ? [60, 40, 60] : 120) } catch { /* ignore */ }
+    playFx(attention.startsWith('turn') ? 'reveal' : 'tick')
+  }, [attention])
   const isMyTurn = state?.phase === 'turn' && state.current === playerIdx
   const needTarget = state?.phase === 'pick_target' && state.pending?.from === playerIdx
   const needPay = state?.phase === 'pay' && state.payFrom === playerIdx
@@ -299,7 +317,7 @@ export default function DealPlayer() {
 
         {/* Status banner */}
         <div
-          className={`rounded-xl px-4 py-3 mb-4 text-center text-sm font-medium border ${
+          className={`rounded-xl px-4 py-3 mb-4 text-center text-sm font-medium border ${isMyTurn || needDefend || needPay ? 'deal-attention ' : ''}${
             isMyTurn
               ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-100'
               : needDefend
@@ -428,7 +446,7 @@ export default function DealPlayer() {
             <span className="text-[10px] text-white/35 font-sans font-normal">privaatne</span>
           </h3>
           <div className="arena-card-hand">
-            {me.hand.map((c) => (
+            {[...me.hand].sort((a, b) => handRank(a) - handRank(b)).map((c) => (
               <DealHandCard key={c.id} card={c} discarding={needDiscard}
                 selected={needDiscard && discardSelected.includes(c.id)}
                 disabled={busy || (!needDiscard && (!isMyTurn || state.playsLeft <= 0))}
