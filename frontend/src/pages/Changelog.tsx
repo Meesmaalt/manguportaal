@@ -9,7 +9,7 @@ const ENTRIES: { v: string; items: string[] }[] = [
     'Majade ja hotellidega saab maksta; katkise komplekti hoone läheb panka, mitte ei kao. Lisatud „Maksa automaatselt“',
     'Märguanne (värin, heli, kuma), kui on sinu käik, vastus või makse; käsi on sorditud',
     'Teleri edetabeliriba, suuremad portreed ja aktiivse mängija esiletõst',
-    'Käigulõpu kell talub ajutisi vigu; adminis „Kontrolli serveriosa ja skeemi“',
+    'Veateated kaovad ise; õpetus kirjeldab uut puudutusega mängu. Käigulõpu kell talub ajutisi vigu; adminis „Kontrolli serveriosa ja skeemi“',
     'PocketBase’i image sisaldab hooks’i ja migratsioone: uuendus = git pull + redeploy',
   ] },
   { v: '3.36.0', items: [
