@@ -68,6 +68,11 @@ export default function DealPlayer() {
     state.phase === 'turn' && state.current === playerIdx ? `turn-${state.turnCount ?? 0}` :
     state.phase === 'defend' && (state.pending?.responseIndex ?? state.pending?.target) === playerIdx ? `defend-${state.log[0]}` :
     state.phase === 'pay' && state.payFrom === playerIdx ? `pay-${state.log[0]}` : ''
+  useEffect(() => {
+    if (!actionError) return
+    const id = window.setTimeout(() => setActionError(''), 6000)
+    return () => clearTimeout(id)
+  }, [actionError])
   const lastAttention = useRef('')
   useEffect(() => {
     if (!attention || attention === lastAttention.current) { if (!attention) lastAttention.current = ''; return }
@@ -317,6 +322,7 @@ export default function DealPlayer() {
 
         {/* Status banner */}
         <div
+          role="status" aria-live="polite"
           className={`rounded-xl px-4 py-3 mb-4 text-center text-sm font-medium border ${isMyTurn || needDefend || needPay ? 'deal-attention ' : ''}${
             isMyTurn
               ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-100'
@@ -486,7 +492,7 @@ export default function DealPlayer() {
           <div className="bg-[#0c1524] border border-gold/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl">
             <h2 className="font-display text-gold text-xl font-black mb-3">3 sammu</h2>
             <ol className="text-sm text-white/80 space-y-2 list-decimal list-inside mb-4">
-              <li>Oma käigul mängi kuni 3 kaarti (raha, kinnistu või tegevus).</li>
+              <li>Oma käigul vajuta kaarti ja vali „Mängi“ või „Panka“ (kuni 3 kaarti).</li>
               <li>Tegevuskaardil vali vastane; tema võib öelda „Ei, aitäh“.</li>
               <li>Võidab see, kes kogub {state.packData?.winSets ?? 3} täiskomplekti.</li>
             </ol>
