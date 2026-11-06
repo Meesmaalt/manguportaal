@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 /**
  * Client-side Gemini AI generation helper.
  * Allows direct Gemini API calls from the browser when self-hosting with static nginx,
@@ -53,7 +54,7 @@ export async function callGeminiDirectly(
   if (!apiKey) {
     try {
       const { appUrl } = await import('@/lib/config')
-      const res = await fetch(appUrl('/api/ai/key'))
+      const res = await fetch(appUrl('/api/ai/key'), { headers: aiHeaders() })
       if (res.ok) {
         const data = await res.json()
         if (data.ok && data.key) {
@@ -68,7 +69,7 @@ export async function callGeminiDirectly(
     const { appUrl } = await import('@/lib/config')
     const srvRes = await fetch(appUrl('/api/ai/generate'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: aiHeaders(),
       body: JSON.stringify({
         prompt,
         model: chosenModel,

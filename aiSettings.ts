@@ -4,7 +4,11 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SETTINGS_FILE = path.join(__dirname, 'ai_settings.json');
+// Salvesta võti andmekausta (docker volume), et see säiliks uuendustel; loe vajadusel ka vanast asukohast.
+const DATA_DIR = process.env.AI_SETTINGS_DIR || path.join(__dirname, 'data');
+const LEGACY_FILE = path.join(__dirname, 'ai_settings.json');
+const NEW_FILE = path.join(DATA_DIR, 'ai_settings.json');
+const SETTINGS_FILE = fs.existsSync(NEW_FILE) || !fs.existsSync(LEGACY_FILE) ? NEW_FILE : LEGACY_FILE;
 
 export function getGlobalApiKey(): string {
   try {
@@ -39,5 +43,6 @@ export function setGlobalSettings(key: string, model: string): void {
   } catch (e) {}
   data.GEMINI_API_KEY = key;
   data.GEMINI_MODEL = model;
+  fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
 }

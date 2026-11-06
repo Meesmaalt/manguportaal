@@ -6,7 +6,8 @@ services:
     container_name: ohtu-pb
     restart: unless-stopped
     ports:
-      - "8090:8090"
+      # Ainult hostist ligipääsetav; frontend kasutab PocketBase'i konteinerivõrgu kaudu (/pb)
+      - "127.0.0.1:8090:8090"
     volumes:
       - pb_data:/pb_data
     # CRITICAL: args must start with "-" so entrypoint still runs superuser upsert
@@ -36,9 +37,13 @@ services:
     environment:
       BASE_PATH: "/mangud"
       PB_PUBLIC_URL: "${PB_PUBLIC_URL:-/mangud/pb}"
+      AI_SETTINGS_DIR: /app/data
+    volumes:
+      - ai_data:/app/data
     depends_on:
       pocketbase:
         condition: service_healthy
 
 volumes:
   pb_data:
+  ai_data:
