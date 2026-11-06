@@ -425,7 +425,8 @@ function beginMultiPay(s, from, amount, action2, color, cardId) {
     color,
     rentMode: "all",
     rentTargets: rest,
-    target: first
+    target: first,
+    amount
   };
   return responseWindow({ ...s, pending }, first);
 }
@@ -779,7 +780,7 @@ function finishForcedDeal(s, takeId, giveId) {
   });
 }
 function applyEffect(s) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const act = s.pending;
   if (!act || act.target == null) return { ...s, phase: "turn", pending: null };
   const from = s.players[act.from];
@@ -818,8 +819,8 @@ function applyEffect(s) {
   }
   if (act.action === "rent") {
     const color = act.color;
-    const amount = color ? rentForSet(from, color) : 3;
-    const colorLabel = color ? ((_a = COLOR_STYLE[color]) == null ? void 0 : _a.label) || color : "";
+    const amount = (_a = act.amount) != null ? _a : color ? rentForSet(from, color) : 3;
+    const colorLabel = color ? ((_b = COLOR_STYLE[color]) == null ? void 0 : _b.label) || color : "";
     return {
       ...st,
       phase: "pay",
@@ -934,7 +935,7 @@ function applyEffect(s) {
     });
     st.phase = "turn";
     st.pending = null;
-    const colorLabel = ((_b = COLOR_STYLE[taken]) == null ? void 0 : _b.label) || taken;
+    const colorLabel = ((_c = COLOR_STYLE[taken]) == null ? void 0 : _c.label) || taken;
     st.lastEvent = {
       id: `${Date.now()}-${Math.random()}`,
       kind: "deal_breaker",
@@ -982,7 +983,7 @@ function applyEffect(s) {
     return finishForcedDeal(
       { ...st, pending: { ...act, propertyId: take.id } },
       take.id,
-      ((_c = myLoose[0]) == null ? void 0 : _c.id) || ""
+      ((_d = myLoose[0]) == null ? void 0 : _d.id) || ""
     );
   }
   return { ...st, phase: "turn", pending: null };
@@ -1170,6 +1171,16 @@ function resolvePayCore(s) {
     payer.bank = keep;
   }
   while (left > 0) {
+    const bld = buildingAssets(payer)[0];
+    if (bld) {
+      const b = { ...payer.buildings || {} };
+      delete b[bld.color];
+      payer = { ...payer, buildings: b };
+      recv.bank.push({ id: `${bld.kind}-${bld.color}-${Math.random().toString(36).slice(2, 8)}`, kind: "money", value: bld.value });
+      paid += bld.value;
+      left -= bld.value;
+      continue;
+    }
     const loose = Object.values(payer.props).flatMap((cards) => cards || []);
     if (!loose.length || loose[0].kind !== "property") break;
     const prop = loose[0];

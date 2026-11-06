@@ -57,6 +57,8 @@ export type PendingAction = {
   color?: PropColor
   rentTargets?: number[]
   rentMode?: 'one' | 'all'
+  /** rent_all: summa fikseeritakse käigu alguses, et see ei muutuks maksete käigus */
+  amount?: number
   /** forced_deal: choosing own property to give */
   responseIndex?: number
   cancelled?: boolean

@@ -9,3 +9,4 @@ pb/pb_data
 !.env.example
 *.log
 .qa
+ai_settings.json

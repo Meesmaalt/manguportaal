@@ -8,3 +8,4 @@ pb/pb_data/
 .qa/
 
 /node_modules
+ai_settings.json

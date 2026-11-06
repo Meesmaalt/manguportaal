@@ -162,6 +162,7 @@ function beginMultiPay(
     rentMode: 'all' as const,
     rentTargets: rest,
     target: first,
+    amount,
   }
   return responseWindow({ ...s, pending }, first)
 }
@@ -563,7 +564,7 @@ function applyEffect(s: KinnistuDealState): KinnistuDealState {
   }
   if (act.action === 'rent') {
     const color = act.color
-    const amount = color ? rentForSet(from, color) : 3
+    const amount = act.amount ?? (color ? rentForSet(from, color) : 3)
     const colorLabel = color ? (COLOR_STYLE[color]?.label || color) : ''
     return {
       ...st,
@@ -945,6 +946,17 @@ function resolvePayCore(s: KinnistuDealState): KinnistuDealState {
 
   // Still short → transfer loose properties as payment
   while (left > 0) {
+    // Enne paku maksa majad/hotellid: nii ei jää maksja katkise komplekti hoonet endale ja maksesumma täitub korrektselt.
+    const bld = buildingAssets(payer)[0]
+    if (bld) {
+      const b = { ...(payer.buildings || {}) }
+      delete b[bld.color]
+      payer = { ...payer, buildings: b }
+      recv.bank.push({ id: `${bld.kind}-${bld.color}-${Math.random().toString(36).slice(2, 8)}`, kind: 'money', value: bld.value })
+      paid += bld.value
+      left -= bld.value
+      continue
+    }
     const loose = Object.values(payer.props).flatMap(cards => cards || [])
     if (!loose.length || loose[0].kind !== 'property') break
     const prop = loose[0]
