@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 import type { MiljonarQuestion } from './types'
 import {
   MILJONAR_KLASSIKA_QUESTIONS,
@@ -18,7 +19,7 @@ export async function generateMiljonarQuizWithAi(topic: string): Promise<{
     const { appUrl } = await import('@/lib/config');
     const res = await fetch(appUrl('/api/ai/quiz'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: aiHeaders(),
       body: JSON.stringify({
         topic: chosenTopic,
         gameType: 'miljonar',

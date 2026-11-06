@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 import { useState, useEffect } from 'react'
 import { Sparkles, Key, Check, ExternalLink, ShieldCheck, Trash2, RefreshCw, Cpu, AlertCircle } from 'lucide-react'
 import { appUrl } from '@/lib/config'
@@ -22,7 +23,7 @@ export default function AdminAiSettingsCard() {
   const [modelError, setModelError] = useState('')
 
   useEffect(() => {
-    fetch(appUrl('/api/ai/key'))
+    fetch(appUrl('/api/ai/key'), { headers: aiHeaders() })
       .then(res => res.json())
       .then(data => {
         if (data.ok) {
@@ -44,7 +45,7 @@ export default function AdminAiSettingsCard() {
     try {
       const res = await fetch(appUrl('/api/ai/models'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({ key: apiKey.trim() || undefined })
       })
       const data = await res.json()
@@ -65,7 +66,7 @@ export default function AdminAiSettingsCard() {
     try {
       await fetch(appUrl('/api/ai/key'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({ key: val, model })
       })
       setHasKey(Boolean(val))
@@ -78,7 +79,7 @@ export default function AdminAiSettingsCard() {
     try {
       await fetch(appUrl('/api/ai/key'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({ key: '', model: 'gemini-2.5-flash' })
       })
       setApiKey('')

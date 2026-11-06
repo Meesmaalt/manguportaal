@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 import type { BlitzQuestion } from './types'
 
 export type QuizGenerateParams = {
@@ -198,7 +199,7 @@ export async function requestAiQuiz(params: QuizGenerateParams): Promise<{ quest
     const { appUrl } = await import('@/lib/config');
     const res = await fetch(appUrl('/api/ai/quiz'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: aiHeaders(),
       body: JSON.stringify(params),
     })
     if (res.ok) {

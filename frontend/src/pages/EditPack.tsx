@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 import { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { pb, formatPbError, type Pack, type KuldvillakPackData } from '@/lib/pocketbase'
@@ -571,7 +572,7 @@ export default function EditPack() {
 
       const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({
           packData: data,
           gameType: pack?.game_type,

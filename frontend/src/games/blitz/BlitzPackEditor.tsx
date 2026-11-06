@@ -1,3 +1,4 @@
+import { aiHeaders } from '@/lib/aiAuth'
 import { useState } from 'react'
 import type { BlitzQuestion, BlitzQuestionType } from './types'
 import { parseBlitzQuestions, questionsToCsv } from './parseQuestions'
@@ -67,7 +68,7 @@ export default function BlitzPackEditor({
     try {
       const res = await fetch(appUrl('/api/ai/translate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiHeaders(),
         body: JSON.stringify({
           packData: { questions },
           gameType: 'blitz',

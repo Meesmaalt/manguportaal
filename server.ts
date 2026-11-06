@@ -44,11 +44,45 @@ import { getGlobalApiKey, getGlobalModel, setGlobalSettings } from './aiSettings
 
 const apiRouter = express.Router();
 
+// --- /api/ai/* kaitse: nõua sisselogitud PocketBase'i kasutajat; võtmehaldus ainult superkasutajale ---
+const PB_INTERNAL = 'http://pocketbase:8090';
+const authCache = new Map<string, { role: 'superuser' | 'user' | null; exp: number }>();
+async function pbRole(token: string): Promise<'superuser' | 'user' | null> {
+  if (!token) return null;
+  const hit = authCache.get(token);
+  if (hit && hit.exp > Date.now()) return hit.role;
+  let role: 'superuser' | 'user' | null = null;
+  for (const [collection, r] of [['_superusers', 'superuser'], ['users', 'user']] as const) {
+    try {
+      const resp = await fetch(`${PB_INTERNAL}/api/collections/${collection}/auth-refresh`, {
+        method: 'POST',
+        headers: { Authorization: token },
+      });
+      if (resp.ok) { role = r; break; }
+    } catch { /* PocketBase ei vasta: käsitle kui sisselogimata */ }
+  }
+  if (authCache.size > 500) authCache.clear();
+  authCache.set(token, { role, exp: Date.now() + (role ? 60_000 : 5_000) });
+  return role;
+}
+const bearer = (req: express.Request) => String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+apiRouter.use('/api/ai', async (req, res, next) => {
+  const role = await pbRole(bearer(req));
+  if (!role) return res.status(401).json({ ok: false, error: 'Logi sisse, et AI-d kasutada' });
+  (req as any).pbRole = role;
+  next();
+});
+const requireSuperuser: express.RequestHandler = (req, res, next) => {
+  if ((req as any).pbRole !== 'superuser') return res.status(403).json({ ok: false, error: 'Ainult administraatorile' });
+  next();
+};
+
 apiRouter.get('/api/ai/key', (req, res) => {
+  if ((req as any).pbRole !== 'superuser') return res.json({ ok: true, key: '', model: getGlobalModel() });
   res.json({ ok: true, key: getGlobalApiKey(), model: getGlobalModel() });
 });
 
-apiRouter.post('/api/ai/key', (req, res) => {
+apiRouter.post('/api/ai/key', requireSuperuser, (req, res) => {
   setGlobalSettings(req.body.key || '', req.body.model || 'gemini-2.5-flash');
   res.json({ ok: true });
 });
