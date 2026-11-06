@@ -94,3 +94,24 @@ test('debt flow works end to end through commands, including automatic payment',
  s=applyDealCommand(s,'Mart',{type:'accept'},'3');assert.equal(s.phase,'pay')
  s=applyDealCommand(s,'Mart',{type:'pay_auto'},'4');assert.equal(s.phase,'turn');assert(s.players[0].bank.reduce((t,c)=>t+c.value,0)>=5)
 })
+
+test('automatic payment spends buildings first and pays the full debt',()=>{
+ let s=fixture();s.phase='pay';s.payFrom=1;s.payAmount=5;s.pending={from:0,target:1,action:'debt',cardId:'debt'}
+ s.players[1].bank=[];s.players[1].props={brown:[prop('a'),prop('b')]};s.players[1].buildings={brown:'hotel'}
+ const paid=resolvePay(s)
+ assert.equal(paid.players[1].bank.length,0)
+ assert(!paid.players[1].buildings.brown)
+ assert(paid.players[0].bank.reduce((t,c)=>t+c.value,0)>=4)
+})
+test('rent from all players keeps the amount fixed while others pay',()=>{
+ let s=fixture();s.players[0].props={orange:[prop('o1','orange')]};s.players[1].props={orange:[prop('o2','orange'),prop('o3','orange')]};s.players[2].bank=[cash('m',10)]
+ s.players[0].hand=[{id:'r',kind:'action',action:'rent',name:'r',value:1,colors:['orange']}]
+ s=applyDealCommand(s,s.players[0].token,{type:'play',cardId:'r'},'1')
+ if(s.phase==='pick_rent_color')s=applyDealCommand(s,s.players[0].token,{type:'rent_color',color:'orange'},'1b')
+ s=applyDealCommand(s,s.players[0].token,{type:'rent_all'},'2')
+ s=applyDealCommand(s,s.players[1].token,{type:'accept'},'3')
+ const base=s.payAmount
+ s=applyDealCommand(s,s.players[1].token,{type:'toggle_pay',cardId:'o2'},'4');s=applyDealCommand(s,s.players[1].token,{type:'pay'},'5')
+ s=applyDealCommand(s,s.players[2].token,{type:'accept'},'6')
+ assert.equal(s.payAmount,base)
+})
