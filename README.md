@@ -1,6 +1,6 @@
 ## Paigaldus ja uuendus (automaatne)
 
-> Turvalisus: vaikimisi PocketBase'i administraator on `admin@ohtu.local` / `ohtu123456`. Määra tootmises `.env` failis oma `PB_ADMIN_EMAIL` ja `PB_ADMIN_PASSWORD`.
+> Administraatori parooli ei ole vaikimisi: esimesel külastusel lehel `/admin` määrad ise e-posti ja parooli (vähemalt 10 märki). Vana vaikeparooliga (`ohtu123456`) olemasoleval paigaldusel palutakse parool sisselogimisel kohe vahetada (Admin → Süsteem).
 
 `git pull` ja seejärel redeploy (`docker compose up -d --build`). PocketBase ehitatakse nüüd `pb/Dockerfile` järgi: hooks (`pb/pb_hooks`), migratsioonid ja mängureeglite moodulid genereeritakse image'i sees värskest koodist. Käsitsi samme (hooksi kopeerimine, eraldi konteineri taaskäivitus, reeglifaili ehitus) pole vaja. Kui hostid PocketBase'i eraldi (mitte selle compose'iga), ehita see sama `pb/Dockerfile`-iga.
 
@@ -151,8 +151,8 @@ docker compose up -d --build
 |--|--|
 | **Mäng** | http://localhost:3000 (või http://SINU_IP:3000) |
 | **Admin** | http://localhost:8090/_/ |
-| Admin e-post | `admin@ohtu.local` |
-| Admin parool | `ohtu123456` |
+| Admin e-post | määrad esmakordsel sisenemisel |
+| Admin parool | määrad esmakordsel sisenemisel |
 
 Esimene käivitus loob automaatselt:
 - admini konto

@@ -6,6 +6,7 @@ import AdminSounds from '@/components/AdminSounds'
 import AdminAiSettingsCard from '@/components/AdminAiSettingsCard'
 import AdminGameSettings from '@/components/AdminGameSettings'
 import { backupUserAuth, restoreUserAuth } from '@/lib/adminAuth'
+import { ChangePasswordCard, FirstSetupForm, LEGACY_DEFAULT_PASSWORD, fetchNeedsSetup } from '@/components/AdminPasswordCards'
 import { hideTemplate, isTemplateHidden, clearHiddenTemplates, unhideTemplate } from '@/lib/hiddenTemplates'
 import { useI18n } from '@/i18n/I18nContext'
 import type { TranslationKey } from '@/i18n/translations'
@@ -56,9 +57,11 @@ type AdminTab = 'packs' | 'settings' | 'ai' | 'sounds' | 'system'
 export default function Admin() {
   const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<AdminTab>('packs')
-  const [email, setEmail] = useState('admin@ohtu.local')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [asAdmin, setAsAdmin] = useState(false)
+  const [needsSetup, setNeedsSetup] = useState(false)
+  const [weakPassword, setWeakPassword] = useState(false)
   const [loading, setLoading] = useState(true)
   const [packs, setPacks] = useState<Pack[]>([])
   const [error, setError] = useState('')
@@ -83,6 +86,7 @@ export default function Admin() {
   useEffect(() => {
     ensurePbUrl()
     setAsAdmin(isSuperuserAuth())
+    fetchNeedsSetup().then(setNeedsSetup)
     setLoading(false)
   }, [])
 
@@ -90,18 +94,25 @@ export default function Admin() {
     if (asAdmin) loadPacks()
   }, [asAdmin])
 
-  async function login(e: React.FormEvent) {
-    e.preventDefault()
+  async function login(e?: React.FormEvent, creds?: { email: string; password: string }) {
+    e?.preventDefault()
+    const em = (creds?.email ?? email).trim()
+    const pw = creds?.password ?? password
     setError('')
     setBusy('login')
     ensurePbUrl()
     try {
       backupUserAuth()
       try {
-        await pb.collection('_superusers').authWithPassword(email.trim(), password)
+        await pb.collection('_superusers').authWithPassword(em, pw)
       } catch {
-        await pb.collection('superusers').authWithPassword(email.trim(), password)
+        await pb.collection('superusers').authWithPassword(em, pw)
       }
+      if (pw === LEGACY_DEFAULT_PASSWORD) {
+        setWeakPassword(true)
+        setActiveTab('system')
+      }
+      setNeedsSetup(false)
       setAsAdmin(true)
     } catch (err: any) {
       setError(
@@ -442,6 +453,9 @@ export default function Admin() {
             <p className="text-white/50 text-sm">{t('adminSub')}</p>
           </div>
         </div>
+        {needsSetup ? (
+          <FirstSetupForm onDone={(em, pw) => login(undefined, { email: em, password: pw })} />
+        ) : (
         <form onSubmit={login} className="card-panel p-6 space-y-4">
           <div>
             <label className="text-white/50 text-xs block mb-1">Email</label>
@@ -471,6 +485,7 @@ export default function Admin() {
           </button>
           <p className="text-white/35 text-xs leading-relaxed">{t('adminHint')}</p>
         </form>
+        )}
         <p className="text-center mt-6">
           <Link to="/" className="text-gold/70 text-sm hover:text-gold">
             ← {t('packBack')}
@@ -984,6 +999,7 @@ export default function Admin() {
       {/* TAB 4: SYSTEM & DIAGNOSTICS */}
       {activeTab === 'system' && (
         <div className="space-y-4 animate-in fade-in duration-150">
+          <ChangePasswordCard warn={weakPassword} />
           <div className="card-panel p-5 space-y-4">
             <h2 className="font-display text-gold text-lg font-bold flex items-center gap-2">
               <Sliders size={20} />
